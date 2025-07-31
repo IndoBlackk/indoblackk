@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dark Minimal Portfolio</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap');
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: #0d0d0d;
+      color: #eee;
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    h1 {
+      font-weight: 300;
+      font-size: 3rem;
+      letter-spacing: 0.2em;
+      margin-bottom: 3rem;
+      user-select: none;
+      text-transform: uppercase;
+      text-shadow: 0 0 8px #fff, 0 0 20px #fff;
+      animation: flickerTitle 3s infinite;
+      color: white;
+    }
+
+    @keyframes flickerTitle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .enter-btn {
+      position: relative;
+      padding: 1rem 3rem;
+      border: 2px solid #fff;
+      background: transparent;
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 300;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 50px;
+      box-shadow:
+        0 0 5px #fff,
+        0 0 20px #fff,
+        0 0 30px #fff,
+        0 0 40px #fff;
+      transition: background 0.3s, color 0.3s;
+      user-select: none;
+      animation: flickerNeon 3s infinite;
+      z-index: 2;
+    }
+
+    @keyframes flickerNeon {
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        opacity: 1;
+        box-shadow:
+          0 0 5px #fff,
+          0 0 20px #fff,
+          0 0 30px #fff,
+          0 0 40px #fff;
+      }
+      20%, 22%, 24%, 55% {
+        opacity: 0.6;
+        box-shadow:
+          0 0 2px #ccc,
+          0 0 10px #ccc,
+          0 0 15px #ccc,
+          0 0 20px #ccc;
+      }
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 250px;
+      height: 250px;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+      filter: blur(30px);
+      animation: flickerGlow 3s infinite;
+      z-index: 1;
+    }
+
+    @keyframes flickerGlow {
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        opacity: 0.15;
+      }
+      20%, 22%, 24%, 55% {
+        opacity: 0.05;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>My Portfolio</h1>
+  <button class="enter-btn" onclick="enterSite()">Enter</button>
+
+  <script>
+    function enterSite() {
+      window.location.href = 'portfolio.html';
+    }
+  </script>
+</body>
+</html>
