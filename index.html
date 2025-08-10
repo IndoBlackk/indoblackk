@@ -28,6 +28,9 @@
     --spot-x: 50%;
     --spot-y: 50%;
     --spot-radius: 24vmax;
+
+    --accent: #ffd8a1;
+    --glass-2: rgba(255,255,255,0.025);
   }
 
   html,body{
@@ -43,7 +46,7 @@
   }
 
   /* =========================
-     STAGE LAYOUT
+     STAGE LAYOUT (your original styles preserved)
      ========================= */
   .stage {
     position:relative;
@@ -57,169 +60,207 @@
     perspective:900px;
   }
 
-  /* canvas for atmospheric fog/noise sits behind content */
-  #fxCanvas {
-    position:absolute;
-    inset:0;
-    z-index:1;
-    pointer-events:none;
-    mix-blend-mode:screen;
-    opacity:0.85;
-  }
+  #fxCanvas { position:absolute; inset:0; z-index:1; pointer-events:none; mix-blend-mode:screen; opacity:0.85; }
 
-  /* subtle scanlines overlay for analog feel */
-  .scanlines {
-    position: absolute;
-    inset:0;
-    background: repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,0.02) 0px,
-      rgba(255,255,255,0.02) 1px,
-      transparent 1px,
-      transparent 4px
-    );
-    z-index:8;
-    pointer-events:none;
-    mix-blend-mode:overlay;
-    opacity:0.18;
-  }
+  .scanlines { position: absolute; inset:0; background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 4px); z-index:8; pointer-events:none; mix-blend-mode:overlay; opacity:0.18; }
 
-  /* main content container (front) */
-  .center {
-    position:relative;
-    z-index:10;
-    transform-style:preserve-3d;
-    transition: transform 220ms ease-out;
-    will-change: transform;
-    padding: 6vh 6vw;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap: 18px;
-    pointer-events:auto;
-  }
+  .center { position:relative; z-index:10; transform-style:preserve-3d; transition: transform 220ms ease-out; will-change: transform; padding: 6vh 6vw; display:flex; flex-direction:column; align-items:center; gap: 18px; pointer-events:auto; }
 
-  /* the logo element */
-  .logo {
-    position:relative;
-    display:inline-block;
-    font-weight:900;
-    font-size:var(--logo-size);
-    line-height:0.82;
-    letter-spacing: -0.02em;
-    color:var(--fg);
-    text-transform:lowercase;
-    transform: translateZ(40px) skew(var(--flicker-skew)) scale(var(--flicker-scale));
-    filter: brightness(var(--flicker-brightness)) hue-rotate(var(--flicker-hue));
-    transition: transform 90ms linear, filter 90ms linear, text-shadow 120ms ease;
-    text-shadow:
-      0 0 4px rgba(255,255,255,0.06),
-      0 8px 30px rgba(0,0,0,0.7);
-    user-select:none;
-    -webkit-user-select:none;
-  }
+  .logo { position:relative; display:inline-block; font-weight:900; font-size:var(--logo-size); line-height:0.82; letter-spacing: -0.02em; color:var(--fg); text-transform:lowercase; transform: translateZ(40px) skew(var(--flicker-skew)) scale(var(--flicker-scale)); filter: brightness(var(--flicker-brightness)) hue-rotate(var(--flicker-hue)); transition: transform 90ms linear, filter 90ms linear, text-shadow 120ms ease; text-shadow: 0 0 4px rgba(255,255,255,0.06), 0 8px 30px rgba(0,0,0,0.7); user-select:none; -webkit-user-select:none; }
 
-  /* logo inner text (so we can slice & clone) */
-  .logo .word {
-    position:relative;
-    display:block;
-    pointer-events:none;
-  }
+  .logo .word { position:relative; display:block; pointer-events:none; }
 
-  /* ghost layer for afterimages during strong flashes */
-  .afterglow {
-    position:absolute;
-    inset:0;
-    z-index:-1;
-    pointer-events:none;
-    filter: blur(10px) saturate(1.2);
-    opacity:0;
-    transition: opacity 180ms linear;
-  }
+  .afterglow { position:absolute; inset:0; z-index:-1; pointer-events:none; filter: blur(10px) saturate(1.2); opacity:0; transition: opacity 180ms linear; }
 
-  /* byline */
-  .byline {
-    font-size:14px;
-    letter-spacing:0.28em;
-    text-transform:uppercase;
-    color:var(--ui-muted);
-    opacity:0.9;
-    mix-blend-mode:screen;
-  }
+  .byline { font-size:14px; letter-spacing:0.28em; text-transform:uppercase; color:var(--ui-muted); opacity:0.9; mix-blend-mode:screen; }
 
-  /* controls */
-  .controls {
-    position:fixed;
-    right:18px;
-    top:18px;
-    z-index:40;
-    display:flex;
-    gap:10px;
-    align-items:center;
-    pointer-events:auto;
-  }
-  .btn {
-    background:var(--control-bg);
-    border:1px solid rgba(255,255,255,0.04);
-    color:var(--fg);
-    padding:8px 12px;
-    font-size:13px;
-    border-radius:8px;
-    cursor:pointer;
-    backdrop-filter: blur(6px);
-  }
+  .controls { position:fixed; right:18px; top:18px; z-index:40; display:flex; gap:10px; align-items:center; pointer-events:auto; }
+  .btn { background:var(--control-bg); border:1px solid rgba(255,255,255,0.04); color:var(--fg); padding:8px 12px; font-size:13px; border-radius:8px; cursor:pointer; backdrop-filter: blur(6px); }
   .btn.toggled { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
 
-  /* spotlight mask: uses CSS variable for center */
-  .spotlight {
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    z-index:9;
-    mix-blend-mode:screen;
-    background: radial-gradient(
-      circle at var(--spot-x) var(--spot-y),
-      rgba(255,255,240,0.18) 0%,
-      rgba(255,255,240,0.06) 8%,
-      transparent 26%
-    );
-    transition: background 120ms linear;
-    filter: blur(8px);
-    opacity:0.95;
-  }
+  .spotlight { position:absolute; inset:0; pointer-events:none; z-index:9; mix-blend-mode:screen; background: radial-gradient(circle at var(--spot-x) var(--spot-y), rgba(255,255,240,0.18) 0%, rgba(255,255,240,0.06) 8%, transparent 26%); transition: background 120ms linear; filter: blur(8px); opacity:0.95; }
 
-  /* slices container (for glitch horizontal slices) */
-  .slices {
-    position:absolute;
-    inset:0;
-    z-index:12;
-    pointer-events:none;
-  }
+  .slices { position:absolute; inset:0; z-index:12; pointer-events:none; }
+  .slice { position:absolute; left:50%; transform: translateX(-50%); color:var(--fg); font-weight:900; text-transform:lowercase; font-size:var(--logo-size); line-height:0.82; white-space:nowrap; pointer-events:none; text-shadow: none; mix-blend-mode:screen; opacity:0; }
 
-  /* each slice is a cloned text piece; hidden by default */
-  .slice {
-    position:absolute;
-    left:50%;
-    transform: translateX(-50%);
-    color:var(--fg);
-    font-weight:900;
-    text-transform:lowercase;
-    font-size:var(--logo-size);
-    line-height:0.82;
-    white-space:nowrap;
-    pointer-events:none;
-    text-shadow: none;
-    mix-blend-mode:screen;
-    opacity:0;
-  }
-
-  /* small footer credit */
   footer { position:fixed; left:12px; bottom:12px; z-index:40; color:rgba(255,255,255,0.04); font-size:12px; }
 
-  /* responsive tweaks */
   @media (max-width:640px){
     .controls { left:12px; right:auto; top:auto; bottom:12px; }
     .logo { font-size: clamp(3.2rem, 28vw, 9rem); }
+  }
+
+  /* =========================
+     New UI: Easter egg (almost invisible) + upload panels + modals
+     ========================= */
+
+  /* very subtle clickable sliver - bottom-right */
+  .easter-egg {
+    position: fixed;
+    right: 8px;
+    bottom: 8px;
+    z-index: 80;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+    box-shadow: 0 1px 10px rgba(0,0,0,0.6);
+    opacity: 0.02;                 /* practically invisible */
+    transition: opacity 220ms ease, transform 260ms ease;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.02);
+  }
+  .easter-egg:focus, .easter-egg:hover {
+    opacity: 0.9;
+    transform: scale(1.06);
+    outline: none;
+  }
+  .easter-egg::after {
+    content: '✉';
+    display:block;
+    text-align:center;
+    font-size:10px;
+    color: rgba(255,255,255,0.06);
+    transform: translateY(-1px);
+    pointer-events:none;
+  }
+  /* tiny hint pulse for discoverability after some idle time */
+  @keyframes eggPulse {
+    0% { transform: scale(1); opacity: 0.02; }
+    50% { transform: scale(1.08); opacity: 0.04; }
+    100% { transform: scale(1); opacity: 0.02; }
+  }
+
+  /* modal overlay */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.86));
+    display: none;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 260ms ease both;
+  }
+  .modal {
+    width: min(720px, 92vw);
+    max-height: 86vh;
+    overflow:auto;
+    background: linear-gradient(180deg, rgba(10,10,10,0.98), rgba(4,4,4,0.98));
+    border:1px solid rgba(255,255,255,0.04);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 60px rgba(0,0,0,0.6);
+    color:var(--fg);
+    transform: translateY(18px) scale(0.98);
+    animation: popIn 300ms cubic-bezier(.2,.9,.2,1) both;
+  }
+  @keyframes popIn { to { transform: translateY(0) scale(1); } }
+  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+
+  /* forms */
+  .modal h3 { margin:0 0 10px 0; font-size:18px; letter-spacing:0.06em; color:var(--accent-warm); }
+  .modal p { margin:0 0 12px 0; color:var(--ui-muted); font-size:13px; }
+  .input, textarea, .file-area {
+    width:100%;
+    box-sizing:border-box;
+    background: rgba(255,255,255,0.02);
+    border: 1px dashed rgba(255,255,255,0.03);
+    color:var(--fg);
+    padding:10px;
+    border-radius:8px;
+    font-family: inherit;
+    font-size:13px;
+    margin-bottom:12px;
+    transition: box-shadow 160ms ease, border 160ms ease;
+  }
+  .input:focus, textarea:focus, .file-area:focus { outline:none; border-color: rgba(255,255,255,0.08); box-shadow: 0 6px 28px rgba(0,0,0,0.6); }
+
+  textarea { min-height:120px; resize:vertical; }
+
+  .row { display:flex; gap:10px; align-items:center; }
+  .muted { color:var(--ui-muted); font-size:12px; }
+
+  .tiny { font-size:12px; padding:6px 8px; border-radius:8px; background:var(--control-bg); border:1px solid rgba(255,255,255,0.03); cursor:pointer; }
+
+  /* Upload preview lists */
+  .media-list { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
+  .media-item {
+    width: 120px;
+    height: 80px;
+    border-radius:8px;
+    overflow:hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--ui-muted);
+    font-size:12px;
+    position:relative;
+    border:1px solid rgba(255,255,255,0.02);
+  }
+  .media-item img, .media-item video { width:100%; height:100%; object-fit:cover; display:block; }
+
+  /* small inline audio player */
+  .audio-row { display:flex; gap:8px; align-items:center; padding:8px; background:rgba(255,255,255,0.01); border-radius:8px; border:1px solid rgba(255,255,255,0.02); }
+  .audio-row audio { width:100%; outline:none; }
+
+  /* subtle entrance/hover animations */
+  .modal .tiny { transition: transform 120ms ease; }
+  .modal .tiny:active { transform: translateY(1px) scale(0.997); }
+
+  /* toast */
+  .toast {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 22px;
+    z-index: 350;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size:13px;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+  .toast.show { opacity:1; transform: translateX(-50%) translateY(-6px); pointer-events:auto; }
+
+  /* small controls for sounds/visuals boxes (visible anchors) */
+  .media-anchors {
+    position: fixed;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 70;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .anchor {
+    width:44px;
+    height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:10px;
+    background: rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.03);
+    color:var(--ui-muted);
+    cursor:pointer;
+    transition: transform 180ms ease, background 200ms linear;
+  }
+  .anchor:hover { transform: translateX(6px); background: rgba(255,255,255,0.035); color:var(--accent-warm); }
+
+  /* small accessibility: focus rings */
+  .anchor:focus, .easter-egg:focus, .tiny:focus, .btn:focus { outline: 2px solid rgba(255,200,120,0.07); outline-offset:3px; }
+
+  /* responsive tweaks */
+  @media (max-width:640px){
+    .media-anchors { left: 10px; top: auto; bottom: 12px; transform:none; flex-direction:row; gap:8px; }
+    .media-item { width:90px; height:60px; }
   }
 </style>
 </head>
@@ -249,16 +290,40 @@
     <footer aria-hidden="true">synt • 2025</footer>
   </div>
 
+  <!-- VERY SUBTLE EASTER EGG: "Tell me something" -->
+  <button id="egg" class="easter-egg" title="Tell me something (secret)" aria-label="Tell me something (hidden)"></button>
+
+  <!-- media anchors for Sounds / Visuals -->
+  <div class="media-anchors" role="navigation" aria-label="media anchors">
+    <button id="openSounds" class="anchor" title="Sounds (upload/play)"><span aria-hidden="true">♪</span><span class="sr-only">Sounds</span></button>
+    <button id="openVisuals" class="anchor" title="Visuals (upload/view)"><span aria-hidden="true">▦</span><span class="sr-only">Visuals</span></button>
+  </div>
+
+  <!-- Modal Backdrop (reused for tell / sounds / visuals) -->
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="modal" class="modal" role="document" aria-labelledby="modalTitle">
+      <!-- Dynamic content injected by JS -->
+      <div id="modalContent"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+        <button id="modalClose" class="tiny" aria-label="Close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <script>
 /* ========================================================
-   Interactive Industrial Bulb / Glitch Engine
-   - Atmosphere canvas (fog + slow noise)
-   - Realistic bulb flicker with ramped brightness and hue
-   - Strobe white bursts -> slice-based CRT-style glitch
-   - Spotlight cursor that subtly brightens where you point
-   - Sound: ambient low rumble + crackle pops triggered on flashes
+   Original engine code starts here unchanged (kept intact),
+   plus additional UI/UX code below for:
+   - easter-egg comment box
+   - sounds upload & preview (audio player)
+   - visuals upload & preview
+   - small animations / hints
    ======================================================== */
 
+  /* ---------- pasted your original script block (keeps engine) ---------- */
 (() => {
   /*** ELEMENTS ***/
   const stage = document.getElementById('stage');
@@ -737,6 +802,268 @@
   ro.observe(word);
 
 })();
+  /* ---------- end original engine block ---------- */
+
+  /* =========================
+     Additional UI behaviour:
+     - Easter egg comment box (client-only)
+     - Sounds upload & short-player preview
+     - Visuals upload & gallery preview
+     - Small hint animation to nudge discovery
+     ========================= */
+
+  (function uiEnhancements() {
+    const egg = document.getElementById('egg');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modal = document.getElementById('modal');
+    const modalContent = document.getElementById('modalContent');
+    const modalClose = document.getElementById('modalClose');
+    const toast = document.getElementById('toast');
+
+    // Optional: if you host a server endpoint to receive comments/uploads, set it here.
+    const UPLOAD_ENDPOINT = ''; // e.g. "https://example.com/api/upload" (leave empty for client-only)
+
+    function showToast(msg, ms = 3000) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(()=> toast.classList.remove('show'), ms);
+    }
+
+    // open/close modal helpers
+    function openModal(titleHtml, innerHtml) {
+      modalContent.innerHTML = '';
+      modalContent.insertAdjacentHTML('beforeend',
+        `<h3 id="modalTitle">${titleHtml}</h3>` + (innerHtml || '')
+      );
+      modalBackdrop.style.display = 'flex';
+      modalBackdrop.setAttribute('aria-hidden', 'false');
+      // trap focus to modal
+      setTimeout(()=> {
+        const focusable = modal.querySelector('button, textarea, input, [tabindex]');
+        if (focusable) focusable.focus();
+      }, 120);
+    }
+    function closeModal() {
+      modalBackdrop.style.display = 'none';
+      modalBackdrop.setAttribute('aria-hidden', 'true');
+      modalContent.innerHTML = '';
+    }
+    modalClose.addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+
+    // EASTER EGG: "Tell me something" form
+    function showTellForm() {
+      const storedName = localStorage.getItem('synt_name') || '';
+      openModal('Tell me something', `
+        <p class="muted">Leave a short note — stored locally. If you want it delivered, add your email or press "Send via email".</p>
+        <input class="input" id="tellName" placeholder="Your name (optional)" value="${escapeHtml(storedName)}" />
+        <textarea id="tellMsg" class="input" placeholder="Tell me something..."></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="sendLocal" class="tiny">Save (local)</button>
+          <button id="mailtoSend" class="tiny">Send via email</button>
+        </div>
+      `);
+      document.getElementById('sendLocal').addEventListener('click', () => {
+        const name = document.getElementById('tellName').value.trim();
+        const msg = document.getElementById('tellMsg').value.trim();
+        if (!msg) { showToast('Write something first'); return; }
+        // store in local storage array
+        const arr = JSON.parse(localStorage.getItem('synt_comments' ) || '[]');
+        arr.unshift({ name: name || 'anonymous', message: msg, ts: Date.now() });
+        localStorage.setItem('synt_comments', JSON.stringify(arr.slice(0,200)));
+        if (name) localStorage.setItem('synt_name', name);
+        closeModal();
+        showToast('Thanks — saved locally!');
+      });
+      document.getElementById('mailtoSend').addEventListener('click', () => {
+        const name = document.getElementById('tellName').value.trim();
+        const msg = document.getElementById('tellMsg').value.trim();
+        if (!msg) { showToast('Write something first'); return; }
+        // open mail client with prefilled body (user will have to send)
+        const subject = encodeURIComponent('A note from your site — synt');
+        const body = encodeURIComponent(`Name: ${name || 'anonymous'}\n\nMessage:\n${msg}`);
+        window.location.href = `mailto:you@example.com?subject=${subject}&body=${body}`;
+      });
+    }
+
+    /* hook the egg */
+    egg.addEventListener('click', (e) => {
+      // small ripple animation
+      egg.animate([{ transform:'scale(1)' },{ transform:'scale(1.06)' },{ transform:'scale(1)' }], { duration:400, easing:'ease-out' });
+      showTellForm();
+    });
+
+    // EGG: keyboard accessibility (press T to open)
+    window.addEventListener('keydown', (e)=> {
+      if (e.key.toLowerCase() === 't') {
+        egg.focus();
+        showTellForm();
+      }
+    });
+
+    // After a little idle time, nudge the egg with subtle pulse so explorers can find it
+    let idleTimer = setTimeout(()=> {
+      egg.style.animation = 'eggPulse 2200ms ease-in-out infinite';
+      setTimeout(()=> egg.style.animation = '', 6400);
+    }, 6500);
+
+    // SOUNDS panel
+    const openSounds = document.getElementById('openSounds');
+    openSounds.addEventListener('click', () => {
+      openSoundsPanel();
+    });
+
+    function openSoundsPanel() {
+      openModal('Sounds — upload & play', `
+        <p class="muted">Upload audio files (visitor-side). Files remain in the browser for this session. You can optionally send them to a server if configured.</p>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label class="tiny" for="soundFiles">Choose files</label>
+          <input id="soundFiles" type="file" accept="audio/*" multiple style="display:none;" />
+          <button id="uploadSoundsBtn" class="tiny">Upload to server</button>
+        </div>
+        <div id="soundPreview" style="margin-top:12px;"></div>
+      `);
+      const fileInput = document.getElementById('soundFiles');
+      const preview = document.getElementById('soundPreview');
+      document.querySelector('label[for="soundFiles"]').addEventListener('click', ()=> fileInput.click());
+      fileInput.addEventListener('change', (ev) => {
+        const files = Array.from(ev.target.files || []);
+        if (!files.length) return;
+        preview.innerHTML = '';
+        files.forEach((f, idx) => {
+          const url = URL.createObjectURL(f);
+          const container = document.createElement('div');
+          container.className = 'audio-row';
+          container.style.marginBottom = '10px';
+          const info = document.createElement('div');
+          info.style.minWidth = '120px';
+          info.style.fontSize = '12px';
+          info.style.color = 'var(--ui-muted)';
+          info.textContent = `${f.name} (${Math.round(f.size/1024)}KB)`;
+          const player = document.createElement('audio');
+          player.controls = true;
+          player.src = url;
+          container.appendChild(info);
+          container.appendChild(player);
+          preview.appendChild(container);
+        });
+      });
+
+      // Upload to server (optional)
+      document.getElementById('uploadSoundsBtn').addEventListener('click', async ()=> {
+        const files = document.getElementById('soundFiles').files;
+        if (!files || files.length === 0) { showToast('Select files first'); return; }
+        if (!UPLOAD_ENDPOINT) {
+          showToast('No server endpoint configured (client-only). See console for sample upload code.');
+          console.info('Sample fetch upload (replace UPLOAD_ENDPOINT):');
+          console.info(`const fd = new FormData(); fd.append('file', files[0]); fetch('https://yourserver/upload', { method:'POST', body: fd });`);
+          return;
+        }
+        try {
+          const fd = new FormData();
+          for (let f of files) fd.append('files', f);
+          const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body: fd });
+          if (!res.ok) throw new Error('upload failed');
+          showToast('Uploaded to server');
+        } catch (e) {
+          showToast('Upload failed');
+          console.error(e);
+        }
+      });
+    }
+
+    // VISUALS panel (images / video)
+    const openVisuals = document.getElementById('openVisuals');
+    openVisuals.addEventListener('click', () => {
+      openVisualsPanel();
+    });
+
+    function openVisualsPanel() {
+      openModal('Visuals — upload & preview', `
+        <p class="muted">Drop images or short videos. Files remain in the browser unless you upload to a server.</p>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <label class="tiny" for="visualFiles">Choose files</label>
+          <input id="visualFiles" type="file" accept="image/*,video/*" multiple style="display:none;" />
+          <button id="uploadVisualsBtn" class="tiny">Upload to server</button>
+        </div>
+        <div id="visualPreview" class="media-list" style="margin-top:12px;"></div>
+      `);
+      const fileInput = document.getElementById('visualFiles');
+      const preview = document.getElementById('visualPreview');
+      document.querySelector('label[for="visualFiles"]').addEventListener('click', ()=> fileInput.click());
+      fileInput.addEventListener('change', (ev) => {
+        const files = Array.from(ev.target.files || []);
+        if (!files.length) return;
+        preview.innerHTML = '';
+        files.forEach((f) => {
+          const url = URL.createObjectURL(f);
+          const item = document.createElement('div');
+          item.className = 'media-item';
+          if (f.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.src = url;
+            item.appendChild(img);
+          } else if (f.type.startsWith('video/')) {
+            const vid = document.createElement('video');
+            vid.src = url;
+            vid.muted = true;
+            vid.loop = true;
+            vid.autoplay = true;
+            vid.playsInline = true;
+            item.appendChild(vid);
+          } else {
+            item.textContent = f.name;
+          }
+          preview.appendChild(item);
+        });
+      });
+
+      document.getElementById('uploadVisualsBtn').addEventListener('click', async ()=> {
+        const files = document.getElementById('visualFiles').files;
+        if (!files || files.length === 0) { showToast('Select files first'); return; }
+        if (!UPLOAD_ENDPOINT) {
+          showToast('No server endpoint configured (client-only). See console for sample upload code.');
+          console.info('Sample fetch upload (replace UPLOAD_ENDPOINT):');
+          console.info(`const fd = new FormData(); fd.append('file', files[0]); fetch('https://yourserver/upload', { method:'POST', body: fd });`);
+          return;
+        }
+        try {
+          const fd = new FormData();
+          for (let f of files) fd.append('files', f);
+          const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body: fd });
+          if (!res.ok) throw new Error('upload failed');
+          showToast('Uploaded to server');
+        } catch (e) {
+          showToast('Upload failed');
+          console.error(e);
+        }
+      });
+    }
+
+    // small helper to escape HTML in inserted values
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+
+    // accessible close on Escape
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // expose a small function to list saved comments (local)
+    window.syntListLocalComments = function() {
+      const arr = JSON.parse(localStorage.getItem('synt_comments') || '[]');
+      return arr;
+    };
+
+  })();
+
+  /* =========================
+     End of UI enhancements
+     ========================= */
+
 </script>
 </body>
 </html>
