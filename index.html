@@ -1,496 +1,742 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Void Portfolio</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>synt — everything feels different in the dark</title>
+<meta name="description" content="synt — everything feels different in the dark. Industrial, brutalist, interactive landing with realistic bulb flicker, glitch slices, spotlight and ambient audio." />
+<style>
+  /* =========================
+     VARIABLES & RESET
+     ========================= */
+  :root{
+    --bg:#060606;
+    --fg:#fff;
+    --accent-warm: #fff8ec;
+    --strobe-white: #ffffff;
+    --glass: rgba(255,255,255,0.02);
 
-  <!-- Font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;600&display=swap"
-    rel="stylesheet"
-  />
+    --logo-size: clamp(4.8rem, 20vw, 14rem);
+    --ui-muted: rgba(255,255,255,0.14);
+    --control-bg: rgba(255,255,255,0.03);
 
-  <style>
-    :root {
-      --bg:#0f0f12;
-      --fg:#e8e8e8;
-      --accent:#9f7aed;
-      --radius:18px;
-      --transition:.35s cubic-bezier(.3,.1,.2,1);
-      --blur:14px;
-      --mono:'Courier New', monospace;
-    }
+    /* dynamic vars controlled by JS */
+    --flicker-brightness: 1;
+    --flicker-hue: 0deg;
+    --flicker-scale: 1;
+    --flicker-skew: 0deg;
+    --spot-x: 50%;
+    --spot-y: 50%;
+    --spot-radius: 24vmax;
+  }
 
-    *{box-sizing:border-box;}
-    body {
-      margin: 0;
-      min-height:100vh;
-      background: var(--bg);
-      color: var(--fg);
-      font-family: 'Montserrat', system-ui,-apple-system,sans-serif;
-      overflow: hidden;
-      position: relative;
-      cursor: none;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex-direction:column;
-      padding:0;
-    }
+  html,body{
+    height:100%;
+    margin:0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Segoe UI Mono", Roboto Mono, monospace;
+    background: radial-gradient(1000px 700px at 10% 20%, rgba(255,180,100,0.02), transparent 8%),
+                linear-gradient(180deg, var(--bg), #050505 55%);
+    color:var(--fg);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    overflow:hidden;
+  }
 
-    /* Custom Cursor */
-    .cursor {
-      position: fixed;
-      top:0;
-      left:0;
-      width: 16px;
-      height: 16px;
-      border: 2px solid var(--accent);
-      border-radius: 50%;
-      pointer-events:none;
-      mix-blend-mode: difference;
-      transform: translate(-50%, -50%);
-      transition: transform .15s ease, background .15s ease;
-      backdrop-filter: blur(2px);
-      z-index: 99;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-    .cursor.active {
-      transform: translate(-50%, -50%) scale(2);
-      background: rgba(159,122,237,.15);
-    }
+  /* =========================
+     STAGE LAYOUT
+     ========================= */
+  .stage {
+    position:relative;
+    width:100%;
+    height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    isolation:isolate;
+    perspective:900px;
+  }
 
-    h1 {
-      font-weight: 200;
-      font-size: clamp(2rem, 6vw, 4rem);
-      letter-spacing: 0.25em;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      text-transform: uppercase;
-      position: relative;
-      z-index:2;
-      line-height:1.1;
-      display:inline-block;
-      overflow: hidden;
-      mix-blend-mode: screen;
-    }
+  /* canvas for atmospheric fog/noise sits behind content */
+  #fxCanvas {
+    position:absolute;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    mix-blend-mode:screen;
+    opacity:0.85;
+  }
 
-    .subtitle {
-      margin-top:.5rem;
-      font-size: .9rem;
-      letter-spacing:.2em;
-      text-transform: uppercase;
-      font-weight:600;
-      opacity:.85;
-      position: relative;
-      z-index:2;
-    }
+  /* subtle scanlines overlay for analog feel */
+  .scanlines {
+    position: absolute;
+    inset:0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.02) 0px,
+      rgba(255,255,255,0.02) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+    z-index:8;
+    pointer-events:none;
+    mix-blend-mode:overlay;
+    opacity:0.18;
+  }
 
-    .btn-wrap {
-      margin-top:2rem;
-      position: relative;
-      z-index:2;
-      display:flex;
-      gap:1rem;
-      flex-wrap:wrap;
-      justify-content:center;
-    }
+  /* main content container (front) */
+  .center {
+    position:relative;
+    z-index:10;
+    transform-style:preserve-3d;
+    transition: transform 220ms ease-out;
+    will-change: transform;
+    padding: 6vh 6vw;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 18px;
+    pointer-events:auto;
+  }
 
-    .enter-btn {
-      position: relative;
-      padding: 1rem 2.5rem;
-      border: 1px solid var(--fg);
-      background: transparent;
-      color: var(--fg);
-      font-size: 1rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      cursor: pointer;
-      border-radius: 999px;
-      letter-spacing:.2em;
-      overflow:hidden;
-      backdrop-filter:blur(4px);
-      transition: all var(--transition);
-      display:inline-flex;
-      align-items:center;
-      gap:.5rem;
-    }
-    .enter-btn:hover {
-      background: rgba(255,255,255,.05);
-      box-shadow: 0 0 30px var(--accent);
-      transform: translateY(-2px);
-    }
+  /* the logo element */
+  .logo {
+    position:relative;
+    display:inline-block;
+    font-weight:900;
+    font-size:var(--logo-size);
+    line-height:0.82;
+    letter-spacing: -0.02em;
+    color:var(--fg);
+    text-transform:lowercase;
+    transform: translateZ(40px) skew(var(--flicker-skew)) scale(var(--flicker-scale));
+    filter: brightness(var(--flicker-brightness)) hue-rotate(var(--flicker-hue));
+    transition: transform 90ms linear, filter 90ms linear, text-shadow 120ms ease;
+    text-shadow:
+      0 0 4px rgba(255,255,255,0.06),
+      0 8px 30px rgba(0,0,0,0.7);
+    user-select:none;
+    -webkit-user-select:none;
+  }
 
-    .audio-toggle {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: rgba(255,255,255,.05);
-      border: 1px solid var(--fg);
-      padding: .65rem .9rem;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size:.7rem;
-      letter-spacing:.2em;
-      text-transform: uppercase;
-      display:flex;
-      align-items:center;
-      gap:.4rem;
-      backdrop-filter: blur(8px);
-      transition: all var(--transition);
-      z-index:3;
-    }
-    .audio-toggle.active {
-      background: rgba(159,122,237,.15);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
+  /* logo inner text (so we can slice & clone) */
+  .logo .word {
+    position:relative;
+    display:block;
+    pointer-events:none;
+  }
 
-    /* Background canvas overlay */
-    #bgcanvas {
-      position: fixed;
-      inset:0;
-      pointer-events:none;
-      z-index:0;
-      mix-blend-mode: overlay;
-    }
+  /* ghost layer for afterimages during strong flashes */
+  .afterglow {
+    position:absolute;
+    inset:0;
+    z-index:-1;
+    pointer-events:none;
+    filter: blur(10px) saturate(1.2);
+    opacity:0;
+    transition: opacity 180ms linear;
+  }
 
-    /* Particle container */
-    canvas#particles {
-      position: fixed;
-      inset:0;
-      z-index:1;
-      pointer-events:none;
-    }
+  /* byline */
+  .byline {
+    font-size:14px;
+    letter-spacing:0.28em;
+    text-transform:uppercase;
+    color:var(--ui-muted);
+    opacity:0.9;
+    mix-blend-mode:screen;
+  }
 
-    /* Glitch effect overlay for text */
-    .glitch {
-      position: relative;
-      display: inline-block;
-    }
-    .glitch::before,
-    .glitch::after {
-      content: attr(data-text);
-      position: absolute;
-      left:0;
-      top:0;
-      width:100%;
-      overflow:hidden;
-      clip: rect(0,900px,0,0);
-    }
-    .glitch::before {
-      animation: glitchTop 3s infinite linear;
-      color: rgba(159,122,237,.8);
-      z-index:3;
-      mix-blend-mode: screen;
-    }
-    .glitch::after {
-      animation: glitchBottom 2.7s infinite linear;
-      color: rgba(255,255,255,.6);
-      z-index:2;
-      mix-blend-mode: screen;
-    }
+  /* controls */
+  .controls {
+    position:fixed;
+    right:18px;
+    top:18px;
+    z-index:40;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    pointer-events:auto;
+  }
+  .btn {
+    background:var(--control-bg);
+    border:1px solid rgba(255,255,255,0.04);
+    color:var(--fg);
+    padding:8px 12px;
+    font-size:13px;
+    border-radius:8px;
+    cursor:pointer;
+    backdrop-filter: blur(6px);
+  }
+  .btn.toggled { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
 
-    @keyframes glitchTop {
-      0% { clip: inset(0 0 0 0); transform: translate(0);}
-      10% { clip: inset(2px 0 40px 0); transform: translate(-2px,-1px);}
-      20% { clip: inset(10px 0 5px 0); transform: translate(2px,1px);}
-      30% { clip: inset(0 0 25px 0); transform: translate(-1px,0);}
-      40% { clip: inset(15px 0 8px 0); transform: translate(1px,-1px);}
-      50% { clip: inset(0 0 0 0); transform: translate(0);}
-      60% { clip: inset(6px 0 30px 0); transform: translate(-2px,1px);}
-      70% { clip: inset(0 0 12px 0); transform: translate(2px,-1px);}
-      80% { clip: inset(12px 0 4px 0); transform: translate(-1px,1px);}
-      90% { clip: inset(3px 0 28px 0); transform: translate(1px,0);}
-      100% { clip: inset(0 0 0 0); transform: translate(0);}
-    }
-    @keyframes glitchBottom {
-      0% { clip: inset(0 0 0 0); transform: translate(0);}
-      15% { clip: inset(8px 0 15px 0); transform: translate(1px,-1px);}
-      35% { clip: inset(2px 0 30px 0); transform: translate(-1px,1px);}
-      55% { clip: inset(10px 0 8px 0); transform: translate(2px,0);}
-      75% { clip: inset(0 0 25px 0); transform: translate(-2px,-1px);}
-      95% { clip: inset(5px 0 18px 0); transform: translate(1px,1px);}
-      100% { clip: inset(0 0 0 0); transform: translate(0);}
-    }
+  /* spotlight mask: uses CSS variable for center */
+  .spotlight {
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:9;
+    mix-blend-mode:screen;
+    background: radial-gradient(
+      circle at var(--spot-x) var(--spot-y),
+      rgba(255,255,240,0.18) 0%,
+      rgba(255,255,240,0.06) 8%,
+      transparent 26%
+    );
+    transition: background 120ms linear;
+    filter: blur(8px);
+    opacity:0.95;
+  }
 
-    /* Tiny caption */
-    .credit {
-      position: absolute;
-      bottom: .8rem;
-      left: .8rem;
-      font-size:.55rem;
-      letter-spacing:.2em;
-      opacity:.4;
-      z-index:2;
-    }
-  </style>
+  /* slices container (for glitch horizontal slices) */
+  .slices {
+    position:absolute;
+    inset:0;
+    z-index:12;
+    pointer-events:none;
+  }
+
+  /* each slice is a cloned text piece; hidden by default */
+  .slice {
+    position:absolute;
+    left:50%;
+    transform: translateX(-50%);
+    color:var(--fg);
+    font-weight:900;
+    text-transform:lowercase;
+    font-size:var(--logo-size);
+    line-height:0.82;
+    white-space:nowrap;
+    pointer-events:none;
+    text-shadow: none;
+    mix-blend-mode:screen;
+    opacity:0;
+  }
+
+  /* small footer credit */
+  footer { position:fixed; left:12px; bottom:12px; z-index:40; color:rgba(255,255,255,0.04); font-size:12px; }
+
+  /* responsive tweaks */
+  @media (max-width:640px){
+    .controls { left:12px; right:auto; top:auto; bottom:12px; }
+    .logo { font-size: clamp(3.2rem, 28vw, 9rem); }
+  }
+</style>
 </head>
-
 <body>
-  <!-- custom cursor -->
-  <div class="cursor" id="cursor"></div>
+  <div class="stage" id="stage">
+    <canvas id="fxCanvas" aria-hidden="true"></canvas>
 
-  <div id="content" aria-label="intro block">
-    <h1 class="glitch" data-text="VOID / CREATOR">
-      <span id="dynamic-text">VOID / CREATOR</span>
-    </h1>
-    <div class="subtitle" id="subtext">a quiet disturbance in the dark</div>
+    <div class="spotlight" id="spotlight" aria-hidden="true"></div>
 
-    <div class="btn-wrap">
-      <button class="enter-btn" onclick="enterSite()">
-        <span>Enter</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          style="transform:translateY(1px);">
-          <path d="M5 12h14M13 6l6 6-6 6" />
-        </svg>
-      </button>
+    <div class="center" id="center">
+      <div class="logo" id="logo" aria-live="polite" aria-label="synt">
+        <span class="word" id="word">synt</span>
+        <span class="afterglow" id="afterglow" aria-hidden="true"></span>
+      </div>
+      <div class="byline">everything feels different in the dark</div>
     </div>
+
+    <div class="slices" id="slices" aria-hidden="true"></div>
+
+    <div class="controls" role="toolbar" aria-label="controls">
+      <button id="toggleSound" class="btn" aria-pressed="false" title="Toggle sound">Sound: Off</button>
+      <button id="toggleFlicker" class="btn toggled" aria-pressed="true" title="Pause flicker">Flicker: On</button>
+      <button id="reboot" class="btn" title="Power cycle (reboot) simulation">Reboot</button>
+    </div>
+
+    <div class="scanlines" aria-hidden="true"></div>
+    <footer aria-hidden="true">synt • 2025</footer>
   </div>
 
-  <div class="audio-toggle" id="audioBtn" aria-label="toggle ambient sound">
-    <span id="audioIcon">🔊</span><span id="audioText">Ambient</span>
-  </div>
+<script>
+/* ========================================================
+   Interactive Industrial Bulb / Glitch Engine
+   - Atmosphere canvas (fog + slow noise)
+   - Realistic bulb flicker with ramped brightness and hue
+   - Strobe white bursts -> slice-based CRT-style glitch
+   - Spotlight cursor that subtly brightens where you point
+   - Sound: ambient low rumble + crackle pops triggered on flashes
+   ======================================================== */
 
-  <canvas id="bgcanvas"></canvas>
-  <canvas id="particles"></canvas>
+(() => {
+  /*** ELEMENTS ***/
+  const stage = document.getElementById('stage');
+  const logo = document.getElementById('logo');
+  const word = document.getElementById('word');
+  const spotlight = document.getElementById('spotlight');
+  const afterglow = document.getElementById('afterglow');
+  const fxCanvas = document.getElementById('fxCanvas');
+  const slicesContainer = document.getElementById('slices');
+  const toggleSoundBtn = document.getElementById('toggleSound');
+  const toggleFlickerBtn = document.getElementById('toggleFlicker');
+  const rebootBtn = document.getElementById('reboot');
 
-  <div class="credit">synt</div>
+  /*** CONFIG ***/
+  const cfg = {
+    baseBrightness: 0.65,
+    strobePeak: 6.5,
+    flickerAvgInterval: 420,
+    flickerJitter: 0.6,
+    microFlickerMs: 30,
+    longFailChance: 0.07,
+    sliceCount: 8,
+    sliceMaxOffset: 46, // px
+    ambientVolume: 0.06,
+    crackleVolume: 0.12,
+    ambientCutoffHz: 400, // lowpass for ambient rumble
+    spotlightRadius: 22, // vmin-ish - handled via CSS variable
+    mouseParallax: 8 // degrees
+  };
 
-  <script>
-    // --- navigation ---
-    function enterSite() {
-      // subtle delay + flash
-      document.body.style.transition = 'background .8s ease';
-      document.body.style.filter = 'brightness(.7)';
-      setTimeout(() => {
-        window.location.href = 'portfolio.html';
-      }, 500);
-    }
+  /*** AUDIO SETUP (lazy) ***/
+  let audioCtx = null;
+  let masterGain = null;
+  let ambientNode = null;
+  let crackleBuffer = null;
+  let ambientOn = false;
 
-    // --- custom cursor logic ---
-    const cursor = document.getElementById('cursor');
-    let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    window.addEventListener('mousemove', (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-      cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-    });
-    // enlarge on hover
-    document.querySelectorAll('.enter-btn').forEach(el => {
-      el.addEventListener('mouseenter', () => cursor.classList.add('active'));
-      el.addEventListener('mouseleave', () => cursor.classList.remove('active'));
-    });
-
-    // --- dynamic headline text snippets ---
-    const snippets = [
-      "VOID / CREATOR",
-      "SILENCE IS LOUDER THAN CODE",
-      "SHADOWS SPEAK IN PIXELS",
-      "MINIMALISM: AN ACTIVE REVOLT",
-      "YOU ARE THE GLITCH",
-      "DRIFT, NOT DEFINE"
-    ];
-    let idx = 0;
-    const dynamic = document.getElementById('dynamic-text');
-    const sub = document.getElementById('subtext');
-
-    function typeEffect(target, text, speed = 45) {
-      target.textContent = '';
-      let i = 0;
-      const t = setInterval(() => {
-        target.textContent += text[i++];
-        if (i >= text.length) clearInterval(t);
-      }, speed);
-    }
-    function rotateText() {
-      idx = (idx + 1) % snippets.length;
-      typeEffect(dynamic, snippets[idx]);
-      // update glitch data-text for overlay
-      document.querySelector('.glitch').setAttribute('data-text', snippets[idx]);
-      // random subtext variant
-      const subs = [
-        "a quiet disturbance in the dark",
-        "code as ambient ritual",
-        "edges of the digital void",
-        "where minimal meets menace",
-        "echoes in empty space"
-      ];
-      sub.textContent = subs[Math.floor(Math.random() * subs.length)];
-    }
-    setInterval(rotateText, 6000);
-    // initial
-    rotateText();
-
-    // --- background canvas noise & gradient ---
-    const bgc = document.getElementById('bgcanvas');
-    const bctx = bgc.getContext('2d');
-    function resizeCanvas() {
-      bgc.width = window.innerWidth;
-      bgc.height = window.innerHeight;
-      particlesCanvas.width = window.innerWidth;
-      particlesCanvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    // procedural subtle noise overlay
-    function drawNoise() {
-      const imageData = bctx.createImageData(bgc.width, bgc.height);
-      const buffer = new Uint32Array(imageData.data.buffer);
-      for (let i = 0; i < buffer.length; i++) {
-        const v = (Math.random() * 8) | 0; // very subtle
-        buffer[i] = (v << 24) | (v << 16) | (v << 8) | v;
-      }
-      bctx.putImageData(imageData, 0, 0);
-      // gradient wash
-      const grd = bctx.createRadialGradient(
-        bgc.width * 0.3, bgc.height * 0.4, 100,
-        bgc.width * 0.7, bgc.height * 0.6, Math.max(bgc.width, bgc.height)
-      );
-      grd.addColorStop(0, 'rgba(159,122,237,0.04)');
-      grd.addColorStop(1, 'rgba(15,15,18,0.9)');
-      bctx.fillStyle = grd;
-      bctx.fillRect(0,0,bgc.width,bgc.height);
-    }
-
-    // --- particle trail ---
-    const particlesCanvas = document.getElementById('particles');
-    const pctx = particlesCanvas.getContext('2d');
-    let particles = [];
-    function spawnParticle(x, y) {
-      particles.push({
-        x, y,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        life: Math.random() * 60 + 40,
-        size: Math.random() * 3 + 1,
-        alpha: 1
-      });
-      if (particles.length > 250) particles.shift();
-    }
-
-    window.addEventListener('mousemove', (e) => {
-      spawnParticle(e.clientX, e.clientY);
-    });
-
-    function updateParticles() {
-      pctx.clearRect(0,0,particlesCanvas.width, particlesCanvas.height);
-      particles.forEach((p, i) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        p.alpha = Math.max(0, p.life / 100);
-        pctx.globalAlpha = p.alpha * 0.6;
-        pctx.fillStyle = "rgba(159,122,237,1)";
-        pctx.beginPath();
-        pctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-        pctx.fill();
-        if (p.life <= 0) particles[i] = null;
-      });
-      particles = particles.filter(Boolean);
-    }
-
-    // --- main loop ---
-    let lastNoise = 0;
-    function loop(t) {
-      if (t - lastNoise > 100) { // refresh noise occasionally
-        drawNoise();
-        lastNoise = t;
-      }
-      updateParticles();
-      requestAnimationFrame(loop);
-    }
-    requestAnimationFrame(loop);
-
-    // --- ambient generative audio ---
-    let audioCtx, droneOsc, gainNode, lfo, isPlaying = false;
-
-    function initAudio() {
+  function ensureAudio() {
+    if (audioCtx) return;
+    try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      gainNode = audioCtx.createGain();
-      gainNode.gain.value = 0.13; // low volume
-      // drone oscillator with slow detune wobble (LFO)
-      droneOsc = audioCtx.createOscillator();
-      droneOsc.type = 'sawtooth';
-      droneOsc.frequency.value = 55; // low hum
-      // subtle low-frequency amplitude modulation
-      lfo = audioCtx.createOscillator();
-      lfo.type = 'triangle';
-      lfo.frequency.value = 0.08; // very slow
-      const lfoGain = audioCtx.createGain();
-      lfoGain.gain.value = 5; // detune depth
-      lfo.connect(lfoGain);
-      lfoGain.connect(droneOsc.detune);
-      // create a subtle reverb-ish using delay + feedback
-      const delay = audioCtx.createDelay();
-      delay.delayTime.value = 0.9;
-      const feedback = audioCtx.createGain();
-      feedback.gain.value = 0.35;
-      delay.connect(feedback);
-      feedback.connect(delay);
-      // filter to darken
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 800;
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.0001;
+      masterGain.connect(audioCtx.destination);
 
-      // chain: drone -> filter -> delay loop -> gain -> destination
-      droneOsc.connect(filter);
-      filter.connect(delay);
-      delay.connect(gainNode);
-      filter.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
+      // create a short crackle buffer
+      crackleBuffer = createNoiseBuffer(audioCtx, 0.12);
 
-      droneOsc.start();
-      lfo.start();
-    }
-
-    function toggleAudio() {
-      if (!audioCtx) initAudio();
-      if (!isPlaying) {
-        audioCtx.resume();
-        isPlaying = true;
-        document.getElementById('audioBtn').classList.add('active');
-        document.getElementById('audioIcon').textContent = "🔊";
-      } else {
-        audioCtx.suspend();
-        isPlaying = false;
-        document.getElementById('audioBtn').classList.remove('active');
-        document.getElementById('audioIcon').textContent = "🔇";
+      // ambient loop: low noise with a lowpass to make rumble
+      const bufferSize = audioCtx.sampleRate * 3; // 3 sec buffer of textured noise
+      const ambientBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = ambientBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        // shape to be low rumble + small hiss
+        data[i] = (Math.random()*2 - 1) * (0.35 + 0.65 * Math.sin(i/120)) * Math.exp(-i / (bufferSize*2));
       }
+      ambientNode = audioCtx.createBufferSource();
+      ambientNode.buffer = ambientBuffer;
+      ambientNode.loop = true;
+      const ambientGain = audioCtx.createGain();
+      ambientGain.gain.value = 0.0001;
+      const lp = audioCtx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = cfg.ambientCutoffHz;
+      ambientNode.connect(ambientGain).connect(lp).connect(masterGain);
+      ambientNode.start(0);
+    } catch (e) {
+      console.warn('Audio not available:', e);
+      audioCtx = null;
+    }
+  }
+
+  function createNoiseBuffer(ctx, duration = 0.14) {
+    const sr = ctx.sampleRate;
+    const len = Math.floor(sr * duration);
+    const buf = ctx.createBuffer(1, len, sr);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<len;i++){
+      // shaped burst: heavier at start
+      d[i] = (Math.random()*2 - 1) * Math.exp(-6 * i / len);
+    }
+    return buf;
+  }
+
+  function crossfadeMaster(to = 0.08, time = 0.2) {
+    if (!masterGain) return;
+    const now = audioCtx.currentTime;
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.setValueAtTime(masterGain.gain.value || 0.0001, now);
+    masterGain.gain.linearRampToValueAtTime(to, now + time);
+  }
+
+  function playCrackle(intensity = 1.0) {
+    if (!audioCtx || !crackleBuffer) return;
+    const src = audioCtx.createBufferSource();
+    src.buffer = crackleBuffer;
+    const g = audioCtx.createGain();
+    g.gain.value = 0.0001;
+    src.connect(g).connect(masterGain);
+    const t = audioCtx.currentTime;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime( cfg.crackleVolume * intensity, t + 0.007 + Math.random()*0.02 );
+    g.gain.exponentialRampToValueAtTime(0.00001, t + 0.06 + Math.random()*0.12);
+    src.playbackRate.value = 0.9 + Math.random()*0.7;
+    src.start(t);
+    src.stop(t + 0.18 + Math.random()*0.1);
+  }
+
+  /*** FX CANVAS (atmospheric fog & slow motion noise) ***/
+  const canvas = fxCanvas;
+  const ctx = canvas.getContext('2d', { alpha: true });
+  let cw = 0, ch = 0;
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cw = Math.max(600, innerWidth);
+    ch = Math.max(400, innerHeight);
+    canvas.width = Math.floor(cw * dpr);
+    canvas.height = Math.floor(ch * dpr);
+    canvas.style.width = cw + 'px';
+    canvas.style.height = ch + 'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // layered moving noise blobs
+  let fxStart = performance.now();
+  function renderFX(now) {
+    const t = (now - fxStart) / 1000;
+    ctx.clearRect(0,0,cw,ch);
+
+    // background soft moving ellipses (fog)
+    for (let i = 0; i < 5; i++) {
+      const ix = (i*37) % 7;
+      const x = cw * (0.08 + 0.84 * ((Math.sin(t*0.07 + i*1.3)+1)/2));
+      const y = ch * (0.06 + 0.88 * ((Math.cos(t*0.05 + i*0.9)+1)/2));
+      const r = Math.min(cw, ch) * (0.28 + 0.12 * Math.sin(t*0.2 + i));
+      const alpha = 0.06 + 0.02 * Math.sin(t*0.6 + i*1.7);
+      const grd = ctx.createRadialGradient(x, y, r*0.1, x, y, r);
+      grd.addColorStop(0, `rgba(255,240,210,${alpha*0.65})`);
+      grd.addColorStop(0.5, `rgba(255,230,200,${alpha*0.3})`);
+      grd.addColorStop(1, `rgba(0,0,0,0)`);
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, r*0.6, 0, 0, Math.PI*2);
+      ctx.fill();
     }
 
-    document.getElementById('audioBtn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleAudio();
-    });
-
-    // auto-start (with user gesture fallback)
-    window.addEventListener('click', () => {
-      if (!isPlaying) toggleAudio();
-    }, { once: true });
-
-    // --- subtle parallax on mouse move for content ---
-    window.addEventListener('mousemove', (e) => {
-      const rx = (e.clientX / window.innerWidth - 0.5) * 15;
-      const ry = (e.clientY / window.innerHeight - 0.5) * 15;
-      document.getElementById('content').style.transform = `translate3d(${rx}px, ${ry}px,0)`;
-    });
-
-    // --- accessibility fallback: reduce motion if prefers-reduced-motion ---
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (media.matches) {
-      // disable animations / heavy effects
-      document.body.style.transition = 'none';
-      // stop rotating text
-      clearInterval();
+    // animated grain overlay (fast subtle)
+    const imgData = ctx.createImageData(80,80);
+    const pixels = imgData.data;
+    for (let i=0;i<pixels.length;i+=4){
+      const v = 128 + Math.floor(28 * (Math.sin((t*8) + i) * Math.random()));
+      pixels[i] = pixels[i+1] = pixels[i+2] = v;
+      pixels[i+3] = 4; // very translucent
     }
-  </script>
+    ctx.putImageData(imgData, 0, 0);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.06;
+    ctx.fillRect(0,0,cw,ch);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+
+    requestAnimationFrame(renderFX);
+  }
+  requestAnimationFrame(renderFX);
+
+  /*** GLITCH SLICES ENGINE ***/
+  const slices = [];
+  function createSlices() {
+    // clear existing
+    slicesContainer.innerHTML = '';
+    slices.length = 0;
+    const rect = word.getBoundingClientRect();
+    for (let i=0;i<cfg.sliceCount;i++){
+      const s = document.createElement('div');
+      s.className = 'slice';
+      s.textContent = word.textContent;
+      // compute vertical position as a ratio
+      const pos = (i+0.5)/cfg.sliceCount;
+      s.style.top = `calc(${pos*100}% - 0.5em)`; // rough centering
+      // clip to thin horizontal band
+      const bandH = (rect.height / cfg.sliceCount);
+      const topPx = Math.round(pos*rect.height - bandH/2);
+      s.style.clipPath = `inset(${topPx}px 0 ${rect.height - topPx - Math.ceil(bandH)}px 0)`;
+      // size matching
+      s.style.fontSize = getComputedStyle(word).fontSize;
+      s.style.left = `${rect.left + rect.width/2}px`;
+      slicesContainer.appendChild(s);
+      slices.push(s);
+    }
+  }
+
+  // run when layout stable
+  function rebuildSlicesDebounced(){
+    // small delay to ensure fonts/layout stable
+    setTimeout(createSlices,120);
+  }
+  window.addEventListener('resize', rebuildSlicesDebounced);
+  window.addEventListener('load', rebuildSlicesDebounced);
+  // ensure slices created after first paint
+  setTimeout(rebuildSlicesDebounced, 280);
+
+  function triggerGlitchBurst(intensity = 1.0) {
+    // only show a subset randomly, displace horizontally and fade in/out
+    const active = Math.max(2, Math.round(cfg.sliceCount * (0.25 + Math.random()*0.6)));
+    const indices = [];
+    for (let i=0;i<slices.length;i++) indices.push(i);
+    // shuffle and take active
+    for (let i=indices.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const take = indices.slice(0, active);
+    take.forEach((i, idx) => {
+      const s = slices[i];
+      const off = (Math.random()*2-1) * cfg.sliceMaxOffset * intensity;
+      s.style.transition = 'none';
+      s.style.opacity = '1';
+      s.style.transform = `translate3d(${off}px, ${(-3 + Math.random()*6)}px, 0) skewX(${(Math.random()*6 - 3)}deg)`;
+      s.style.color = idx % 2 === 0 ? 'white' : 'rgba(255,255,255,0.85)';
+      s.style.textShadow = '0 2px 10px rgba(0,0,0,0.6)';
+      // schedule fade
+      requestAnimationFrame(()=>{
+        s.style.transition = `transform ${120 + Math.random()*220}ms cubic-bezier(.2,.9,.2,1), opacity ${120 + Math.random()*220}ms linear`;
+        setTimeout(()=> {
+          s.style.opacity = '0';
+          s.style.transform = `translate3d(0,0,0)`;
+        }, 80 + Math.random()*160);
+      });
+    });
+  }
+
+  /*** FLICKER ENGINE (realistic bulb) ***/
+  let flickerRunning = true;
+  let lastBrightness = cfg.baseBrightness;
+  let flickerStop = false;
+
+  function rampBrightness(from, to, dur = 120){
+    const start = performance.now();
+    return new Promise((resolve) => {
+      function frame(){
+        const t = (performance.now() - start) / dur;
+        const clamped = Math.min(1, Math.max(0, t));
+        // ease out
+        const eased = 1 - Math.pow(1 - clamped, 2);
+        const value = from + (to - from) * eased;
+        lastBrightness = value;
+        setCSSBrightness(value);
+        if (clamped < 1) requestAnimationFrame(frame); else resolve();
+      }
+      frame();
+    });
+  }
+
+  function setCSSBrightness(b, hue = 0, scale = 1, skew = 0) {
+    logo.style.setProperty('--flicker-brightness', b);
+    logo.style.setProperty('--flicker-hue', `${hue}deg`);
+    logo.style.setProperty('--flicker-scale', scale);
+    logo.style.setProperty('--flicker-skew', `${skew}deg`);
+    // afterglow intensity
+    afterglow.style.opacity = (b > 1.3) ? Math.min(0.95, (b-1)*0.26) : Math.max(0, (b-0.6)*0.18);
+  }
+
+  // main async loop
+  async function flickerLoop(){
+    flickerStop = false;
+    lastBrightness = cfg.baseBrightness;
+    setCSSBrightness(cfg.baseBrightness, 0, 1, 0);
+
+    // intro power-on sequence with false starts
+    await rampBrightness(0.02, 0.18, 280);
+    // a couple of false starts
+    for (let i=0;i<3;i++){
+      await rampBrightness(0.18, 3.2 + Math.random()*1.6, 70 + Math.random()*120);
+      playCrackle(0.9 + Math.random()*0.6);
+      await rampBrightness(3.2 + Math.random()*1.2, 0.2, 120 + Math.random()*220);
+      await new Promise(r => setTimeout(r, 120 + Math.random()*300));
+    }
+    // settle to near-base
+    await rampBrightness(0.2, cfg.baseBrightness, 500);
+
+    // enable ambient audio fade
+    if (audioCtx && masterGain) {
+      crossfadeMaster(cfg.ambientVolume, 0.7);
+      ambientOn = true;
+    }
+
+    while(!flickerStop){
+      // rhythmic choice: minor twitch or larger flash or long fail
+      const dice = Math.random();
+      if (dice < cfg.longFailChance) {
+        // long dip/outage then gradual come back
+        await rampBrightness(lastBrightness, 0.04, 220 + Math.random()*420);
+        if (audioCtx) playCrackle(1.2);
+        await new Promise(r => setTimeout(r, 200 + Math.random()*900));
+        await rampBrightness(0.04, cfg.baseBrightness + Math.random()*0.12, 480 + Math.random()*360);
+      } else if (dice < 0.28) {
+        // strong flash / strobe
+        const peak = cfg.strobePeak * (1 + Math.random()*0.25);
+        await rampBrightness(lastBrightness, peak, 35 + Math.random()*45);
+        // quick tiny afterpeak wobble
+        playCrackle(1.0 + Math.random()*0.6);
+        if (Math.random() > 0.35) triggerGlitchBurst(0.8 + Math.random()*0.9);
+        await rampBrightness(peak, Math.max(cfg.baseBrightness, peak * (0.25 + Math.random()*0.45)), 80 + Math.random()*140);
+        await rampBrightness(Math.max(cfg.baseBrightness, peak * (0.25)), cfg.baseBrightness + (Math.random()-0.5)*0.08, 260 + Math.random()*420);
+      } else {
+        // small twitch
+        const micro = cfg.baseBrightness + (Math.random()-0.5) * 0.18;
+        await rampBrightness(lastBrightness, micro, 30 + Math.random()*90);
+        if (Math.random() > 0.8) playCrackle(0.75 + Math.random()*0.3);
+        await rampBrightness(micro, cfg.baseBrightness + (Math.random()-0.5)*0.06, 120 + Math.random()*260);
+        await new Promise(r => setTimeout(r, 60 + Math.random()*240));
+      }
+      // spacing
+      await new Promise(r => setTimeout(r, Math.max(80, cfg.flickerAvgInterval * (0.6 + Math.random()*cfg.flickerJitter))));
+    }
+  }
+
+  // start/stop helper
+  let flickerPromise = null;
+  function startFlicker() {
+    if (flickerPromise) return;
+    flickerPromise = flickerLoop().catch(e => console.warn(e)).finally(()=>{ flickerPromise = null; });
+    toggleFlickerBtn.classList.add('toggled');
+    toggleFlickerBtn.setAttribute('aria-pressed','true');
+  }
+  function stopFlicker() {
+    flickerStop = true;
+    toggleFlickerBtn.classList.remove('toggled');
+    toggleFlickerBtn.setAttribute('aria-pressed','false');
+  }
+
+  // kick off initially
+  startFlicker();
+
+  /*** INTERACTIVE SPOTLIGHT + PARALLAX ***/
+  function updateSpot(xPct, yPct) {
+    spotlight.style.setProperty('--spot-x', `${xPct}%`);
+    spotlight.style.setProperty('--spot-y', `${yPct}%`);
+    // slightly modulate main brightness where pointer is
+    // (not necessary here: spotlight purely visual)
+  }
+
+  // mouse move
+  window.addEventListener('mousemove', (e) => {
+    const xPct = (e.clientX / innerWidth) * 100;
+    const yPct = (e.clientY / innerHeight) * 100;
+    updateSpot(xPct, yPct);
+    // parallax tilt
+    const rx = (e.clientY / innerHeight - 0.5) * cfg.mouseParallax;
+    const ry = (e.clientX / innerWidth - 0.5) * -cfg.mouseParallax;
+    document.getElementById('center').style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) translateZ(18px)`;
+  });
+  // touch move
+  window.addEventListener('touchmove', (e) => {
+    if (!e.touches || e.touches.length === 0) return;
+    const t = e.touches[0];
+    const xPct = (t.clientX / innerWidth) * 100;
+    const yPct = (t.clientY / innerHeight) * 100;
+    updateSpot(xPct, yPct);
+  }, { passive:true });
+
+  // center if idle
+  window.addEventListener('mouseleave', ()=> {
+    updateSpot(50,50);
+    document.getElementById('center').style.transform = `translateZ(18px)`;
+  });
+
+  /*** UI CONTROLS ***/
+  toggleSoundBtn.addEventListener('click', async () => {
+    if (!audioCtx) {
+      // require user gesture to unlock audio
+      ensureAudio();
+      if (!audioCtx) { alert('Audio unavailable'); return; }
+      // small resume (some browsers require resume)
+      try { await audioCtx.resume(); } catch(e){}
+    }
+    if (!ambientOn) {
+      crossfadeMaster(cfg.ambientVolume, 0.38);
+      ambientOn = true;
+      toggleSoundBtn.classList.add('toggled');
+      toggleSoundBtn.setAttribute('aria-pressed','true');
+    } else {
+      // fade out sound
+      crossfadeMaster(0.0001, 0.28);
+      ambientOn = false;
+      toggleSoundBtn.classList.remove('toggled');
+      toggleSoundBtn.setAttribute('aria-pressed','false');
+    }
+  });
+
+  toggleFlickerBtn.addEventListener('click', () => {
+    if (flickerPromise) stopFlicker(); else startFlicker();
+  });
+
+  rebootBtn.addEventListener('click', async () => {
+    // brief simulated power cycle: kill flicker, rapid stutters, then restart
+    stopFlicker();
+    // visually force quick rapid sparks
+    for (let i=0;i<4;i++){
+      setCSSBrightness(0.06 + Math.random()*0.22, (Math.random()*40 - 20), 0.98, (Math.random()*2-1));
+      await new Promise(r => setTimeout(r, 110 + Math.random()*120));
+      setCSSBrightness(Math.min(1.0, cfg.baseBrightness + Math.random()*0.12), (Math.random()*30 - 15), 1, 0);
+      await new Promise(r => setTimeout(r, 60 + Math.random()*140));
+    }
+    // long off
+    setCSSBrightness(0.02, 0, 1, 0);
+    await new Promise(r => setTimeout(r, 380 + Math.random()*520));
+    // restart flicker
+    startFlicker();
+  });
+
+  // keyboard shortcuts
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 's') toggleSoundBtn.click();
+    if (e.key === 'f') toggleFlickerBtn.click();
+    if (e.key === 'r') rebootBtn.click();
+  });
+
+  /*** LIGHTING SYNC: when strong flashes occur, call these hooks ***/
+  // We set up a small hook in playCrackle + flicker loop; but also expose function
+  function visualStrobePeak(intensity=1) {
+    // blow out the word briefly and trigger slices
+    logo.style.transition = 'filter 40ms linear, transform 60ms linear';
+    setCSSBrightness(cfg.strobePeak * Math.min(1.6, intensity), (Math.random()*8 - 4), 1.02 + (Math.random()*0.04), (Math.random()*3 - 1.5));
+    // massive transient afterglow
+    afterglow.style.transition = 'opacity 80ms linear';
+    afterglow.style.opacity = 0.95;
+    // slice blast
+    triggerGlitchBurst(0.9 + Math.random()*0.9);
+    // play crackle
+    if (audioCtx) playCrackle(1.0 + intensity*0.6);
+    // then quickly decay
+    setTimeout(()=> {
+      rampBrightness(lastBrightness, cfg.baseBrightness + (Math.random()-0.5)*0.04, 240 + Math.random()*140);
+    }, 50 + Math.random()*60);
+  }
+
+  // Make strobe visual available for external triggers (if you want to call from console)
+  window.syntVisualStrobe = visualStrobePeak;
+
+  /*** initial focus + accessibility hint: require a gesture to wake audio (handled by UI) ***/
+  // show subtle hint only for first visit (until user interacts)
+  let hinted = false;
+  function showHintOnce(){
+    if (hinted) return;
+    hinted = true;
+    // small temporary message on the screen (very subtle)
+    const m = document.createElement('div');
+    m.textContent = 'click to enable sound';
+    Object.assign(m.style, {
+      position:'fixed', left:'50%', top:'86%', transform:'translateX(-50%)',
+      color:'rgba(255,255,255,0.08)', fontSize:'12px', zIndex:60, padding:'6px 8px',
+      borderRadius:'6px', background:'rgba(0,0,0,0.08)', pointerEvents:'none'
+    });
+    document.body.appendChild(m);
+    setTimeout(()=> m.style.opacity = '0.0', 2700);
+    setTimeout(()=> m.remove(), 3400);
+  }
+  showHintOnce();
+
+  // unlock audio on first click or keydown
+  function unlockAudioGesture() {
+    ensureAudio();
+    try { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
+    document.removeEventListener('pointerdown', unlockAudioGesture);
+    document.removeEventListener('keydown', unlockAudioGesture);
+  }
+  document.addEventListener('pointerdown', unlockAudioGesture, { once:true });
+  document.addEventListener('keydown', unlockAudioGesture, { once:true });
+
+  // ensure slices are rebuilt when font/size changes or layout updates
+  // small observer for logo rect changes
+  const ro = new ResizeObserver(()=>rebuildSlicesDebounced());
+  ro.observe(word);
+
+})();
+</script>
 </body>
 </html>
