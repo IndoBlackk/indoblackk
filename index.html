@@ -1,1069 +1,317 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8">
 <title>synt — everything feels different in the dark</title>
-<meta name="description" content="synt — everything feels different in the dark. Industrial, brutalist, interactive landing with realistic bulb flicker, glitch slices, spotlight and ambient audio." />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  /* =========================
-     VARIABLES & RESET
-     ========================= */
-  :root{
-    --bg:#060606;
-    --fg:#fff;
-    --accent-warm: #fff8ec;
-    --strobe-white: #ffffff;
-    --glass: rgba(255,255,255,0.02);
+/* --- ROOT & GLOBAL --- */
+:root {
+  --bg: #0a0a0a;
+  --fg: #fff;
+  --flicker-brightness: 1;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  height: 100%;
+  font-family: monospace;
+  overflow: hidden;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.04) 0px,
+    rgba(255,255,255,0.04) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 5;
+}
 
-    --logo-size: clamp(4.8rem, 20vw, 14rem);
-    --ui-muted: rgba(255,255,255,0.14);
-    --control-bg: rgba(255,255,255,0.03);
+/* --- STAGE & LOGO --- */
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  position: relative;
+  z-index: 10;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+.logo {
+  font-size: clamp(4rem, 18vw, 14rem);
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--fg);
+  filter: brightness(var(--flicker-brightness));
+  text-shadow: 0 0 5px #fff, 0 0 15px #fff, 0 0 30px rgba(255,255,255,0.6);
+  transition: filter 0.1s ease, text-shadow 0.1s ease;
+}
+.byline {
+  font-size: 0.9rem;
+  opacity: 0.6;
+  margin-top: 1rem;
+  letter-spacing: 0.2em;
+}
 
-    /* dynamic vars controlled by JS */
-    --flicker-brightness: 1;
-    --flicker-hue: 0deg;
-    --flicker-scale: 1;
-    --flicker-skew: 0deg;
-    --spot-x: 50%;
-    --spot-y: 50%;
-    --spot-radius: 24vmax;
+/* --- MENU --- */
+.menu {
+  display: flex;
+  gap: 2rem;
+  margin-top: 3rem;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.menu-box {
+  padding: 1rem 2rem;
+  border: 2px solid var(--fg);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.menu-box::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.1);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+.menu-box:hover::after {
+  transform: translateY(0);
+}
+.menu-box:hover {
+  filter: brightness(1.5);
+}
 
-    --accent: #ffd8a1;
-    --glass-2: rgba(255,255,255,0.025);
-  }
+/* --- HIDDEN EASTER EGG --- */
+#easter-egg {
+  position: fixed;
+  bottom: 5px;
+  right: 8px;
+  font-size: 0.8rem;
+  opacity: 0.05;
+  cursor: pointer;
+  z-index: 50;
+}
+#easter-egg:hover {
+  opacity: 0.3;
+}
 
-  html,body{
-    height:100%;
-    margin:0;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Segoe UI Mono", Roboto Mono, monospace;
-    background: radial-gradient(1000px 700px at 10% 20%, rgba(255,180,100,0.02), transparent 8%),
-                linear-gradient(180deg, var(--bg), #050505 55%);
-    color:var(--fg);
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    overflow:hidden;
-  }
+/* --- POPUP FORM --- */
+.popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.popup form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #111;
+  padding: 2rem;
+  border: 2px solid var(--fg);
+}
+.popup input, .popup textarea {
+  background: #000;
+  color: var(--fg);
+  border: 1px solid #444;
+  padding: 0.5rem;
+  font-family: monospace;
+}
+.popup button {
+  background: var(--fg);
+  color: var(--bg);
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-weight: bold;
+}
+.popup button:hover {
+  background: #ccc;
+}
 
-  /* =========================
-     STAGE LAYOUT (your original styles preserved)
-     ========================= */
-  .stage {
-    position:relative;
-    width:100%;
-    height:100dvh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-    isolation:isolate;
-    perspective:900px;
-  }
+/* --- CONTENT SECTIONS --- */
+.section {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  overflow-y: auto;
+  z-index: 90;
+}
+.section h1 {
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+  gap: 1rem;
+  width: 100%;
+}
+.track, .visual {
+  background: #111;
+  padding: 1rem;
+  border: 2px solid var(--fg);
+}
+.track audio {
+  width: 100%;
+}
+.visual img {
+  width: 100%;
+  display: block;
+}
 
-  #fxCanvas { position:absolute; inset:0; z-index:1; pointer-events:none; mix-blend-mode:screen; opacity:0.85; }
-
-  .scanlines { position: absolute; inset:0; background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 4px); z-index:8; pointer-events:none; mix-blend-mode:overlay; opacity:0.18; }
-
-  .center { position:relative; z-index:10; transform-style:preserve-3d; transition: transform 220ms ease-out; will-change: transform; padding: 6vh 6vw; display:flex; flex-direction:column; align-items:center; gap: 18px; pointer-events:auto; }
-
-  .logo { position:relative; display:inline-block; font-weight:900; font-size:var(--logo-size); line-height:0.82; letter-spacing: -0.02em; color:var(--fg); text-transform:lowercase; transform: translateZ(40px) skew(var(--flicker-skew)) scale(var(--flicker-scale)); filter: brightness(var(--flicker-brightness)) hue-rotate(var(--flicker-hue)); transition: transform 90ms linear, filter 90ms linear, text-shadow 120ms ease; text-shadow: 0 0 4px rgba(255,255,255,0.06), 0 8px 30px rgba(0,0,0,0.7); user-select:none; -webkit-user-select:none; }
-
-  .logo .word { position:relative; display:block; pointer-events:none; }
-
-  .afterglow { position:absolute; inset:0; z-index:-1; pointer-events:none; filter: blur(10px) saturate(1.2); opacity:0; transition: opacity 180ms linear; }
-
-  .byline { font-size:14px; letter-spacing:0.28em; text-transform:uppercase; color:var(--ui-muted); opacity:0.9; mix-blend-mode:screen; }
-
-  .controls { position:fixed; right:18px; top:18px; z-index:40; display:flex; gap:10px; align-items:center; pointer-events:auto; }
-  .btn { background:var(--control-bg); border:1px solid rgba(255,255,255,0.04); color:var(--fg); padding:8px 12px; font-size:13px; border-radius:8px; cursor:pointer; backdrop-filter: blur(6px); }
-  .btn.toggled { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
-
-  .spotlight { position:absolute; inset:0; pointer-events:none; z-index:9; mix-blend-mode:screen; background: radial-gradient(circle at var(--spot-x) var(--spot-y), rgba(255,255,240,0.18) 0%, rgba(255,255,240,0.06) 8%, transparent 26%); transition: background 120ms linear; filter: blur(8px); opacity:0.95; }
-
-  .slices { position:absolute; inset:0; z-index:12; pointer-events:none; }
-  .slice { position:absolute; left:50%; transform: translateX(-50%); color:var(--fg); font-weight:900; text-transform:lowercase; font-size:var(--logo-size); line-height:0.82; white-space:nowrap; pointer-events:none; text-shadow: none; mix-blend-mode:screen; opacity:0; }
-
-  footer { position:fixed; left:12px; bottom:12px; z-index:40; color:rgba(255,255,255,0.04); font-size:12px; }
-
-  @media (max-width:640px){
-    .controls { left:12px; right:auto; top:auto; bottom:12px; }
-    .logo { font-size: clamp(3.2rem, 28vw, 9rem); }
-  }
-
-  /* =========================
-     New UI: Easter egg (almost invisible) + upload panels + modals
-     ========================= */
-
-  /* very subtle clickable sliver - bottom-right */
-  .easter-egg {
-    position: fixed;
-    right: 8px;
-    bottom: 8px;
-    z-index: 80;
-    width: 18px;
-    height: 18px;
-    border-radius: 6px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
-    box-shadow: 0 1px 10px rgba(0,0,0,0.6);
-    opacity: 0.02;                 /* practically invisible */
-    transition: opacity 220ms ease, transform 260ms ease;
-    cursor: pointer;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255,255,255,0.02);
-  }
-  .easter-egg:focus, .easter-egg:hover {
-    opacity: 0.9;
-    transform: scale(1.06);
-    outline: none;
-  }
-  .easter-egg::after {
-    content: '✉';
-    display:block;
-    text-align:center;
-    font-size:10px;
-    color: rgba(255,255,255,0.06);
-    transform: translateY(-1px);
-    pointer-events:none;
-  }
-  /* tiny hint pulse for discoverability after some idle time */
-  @keyframes eggPulse {
-    0% { transform: scale(1); opacity: 0.02; }
-    50% { transform: scale(1.08); opacity: 0.04; }
-    100% { transform: scale(1); opacity: 0.02; }
-  }
-
-  /* modal overlay */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    background: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.86));
-    display: none;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 260ms ease both;
-  }
-  .modal {
-    width: min(720px, 92vw);
-    max-height: 86vh;
-    overflow:auto;
-    background: linear-gradient(180deg, rgba(10,10,10,0.98), rgba(4,4,4,0.98));
-    border:1px solid rgba(255,255,255,0.04);
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 10px 60px rgba(0,0,0,0.6);
-    color:var(--fg);
-    transform: translateY(18px) scale(0.98);
-    animation: popIn 300ms cubic-bezier(.2,.9,.2,1) both;
-  }
-  @keyframes popIn { to { transform: translateY(0) scale(1); } }
-  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
-
-  /* forms */
-  .modal h3 { margin:0 0 10px 0; font-size:18px; letter-spacing:0.06em; color:var(--accent-warm); }
-  .modal p { margin:0 0 12px 0; color:var(--ui-muted); font-size:13px; }
-  .input, textarea, .file-area {
-    width:100%;
-    box-sizing:border-box;
-    background: rgba(255,255,255,0.02);
-    border: 1px dashed rgba(255,255,255,0.03);
-    color:var(--fg);
-    padding:10px;
-    border-radius:8px;
-    font-family: inherit;
-    font-size:13px;
-    margin-bottom:12px;
-    transition: box-shadow 160ms ease, border 160ms ease;
-  }
-  .input:focus, textarea:focus, .file-area:focus { outline:none; border-color: rgba(255,255,255,0.08); box-shadow: 0 6px 28px rgba(0,0,0,0.6); }
-
-  textarea { min-height:120px; resize:vertical; }
-
-  .row { display:flex; gap:10px; align-items:center; }
-  .muted { color:var(--ui-muted); font-size:12px; }
-
-  .tiny { font-size:12px; padding:6px 8px; border-radius:8px; background:var(--control-bg); border:1px solid rgba(255,255,255,0.03); cursor:pointer; }
-
-  /* Upload preview lists */
-  .media-list { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
-  .media-item {
-    width: 120px;
-    height: 80px;
-    border-radius:8px;
-    overflow:hidden;
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:var(--ui-muted);
-    font-size:12px;
-    position:relative;
-    border:1px solid rgba(255,255,255,0.02);
-  }
-  .media-item img, .media-item video { width:100%; height:100%; object-fit:cover; display:block; }
-
-  /* small inline audio player */
-  .audio-row { display:flex; gap:8px; align-items:center; padding:8px; background:rgba(255,255,255,0.01); border-radius:8px; border:1px solid rgba(255,255,255,0.02); }
-  .audio-row audio { width:100%; outline:none; }
-
-  /* subtle entrance/hover animations */
-  .modal .tiny { transition: transform 120ms ease; }
-  .modal .tiny:active { transform: translateY(1px) scale(0.997); }
-
-  /* toast */
-  .toast {
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: 22px;
-    z-index: 350;
-    background: rgba(0,0,0,0.75);
-    color: #fff;
-    padding: 8px 14px;
-    border-radius: 10px;
-    font-size:13px;
-    opacity:0;
-    pointer-events:none;
-    transition: opacity 220ms ease, transform 220ms ease;
-  }
-  .toast.show { opacity:1; transform: translateX(-50%) translateY(-6px); pointer-events:auto; }
-
-  /* small controls for sounds/visuals boxes (visible anchors) */
-  .media-anchors {
-    position: fixed;
-    left: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 70;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-  .anchor {
-    width:44px;
-    height:44px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:10px;
-    background: rgba(255,255,255,0.02);
-    border:1px solid rgba(255,255,255,0.03);
-    color:var(--ui-muted);
-    cursor:pointer;
-    transition: transform 180ms ease, background 200ms linear;
-  }
-  .anchor:hover { transform: translateX(6px); background: rgba(255,255,255,0.035); color:var(--accent-warm); }
-
-  /* small accessibility: focus rings */
-  .anchor:focus, .easter-egg:focus, .tiny:focus, .btn:focus { outline: 2px solid rgba(255,200,120,0.07); outline-offset:3px; }
-
-  /* responsive tweaks */
-  @media (max-width:640px){
-    .media-anchors { left: 10px; top: auto; bottom: 12px; transform:none; flex-direction:row; gap:8px; }
-    .media-item { width:90px; height:60px; }
-  }
+/* --- BACK BUTTON --- */
+.back-btn {
+  margin-top: 2rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border: 2px solid var(--fg);
+  padding: 0.5rem 1rem;
+}
+.back-btn:hover {
+  filter: brightness(1.5);
+}
 </style>
 </head>
 <body>
-  <div class="stage" id="stage">
-    <canvas id="fxCanvas" aria-hidden="true"></canvas>
 
-    <div class="spotlight" id="spotlight" aria-hidden="true"></div>
-
-    <div class="center" id="center">
-      <div class="logo" id="logo" aria-live="polite" aria-label="synt">
-        <span class="word" id="word">synt</span>
-        <span class="afterglow" id="afterglow" aria-hidden="true"></span>
-      </div>
-      <div class="byline">everything feels different in the dark</div>
-    </div>
-
-    <div class="slices" id="slices" aria-hidden="true"></div>
-
-    <div class="controls" role="toolbar" aria-label="controls">
-      <button id="toggleSound" class="btn" aria-pressed="false" title="Toggle sound">Sound: Off</button>
-      <button id="toggleFlicker" class="btn toggled" aria-pressed="true" title="Pause flicker">Flicker: On</button>
-      <button id="reboot" class="btn" title="Power cycle (reboot) simulation">Reboot</button>
-    </div>
-
-    <div class="scanlines" aria-hidden="true"></div>
-    <footer aria-hidden="true">synt • 2025</footer>
+<div class="stage" id="stage">
+  <div id="logo" class="logo">synt</div>
+  <div class="byline">everything feels different in the dark</div>
+  <div class="menu" id="menu">
+    <div class="menu-box" data-section="sounds">Sounds</div>
+    <div class="menu-box" data-section="visuals">Visuals</div>
   </div>
+</div>
 
-  <!-- VERY SUBTLE EASTER EGG: "Tell me something" -->
-  <button id="egg" class="easter-egg" title="Tell me something (secret)" aria-label="Tell me something (hidden)"></button>
+<div id="easter-egg">tell me something</div>
 
-  <!-- media anchors for Sounds / Visuals -->
-  <div class="media-anchors" role="navigation" aria-label="media anchors">
-    <button id="openSounds" class="anchor" title="Sounds (upload/play)"><span aria-hidden="true">♪</span><span class="sr-only">Sounds</span></button>
-    <button id="openVisuals" class="anchor" title="Visuals (upload/view)"><span aria-hidden="true">▦</span><span class="sr-only">Visuals</span></button>
-  </div>
+<!-- Popup Form -->
+<div class="popup" id="popup">
+  <form>
+    <input type="text" placeholder="Your name">
+    <textarea rows="4" placeholder="Your message"></textarea>
+    <button type="button" onclick="closePopup()">Send</button>
+  </form>
+</div>
 
-  <!-- Modal Backdrop (reused for tell / sounds / visuals) -->
-  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
-    <div id="modal" class="modal" role="document" aria-labelledby="modalTitle">
-      <!-- Dynamic content injected by JS -->
-      <div id="modalContent"></div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
-        <button id="modalClose" class="tiny" aria-label="Close">Close</button>
-      </div>
+<!-- Sounds Section -->
+<div class="section" id="sounds">
+  <h1>Sounds</h1>
+  <div class="grid">
+    <div class="track">
+      <strong>Track 1</strong>
+      <audio controls>
+        <source src="your-audio.mp3" type="audio/mpeg">
+      </audio>
+    </div>
+    <div class="track">
+      <strong>Track 2</strong>
+      <audio controls>
+        <source src="your-audio2.mp3" type="audio/mpeg">
+      </audio>
     </div>
   </div>
+  <div class="back-btn" onclick="goHome()">Back</div>
+</div>
 
-  <!-- toast -->
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+<!-- Visuals Section -->
+<div class="section" id="visuals">
+  <h1>Visuals</h1>
+  <div class="grid">
+    <div class="visual"><img src="https://placehold.co/400x300" alt=""></div>
+    <div class="visual"><img src="https://placehold.co/400x300" alt=""></div>
+  </div>
+  <div class="back-btn" onclick="goHome()">Back</div>
+</div>
 
 <script>
-/* ========================================================
-   Original engine code starts here unchanged (kept intact),
-   plus additional UI/UX code below for:
-   - easter-egg comment box
-   - sounds upload & preview (audio player)
-   - visuals upload & preview
-   - small animations / hints
-   ======================================================== */
+const logo = document.getElementById('logo');
+const menu = document.getElementById('menu');
+const stage = document.getElementById('stage');
+const easterEgg = document.getElementById('easter-egg');
+const popup = document.getElementById('popup');
+const sections = document.querySelectorAll('.section');
+let audioCtx;
 
-  /* ---------- pasted your original script block (keeps engine) ---------- */
-(() => {
-  /*** ELEMENTS ***/
-  const stage = document.getElementById('stage');
-  const logo = document.getElementById('logo');
-  const word = document.getElementById('word');
-  const spotlight = document.getElementById('spotlight');
-  const afterglow = document.getElementById('afterglow');
-  const fxCanvas = document.getElementById('fxCanvas');
-  const slicesContainer = document.getElementById('slices');
-  const toggleSoundBtn = document.getElementById('toggleSound');
-  const toggleFlickerBtn = document.getElementById('toggleFlicker');
-  const rebootBtn = document.getElementById('reboot');
+function playFlickerSound() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = 100 + Math.random()*50;
+  gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.1);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime+0.1);
+}
 
-  /*** CONFIG ***/
-  const cfg = {
-    baseBrightness: 0.65,
-    strobePeak: 6.5,
-    flickerAvgInterval: 420,
-    flickerJitter: 0.6,
-    microFlickerMs: 30,
-    longFailChance: 0.07,
-    sliceCount: 8,
-    sliceMaxOffset: 46, // px
-    ambientVolume: 0.06,
-    crackleVolume: 0.12,
-    ambientCutoffHz: 400, // lowpass for ambient rumble
-    spotlightRadius: 22, // vmin-ish - handled via CSS variable
-    mouseParallax: 8 // degrees
-  };
-
-  /*** AUDIO SETUP (lazy) ***/
-  let audioCtx = null;
-  let masterGain = null;
-  let ambientNode = null;
-  let crackleBuffer = null;
-  let ambientOn = false;
-
-  function ensureAudio() {
-    if (audioCtx) return;
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      masterGain = audioCtx.createGain();
-      masterGain.gain.value = 0.0001;
-      masterGain.connect(audioCtx.destination);
-
-      // create a short crackle buffer
-      crackleBuffer = createNoiseBuffer(audioCtx, 0.12);
-
-      // ambient loop: low noise with a lowpass to make rumble
-      const bufferSize = audioCtx.sampleRate * 3; // 3 sec buffer of textured noise
-      const ambientBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = ambientBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        // shape to be low rumble + small hiss
-        data[i] = (Math.random()*2 - 1) * (0.35 + 0.65 * Math.sin(i/120)) * Math.exp(-i / (bufferSize*2));
-      }
-      ambientNode = audioCtx.createBufferSource();
-      ambientNode.buffer = ambientBuffer;
-      ambientNode.loop = true;
-      const ambientGain = audioCtx.createGain();
-      ambientGain.gain.value = 0.0001;
-      const lp = audioCtx.createBiquadFilter();
-      lp.type = 'lowpass';
-      lp.frequency.value = cfg.ambientCutoffHz;
-      ambientNode.connect(ambientGain).connect(lp).connect(masterGain);
-      ambientNode.start(0);
-    } catch (e) {
-      console.warn('Audio not available:', e);
-      audioCtx = null;
-    }
+function flickerLoop() {
+  if (Math.random() < 0.1) {
+    logo.style.setProperty('--flicker-brightness', 3 + Math.random()*2);
+    logo.style.textShadow = "0 0 10px #fff,0 0 40px #fff,0 0 80px rgba(255,255,255,0.8)";
+    playFlickerSound();
+  } else {
+    logo.style.setProperty('--flicker-brightness', 0.6 + Math.random()*0.3);
+    logo.style.textShadow = "0 0 4px #fff,0 0 12px rgba(255,255,255,0.5)";
   }
+  setTimeout(flickerLoop, 50 + Math.random()*200);
+}
 
-  function createNoiseBuffer(ctx, duration = 0.14) {
-    const sr = ctx.sampleRate;
-    const len = Math.floor(sr * duration);
-    const buf = ctx.createBuffer(1, len, sr);
-    const d = buf.getChannelData(0);
-    for (let i=0;i<len;i++){
-      // shaped burst: heavier at start
-      d[i] = (Math.random()*2 - 1) * Math.exp(-6 * i / len);
-    }
-    return buf;
-  }
+document.addEventListener('click', () => {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+});
 
-  function crossfadeMaster(to = 0.08, time = 0.2) {
-    if (!masterGain) return;
-    const now = audioCtx.currentTime;
-    masterGain.gain.cancelScheduledValues(now);
-    masterGain.gain.setValueAtTime(masterGain.gain.value || 0.0001, now);
-    masterGain.gain.linearRampToValueAtTime(to, now + time);
-  }
+setTimeout(() => {
+  menu.style.opacity = 1;
+}, 3000);
 
-  function playCrackle(intensity = 1.0) {
-    if (!audioCtx || !crackleBuffer) return;
-    const src = audioCtx.createBufferSource();
-    src.buffer = crackleBuffer;
-    const g = audioCtx.createGain();
-    g.gain.value = 0.0001;
-    src.connect(g).connect(masterGain);
-    const t = audioCtx.currentTime;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime( cfg.crackleVolume * intensity, t + 0.007 + Math.random()*0.02 );
-    g.gain.exponentialRampToValueAtTime(0.00001, t + 0.06 + Math.random()*0.12);
-    src.playbackRate.value = 0.9 + Math.random()*0.7;
-    src.start(t);
-    src.stop(t + 0.18 + Math.random()*0.1);
-  }
-
-  /*** FX CANVAS (atmospheric fog & slow motion noise) ***/
-  const canvas = fxCanvas;
-  const ctx = canvas.getContext('2d', { alpha: true });
-  let cw = 0, ch = 0;
-  function resizeCanvas() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    cw = Math.max(600, innerWidth);
-    ch = Math.max(400, innerHeight);
-    canvas.width = Math.floor(cw * dpr);
-    canvas.height = Math.floor(ch * dpr);
-    canvas.style.width = cw + 'px';
-    canvas.style.height = ch + 'px';
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-  }
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
-  // layered moving noise blobs
-  let fxStart = performance.now();
-  function renderFX(now) {
-    const t = (now - fxStart) / 1000;
-    ctx.clearRect(0,0,cw,ch);
-
-    // background soft moving ellipses (fog)
-    for (let i = 0; i < 5; i++) {
-      const ix = (i*37) % 7;
-      const x = cw * (0.08 + 0.84 * ((Math.sin(t*0.07 + i*1.3)+1)/2));
-      const y = ch * (0.06 + 0.88 * ((Math.cos(t*0.05 + i*0.9)+1)/2));
-      const r = Math.min(cw, ch) * (0.28 + 0.12 * Math.sin(t*0.2 + i));
-      const alpha = 0.06 + 0.02 * Math.sin(t*0.6 + i*1.7);
-      const grd = ctx.createRadialGradient(x, y, r*0.1, x, y, r);
-      grd.addColorStop(0, `rgba(255,240,210,${alpha*0.65})`);
-      grd.addColorStop(0.5, `rgba(255,230,200,${alpha*0.3})`);
-      grd.addColorStop(1, `rgba(0,0,0,0)`);
-      ctx.fillStyle = grd;
-      ctx.beginPath();
-      ctx.ellipse(x, y, r, r*0.6, 0, 0, Math.PI*2);
-      ctx.fill();
-    }
-
-    // animated grain overlay (fast subtle)
-    const imgData = ctx.createImageData(80,80);
-    const pixels = imgData.data;
-    for (let i=0;i<pixels.length;i+=4){
-      const v = 128 + Math.floor(28 * (Math.sin((t*8) + i) * Math.random()));
-      pixels[i] = pixels[i+1] = pixels[i+2] = v;
-      pixels[i+3] = 4; // very translucent
-    }
-    ctx.putImageData(imgData, 0, 0);
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.06;
-    ctx.fillRect(0,0,cw,ch);
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
-
-    requestAnimationFrame(renderFX);
-  }
-  requestAnimationFrame(renderFX);
-
-  /*** GLITCH SLICES ENGINE ***/
-  const slices = [];
-  function createSlices() {
-    // clear existing
-    slicesContainer.innerHTML = '';
-    slices.length = 0;
-    const rect = word.getBoundingClientRect();
-    for (let i=0;i<cfg.sliceCount;i++){
-      const s = document.createElement('div');
-      s.className = 'slice';
-      s.textContent = word.textContent;
-      // compute vertical position as a ratio
-      const pos = (i+0.5)/cfg.sliceCount;
-      s.style.top = `calc(${pos*100}% - 0.5em)`; // rough centering
-      // clip to thin horizontal band
-      const bandH = (rect.height / cfg.sliceCount);
-      const topPx = Math.round(pos*rect.height - bandH/2);
-      s.style.clipPath = `inset(${topPx}px 0 ${rect.height - topPx - Math.ceil(bandH)}px 0)`;
-      // size matching
-      s.style.fontSize = getComputedStyle(word).fontSize;
-      s.style.left = `${rect.left + rect.width/2}px`;
-      slicesContainer.appendChild(s);
-      slices.push(s);
-    }
-  }
-
-  // run when layout stable
-  function rebuildSlicesDebounced(){
-    // small delay to ensure fonts/layout stable
-    setTimeout(createSlices,120);
-  }
-  window.addEventListener('resize', rebuildSlicesDebounced);
-  window.addEventListener('load', rebuildSlicesDebounced);
-  // ensure slices created after first paint
-  setTimeout(rebuildSlicesDebounced, 280);
-
-  function triggerGlitchBurst(intensity = 1.0) {
-    // only show a subset randomly, displace horizontally and fade in/out
-    const active = Math.max(2, Math.round(cfg.sliceCount * (0.25 + Math.random()*0.6)));
-    const indices = [];
-    for (let i=0;i<slices.length;i++) indices.push(i);
-    // shuffle and take active
-    for (let i=indices.length-1;i>0;i--){
-      const j = Math.floor(Math.random()*(i+1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
-    const take = indices.slice(0, active);
-    take.forEach((i, idx) => {
-      const s = slices[i];
-      const off = (Math.random()*2-1) * cfg.sliceMaxOffset * intensity;
-      s.style.transition = 'none';
-      s.style.opacity = '1';
-      s.style.transform = `translate3d(${off}px, ${(-3 + Math.random()*6)}px, 0) skewX(${(Math.random()*6 - 3)}deg)`;
-      s.style.color = idx % 2 === 0 ? 'white' : 'rgba(255,255,255,0.85)';
-      s.style.textShadow = '0 2px 10px rgba(0,0,0,0.6)';
-      // schedule fade
-      requestAnimationFrame(()=>{
-        s.style.transition = `transform ${120 + Math.random()*220}ms cubic-bezier(.2,.9,.2,1), opacity ${120 + Math.random()*220}ms linear`;
-        setTimeout(()=> {
-          s.style.opacity = '0';
-          s.style.transform = `translate3d(0,0,0)`;
-        }, 80 + Math.random()*160);
-      });
-    });
-  }
-
-  /*** FLICKER ENGINE (realistic bulb) ***/
-  let flickerRunning = true;
-  let lastBrightness = cfg.baseBrightness;
-  let flickerStop = false;
-
-  function rampBrightness(from, to, dur = 120){
-    const start = performance.now();
-    return new Promise((resolve) => {
-      function frame(){
-        const t = (performance.now() - start) / dur;
-        const clamped = Math.min(1, Math.max(0, t));
-        // ease out
-        const eased = 1 - Math.pow(1 - clamped, 2);
-        const value = from + (to - from) * eased;
-        lastBrightness = value;
-        setCSSBrightness(value);
-        if (clamped < 1) requestAnimationFrame(frame); else resolve();
-      }
-      frame();
-    });
-  }
-
-  function setCSSBrightness(b, hue = 0, scale = 1, skew = 0) {
-    logo.style.setProperty('--flicker-brightness', b);
-    logo.style.setProperty('--flicker-hue', `${hue}deg`);
-    logo.style.setProperty('--flicker-scale', scale);
-    logo.style.setProperty('--flicker-skew', `${skew}deg`);
-    // afterglow intensity
-    afterglow.style.opacity = (b > 1.3) ? Math.min(0.95, (b-1)*0.26) : Math.max(0, (b-0.6)*0.18);
-  }
-
-  // main async loop
-  async function flickerLoop(){
-    flickerStop = false;
-    lastBrightness = cfg.baseBrightness;
-    setCSSBrightness(cfg.baseBrightness, 0, 1, 0);
-
-    // intro power-on sequence with false starts
-    await rampBrightness(0.02, 0.18, 280);
-    // a couple of false starts
-    for (let i=0;i<3;i++){
-      await rampBrightness(0.18, 3.2 + Math.random()*1.6, 70 + Math.random()*120);
-      playCrackle(0.9 + Math.random()*0.6);
-      await rampBrightness(3.2 + Math.random()*1.2, 0.2, 120 + Math.random()*220);
-      await new Promise(r => setTimeout(r, 120 + Math.random()*300));
-    }
-    // settle to near-base
-    await rampBrightness(0.2, cfg.baseBrightness, 500);
-
-    // enable ambient audio fade
-    if (audioCtx && masterGain) {
-      crossfadeMaster(cfg.ambientVolume, 0.7);
-      ambientOn = true;
-    }
-
-    while(!flickerStop){
-      // rhythmic choice: minor twitch or larger flash or long fail
-      const dice = Math.random();
-      if (dice < cfg.longFailChance) {
-        // long dip/outage then gradual come back
-        await rampBrightness(lastBrightness, 0.04, 220 + Math.random()*420);
-        if (audioCtx) playCrackle(1.2);
-        await new Promise(r => setTimeout(r, 200 + Math.random()*900));
-        await rampBrightness(0.04, cfg.baseBrightness + Math.random()*0.12, 480 + Math.random()*360);
-      } else if (dice < 0.28) {
-        // strong flash / strobe
-        const peak = cfg.strobePeak * (1 + Math.random()*0.25);
-        await rampBrightness(lastBrightness, peak, 35 + Math.random()*45);
-        // quick tiny afterpeak wobble
-        playCrackle(1.0 + Math.random()*0.6);
-        if (Math.random() > 0.35) triggerGlitchBurst(0.8 + Math.random()*0.9);
-        await rampBrightness(peak, Math.max(cfg.baseBrightness, peak * (0.25 + Math.random()*0.45)), 80 + Math.random()*140);
-        await rampBrightness(Math.max(cfg.baseBrightness, peak * (0.25)), cfg.baseBrightness + (Math.random()-0.5)*0.08, 260 + Math.random()*420);
-      } else {
-        // small twitch
-        const micro = cfg.baseBrightness + (Math.random()-0.5) * 0.18;
-        await rampBrightness(lastBrightness, micro, 30 + Math.random()*90);
-        if (Math.random() > 0.8) playCrackle(0.75 + Math.random()*0.3);
-        await rampBrightness(micro, cfg.baseBrightness + (Math.random()-0.5)*0.06, 120 + Math.random()*260);
-        await new Promise(r => setTimeout(r, 60 + Math.random()*240));
-      }
-      // spacing
-      await new Promise(r => setTimeout(r, Math.max(80, cfg.flickerAvgInterval * (0.6 + Math.random()*cfg.flickerJitter))));
-    }
-  }
-
-  // start/stop helper
-  let flickerPromise = null;
-  function startFlicker() {
-    if (flickerPromise) return;
-    flickerPromise = flickerLoop().catch(e => console.warn(e)).finally(()=>{ flickerPromise = null; });
-    toggleFlickerBtn.classList.add('toggled');
-    toggleFlickerBtn.setAttribute('aria-pressed','true');
-  }
-  function stopFlicker() {
-    flickerStop = true;
-    toggleFlickerBtn.classList.remove('toggled');
-    toggleFlickerBtn.setAttribute('aria-pressed','false');
-  }
-
-  // kick off initially
-  startFlicker();
-
-  /*** INTERACTIVE SPOTLIGHT + PARALLAX ***/
-  function updateSpot(xPct, yPct) {
-    spotlight.style.setProperty('--spot-x', `${xPct}%`);
-    spotlight.style.setProperty('--spot-y', `${yPct}%`);
-    // slightly modulate main brightness where pointer is
-    // (not necessary here: spotlight purely visual)
-  }
-
-  // mouse move
-  window.addEventListener('mousemove', (e) => {
-    const xPct = (e.clientX / innerWidth) * 100;
-    const yPct = (e.clientY / innerHeight) * 100;
-    updateSpot(xPct, yPct);
-    // parallax tilt
-    const rx = (e.clientY / innerHeight - 0.5) * cfg.mouseParallax;
-    const ry = (e.clientX / innerWidth - 0.5) * -cfg.mouseParallax;
-    document.getElementById('center').style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) translateZ(18px)`;
+document.querySelectorAll('.menu-box').forEach(box => {
+  box.addEventListener('click', () => {
+    stage.style.opacity = 0;
+    setTimeout(() => {
+      document.getElementById(box.dataset.section).style.display = 'flex';
+    }, 500);
   });
-  // touch move
-  window.addEventListener('touchmove', (e) => {
-    if (!e.touches || e.touches.length === 0) return;
-    const t = e.touches[0];
-    const xPct = (t.clientX / innerWidth) * 100;
-    const yPct = (t.clientY / innerHeight) * 100;
-    updateSpot(xPct, yPct);
-  }, { passive:true });
+});
 
-  // center if idle
-  window.addEventListener('mouseleave', ()=> {
-    updateSpot(50,50);
-    document.getElementById('center').style.transform = `translateZ(18px)`;
-  });
+function goHome() {
+  sections.forEach(s => s.style.display = 'none');
+  stage.style.opacity = 1;
+}
 
-  /*** UI CONTROLS ***/
-  toggleSoundBtn.addEventListener('click', async () => {
-    if (!audioCtx) {
-      // require user gesture to unlock audio
-      ensureAudio();
-      if (!audioCtx) { alert('Audio unavailable'); return; }
-      // small resume (some browsers require resume)
-      try { await audioCtx.resume(); } catch(e){}
-    }
-    if (!ambientOn) {
-      crossfadeMaster(cfg.ambientVolume, 0.38);
-      ambientOn = true;
-      toggleSoundBtn.classList.add('toggled');
-      toggleSoundBtn.setAttribute('aria-pressed','true');
-    } else {
-      // fade out sound
-      crossfadeMaster(0.0001, 0.28);
-      ambientOn = false;
-      toggleSoundBtn.classList.remove('toggled');
-      toggleSoundBtn.setAttribute('aria-pressed','false');
-    }
-  });
+easterEgg.addEventListener('click', () => {
+  popup.style.display = 'flex';
+});
+function closePopup() {
+  popup.style.display = 'none';
+}
 
-  toggleFlickerBtn.addEventListener('click', () => {
-    if (flickerPromise) stopFlicker(); else startFlicker();
-  });
-
-  rebootBtn.addEventListener('click', async () => {
-    // brief simulated power cycle: kill flicker, rapid stutters, then restart
-    stopFlicker();
-    // visually force quick rapid sparks
-    for (let i=0;i<4;i++){
-      setCSSBrightness(0.06 + Math.random()*0.22, (Math.random()*40 - 20), 0.98, (Math.random()*2-1));
-      await new Promise(r => setTimeout(r, 110 + Math.random()*120));
-      setCSSBrightness(Math.min(1.0, cfg.baseBrightness + Math.random()*0.12), (Math.random()*30 - 15), 1, 0);
-      await new Promise(r => setTimeout(r, 60 + Math.random()*140));
-    }
-    // long off
-    setCSSBrightness(0.02, 0, 1, 0);
-    await new Promise(r => setTimeout(r, 380 + Math.random()*520));
-    // restart flicker
-    startFlicker();
-  });
-
-  // keyboard shortcuts
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 's') toggleSoundBtn.click();
-    if (e.key === 'f') toggleFlickerBtn.click();
-    if (e.key === 'r') rebootBtn.click();
-  });
-
-  /*** LIGHTING SYNC: when strong flashes occur, call these hooks ***/
-  // We set up a small hook in playCrackle + flicker loop; but also expose function
-  function visualStrobePeak(intensity=1) {
-    // blow out the word briefly and trigger slices
-    logo.style.transition = 'filter 40ms linear, transform 60ms linear';
-    setCSSBrightness(cfg.strobePeak * Math.min(1.6, intensity), (Math.random()*8 - 4), 1.02 + (Math.random()*0.04), (Math.random()*3 - 1.5));
-    // massive transient afterglow
-    afterglow.style.transition = 'opacity 80ms linear';
-    afterglow.style.opacity = 0.95;
-    // slice blast
-    triggerGlitchBurst(0.9 + Math.random()*0.9);
-    // play crackle
-    if (audioCtx) playCrackle(1.0 + intensity*0.6);
-    // then quickly decay
-    setTimeout(()=> {
-      rampBrightness(lastBrightness, cfg.baseBrightness + (Math.random()-0.5)*0.04, 240 + Math.random()*140);
-    }, 50 + Math.random()*60);
-  }
-
-  // Make strobe visual available for external triggers (if you want to call from console)
-  window.syntVisualStrobe = visualStrobePeak;
-
-  /*** initial focus + accessibility hint: require a gesture to wake audio (handled by UI) ***/
-  // show subtle hint only for first visit (until user interacts)
-  let hinted = false;
-  function showHintOnce(){
-    if (hinted) return;
-    hinted = true;
-    // small temporary message on the screen (very subtle)
-    const m = document.createElement('div');
-    m.textContent = 'click to enable sound';
-    Object.assign(m.style, {
-      position:'fixed', left:'50%', top:'86%', transform:'translateX(-50%)',
-      color:'rgba(255,255,255,0.08)', fontSize:'12px', zIndex:60, padding:'6px 8px',
-      borderRadius:'6px', background:'rgba(0,0,0,0.08)', pointerEvents:'none'
-    });
-    document.body.appendChild(m);
-    setTimeout(()=> m.style.opacity = '0.0', 2700);
-    setTimeout(()=> m.remove(), 3400);
-  }
-  showHintOnce();
-
-  // unlock audio on first click or keydown
-  function unlockAudioGesture() {
-    ensureAudio();
-    try { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
-    document.removeEventListener('pointerdown', unlockAudioGesture);
-    document.removeEventListener('keydown', unlockAudioGesture);
-  }
-  document.addEventListener('pointerdown', unlockAudioGesture, { once:true });
-  document.addEventListener('keydown', unlockAudioGesture, { once:true });
-
-  // ensure slices are rebuilt when font/size changes or layout updates
-  // small observer for logo rect changes
-  const ro = new ResizeObserver(()=>rebuildSlicesDebounced());
-  ro.observe(word);
-
-})();
-  /* ---------- end original engine block ---------- */
-
-  /* =========================
-     Additional UI behaviour:
-     - Easter egg comment box (client-only)
-     - Sounds upload & short-player preview
-     - Visuals upload & gallery preview
-     - Small hint animation to nudge discovery
-     ========================= */
-
-  (function uiEnhancements() {
-    const egg = document.getElementById('egg');
-    const modalBackdrop = document.getElementById('modalBackdrop');
-    const modal = document.getElementById('modal');
-    const modalContent = document.getElementById('modalContent');
-    const modalClose = document.getElementById('modalClose');
-    const toast = document.getElementById('toast');
-
-    // Optional: if you host a server endpoint to receive comments/uploads, set it here.
-    const UPLOAD_ENDPOINT = ''; // e.g. "https://example.com/api/upload" (leave empty for client-only)
-
-    function showToast(msg, ms = 3000) {
-      toast.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(()=> toast.classList.remove('show'), ms);
-    }
-
-    // open/close modal helpers
-    function openModal(titleHtml, innerHtml) {
-      modalContent.innerHTML = '';
-      modalContent.insertAdjacentHTML('beforeend',
-        `<h3 id="modalTitle">${titleHtml}</h3>` + (innerHtml || '')
-      );
-      modalBackdrop.style.display = 'flex';
-      modalBackdrop.setAttribute('aria-hidden', 'false');
-      // trap focus to modal
-      setTimeout(()=> {
-        const focusable = modal.querySelector('button, textarea, input, [tabindex]');
-        if (focusable) focusable.focus();
-      }, 120);
-    }
-    function closeModal() {
-      modalBackdrop.style.display = 'none';
-      modalBackdrop.setAttribute('aria-hidden', 'true');
-      modalContent.innerHTML = '';
-    }
-    modalClose.addEventListener('click', closeModal);
-    modalBackdrop.addEventListener('click', (e) => {
-      if (e.target === modalBackdrop) closeModal();
-    });
-
-    // EASTER EGG: "Tell me something" form
-    function showTellForm() {
-      const storedName = localStorage.getItem('synt_name') || '';
-      openModal('Tell me something', `
-        <p class="muted">Leave a short note — stored locally. If you want it delivered, add your email or press "Send via email".</p>
-        <input class="input" id="tellName" placeholder="Your name (optional)" value="${escapeHtml(storedName)}" />
-        <textarea id="tellMsg" class="input" placeholder="Tell me something..."></textarea>
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button id="sendLocal" class="tiny">Save (local)</button>
-          <button id="mailtoSend" class="tiny">Send via email</button>
-        </div>
-      `);
-      document.getElementById('sendLocal').addEventListener('click', () => {
-        const name = document.getElementById('tellName').value.trim();
-        const msg = document.getElementById('tellMsg').value.trim();
-        if (!msg) { showToast('Write something first'); return; }
-        // store in local storage array
-        const arr = JSON.parse(localStorage.getItem('synt_comments' ) || '[]');
-        arr.unshift({ name: name || 'anonymous', message: msg, ts: Date.now() });
-        localStorage.setItem('synt_comments', JSON.stringify(arr.slice(0,200)));
-        if (name) localStorage.setItem('synt_name', name);
-        closeModal();
-        showToast('Thanks — saved locally!');
-      });
-      document.getElementById('mailtoSend').addEventListener('click', () => {
-        const name = document.getElementById('tellName').value.trim();
-        const msg = document.getElementById('tellMsg').value.trim();
-        if (!msg) { showToast('Write something first'); return; }
-        // open mail client with prefilled body (user will have to send)
-        const subject = encodeURIComponent('A note from your site — synt');
-        const body = encodeURIComponent(`Name: ${name || 'anonymous'}\n\nMessage:\n${msg}`);
-        window.location.href = `mailto:you@example.com?subject=${subject}&body=${body}`;
-      });
-    }
-
-    /* hook the egg */
-    egg.addEventListener('click', (e) => {
-      // small ripple animation
-      egg.animate([{ transform:'scale(1)' },{ transform:'scale(1.06)' },{ transform:'scale(1)' }], { duration:400, easing:'ease-out' });
-      showTellForm();
-    });
-
-    // EGG: keyboard accessibility (press T to open)
-    window.addEventListener('keydown', (e)=> {
-      if (e.key.toLowerCase() === 't') {
-        egg.focus();
-        showTellForm();
-      }
-    });
-
-    // After a little idle time, nudge the egg with subtle pulse so explorers can find it
-    let idleTimer = setTimeout(()=> {
-      egg.style.animation = 'eggPulse 2200ms ease-in-out infinite';
-      setTimeout(()=> egg.style.animation = '', 6400);
-    }, 6500);
-
-    // SOUNDS panel
-    const openSounds = document.getElementById('openSounds');
-    openSounds.addEventListener('click', () => {
-      openSoundsPanel();
-    });
-
-    function openSoundsPanel() {
-      openModal('Sounds — upload & play', `
-        <p class="muted">Upload audio files (visitor-side). Files remain in the browser for this session. You can optionally send them to a server if configured.</p>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <label class="tiny" for="soundFiles">Choose files</label>
-          <input id="soundFiles" type="file" accept="audio/*" multiple style="display:none;" />
-          <button id="uploadSoundsBtn" class="tiny">Upload to server</button>
-        </div>
-        <div id="soundPreview" style="margin-top:12px;"></div>
-      `);
-      const fileInput = document.getElementById('soundFiles');
-      const preview = document.getElementById('soundPreview');
-      document.querySelector('label[for="soundFiles"]').addEventListener('click', ()=> fileInput.click());
-      fileInput.addEventListener('change', (ev) => {
-        const files = Array.from(ev.target.files || []);
-        if (!files.length) return;
-        preview.innerHTML = '';
-        files.forEach((f, idx) => {
-          const url = URL.createObjectURL(f);
-          const container = document.createElement('div');
-          container.className = 'audio-row';
-          container.style.marginBottom = '10px';
-          const info = document.createElement('div');
-          info.style.minWidth = '120px';
-          info.style.fontSize = '12px';
-          info.style.color = 'var(--ui-muted)';
-          info.textContent = `${f.name} (${Math.round(f.size/1024)}KB)`;
-          const player = document.createElement('audio');
-          player.controls = true;
-          player.src = url;
-          container.appendChild(info);
-          container.appendChild(player);
-          preview.appendChild(container);
-        });
-      });
-
-      // Upload to server (optional)
-      document.getElementById('uploadSoundsBtn').addEventListener('click', async ()=> {
-        const files = document.getElementById('soundFiles').files;
-        if (!files || files.length === 0) { showToast('Select files first'); return; }
-        if (!UPLOAD_ENDPOINT) {
-          showToast('No server endpoint configured (client-only). See console for sample upload code.');
-          console.info('Sample fetch upload (replace UPLOAD_ENDPOINT):');
-          console.info(`const fd = new FormData(); fd.append('file', files[0]); fetch('https://yourserver/upload', { method:'POST', body: fd });`);
-          return;
-        }
-        try {
-          const fd = new FormData();
-          for (let f of files) fd.append('files', f);
-          const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body: fd });
-          if (!res.ok) throw new Error('upload failed');
-          showToast('Uploaded to server');
-        } catch (e) {
-          showToast('Upload failed');
-          console.error(e);
-        }
-      });
-    }
-
-    // VISUALS panel (images / video)
-    const openVisuals = document.getElementById('openVisuals');
-    openVisuals.addEventListener('click', () => {
-      openVisualsPanel();
-    });
-
-    function openVisualsPanel() {
-      openModal('Visuals — upload & preview', `
-        <p class="muted">Drop images or short videos. Files remain in the browser unless you upload to a server.</p>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <label class="tiny" for="visualFiles">Choose files</label>
-          <input id="visualFiles" type="file" accept="image/*,video/*" multiple style="display:none;" />
-          <button id="uploadVisualsBtn" class="tiny">Upload to server</button>
-        </div>
-        <div id="visualPreview" class="media-list" style="margin-top:12px;"></div>
-      `);
-      const fileInput = document.getElementById('visualFiles');
-      const preview = document.getElementById('visualPreview');
-      document.querySelector('label[for="visualFiles"]').addEventListener('click', ()=> fileInput.click());
-      fileInput.addEventListener('change', (ev) => {
-        const files = Array.from(ev.target.files || []);
-        if (!files.length) return;
-        preview.innerHTML = '';
-        files.forEach((f) => {
-          const url = URL.createObjectURL(f);
-          const item = document.createElement('div');
-          item.className = 'media-item';
-          if (f.type.startsWith('image/')) {
-            const img = document.createElement('img');
-            img.src = url;
-            item.appendChild(img);
-          } else if (f.type.startsWith('video/')) {
-            const vid = document.createElement('video');
-            vid.src = url;
-            vid.muted = true;
-            vid.loop = true;
-            vid.autoplay = true;
-            vid.playsInline = true;
-            item.appendChild(vid);
-          } else {
-            item.textContent = f.name;
-          }
-          preview.appendChild(item);
-        });
-      });
-
-      document.getElementById('uploadVisualsBtn').addEventListener('click', async ()=> {
-        const files = document.getElementById('visualFiles').files;
-        if (!files || files.length === 0) { showToast('Select files first'); return; }
-        if (!UPLOAD_ENDPOINT) {
-          showToast('No server endpoint configured (client-only). See console for sample upload code.');
-          console.info('Sample fetch upload (replace UPLOAD_ENDPOINT):');
-          console.info(`const fd = new FormData(); fd.append('file', files[0]); fetch('https://yourserver/upload', { method:'POST', body: fd });`);
-          return;
-        }
-        try {
-          const fd = new FormData();
-          for (let f of files) fd.append('files', f);
-          const res = await fetch(UPLOAD_ENDPOINT, { method:'POST', body: fd });
-          if (!res.ok) throw new Error('upload failed');
-          showToast('Uploaded to server');
-        } catch (e) {
-          showToast('Upload failed');
-          console.error(e);
-        }
-      });
-    }
-
-    // small helper to escape HTML in inserted values
-    function escapeHtml(str) {
-      return String(str || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-    }
-
-    // accessible close on Escape
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeModal();
-    });
-
-    // expose a small function to list saved comments (local)
-    window.syntListLocalComments = function() {
-      const arr = JSON.parse(localStorage.getItem('synt_comments') || '[]');
-      return arr;
-    };
-
-  })();
-
-  /* =========================
-     End of UI enhancements
-     ========================= */
-
+flickerLoop();
 </script>
 </body>
 </html>
