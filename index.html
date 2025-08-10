@@ -211,10 +211,10 @@ body::before {
 
 <!-- Popup Form -->
 <div class="popup" id="popup">
-  <form>
-    <input type="text" placeholder="Your name">
-    <textarea rows="4" placeholder="Your message"></textarea>
-    <button type="button" onclick="closePopup()">Send</button>
+  <form action="https://formspree.io/f/meozvvon" method="POST">
+    <input type="text" name="name" placeholder="Your name" required>
+    <textarea rows="4" name="message" placeholder="Your message" required></textarea>
+    <button type="submit">Send</button>
   </form>
 </div>
 
