@@ -29,24 +29,29 @@
   --border-width: 2px;
   --border-color: var(--fg);
 
-  /* Spacing & layout */
-  --gap: 1rem;
-  /* reduced menu gap so buttons are closer, but keep original look */
-  --menu-gap: 0.8rem;             /* was 2rem in original, now tighter */
-  /* slightly smaller button padding so they're not so large or close to edges */
-  --menu-padding-vertical: 0.65rem; /* reduced from 1rem */
-  --menu-padding-horizontal: 1.2rem; /* reduced from 2rem */
-  --control-padding: 0.5rem;
-
-  /* Page padding to keep things away from the screen edge */
-  --page-padding: clamp(1rem, 3vw, 2.5rem);
-
-  /* Content width control so layout feels central without changing visuals */
+  /* Spacing & layout (tuned for visually balanced layout) */
+  --page-padding: clamp(1rem, 3vw, 2.25rem); /* keeps content from hugging edges */
   --max-content-width: 1200px;
+
+  /* Stage spacing: offset moves the centered block slightly downward for better visual weight */
+  --stage-offset: 3.5vh;   /* primary downward offset to address "synt" being too high */
+
+  /* Internal spacing tuned visually */
+  --stage-gap: 1.05rem;    /* space between logo, byline and menu */
+  --logo-byline-gap: 0.18rem;
+  --byline-menu-gap: 0.6rem;
+
+  /* Menu/button spacing */
+  --menu-gap: 0.72rem;
+  --menu-padding-vertical: 0.85rem;
+  --menu-padding-horizontal: 1.6rem;
+  --menu-min-width: 120px;
+
+  --control-padding: 0.5rem;
 
   /* Typography */
   --font-family: monospace, ui-monospace, "SFMono-Regular", Menlo, Monaco, "Roboto Mono", "Segoe UI Mono", monospace;
-  --byline-size: 0.9rem;
+  --byline-size: 0.95rem;
 
   /* Effects */
   --shadow-small: 0 0 5px #fff;
@@ -65,11 +70,12 @@ html, body {
   color: var(--fg);
   height: 100%;
   font-family: var(--font-family);
-  /* preserve original behavior: no scrolling of background if overlays open */
-  overflow: hidden;
+  overflow: hidden; /* keep original behavior */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* visually-hidden: screen-reader-only utility */
+/* Accessibility helper */
 .visually-hidden {
   position: absolute !important;
   height: 1px; width: 1px;
@@ -78,7 +84,7 @@ html, body {
   white-space: nowrap;
 }
 
-/* Skip link - visually hidden until focused */
+/* Skip link */
 .skip-link {
   position: absolute;
   left: -9999px;
@@ -96,9 +102,10 @@ html, body {
   color: var(--fg);
   z-index: 9999;
   text-decoration: none;
+  border-radius: 6px;
 }
 
-/* Subtle film grain */
+/* Film grain */
 body::before {
   content: "";
   position: fixed;
@@ -112,32 +119,36 @@ body::before {
   );
   pointer-events: none;
   z-index: 5;
+  mix-blend-mode: overlay;
 }
 
-/* Centering container: ensures equal space above and below and keeps content away from edges */
+/* Main centering - keeps equal space above/below but stage is visually nudged down a little */
 main#main {
   min-height: 100vh;
   display: flex;
-  align-items: center;            /* vertical centering */
-  justify-content: center;        /* horizontal centering */
+  align-items: center;
+  justify-content: center;
   padding: var(--page-padding);
   position: relative;
 }
 
-/* Stage / header (preserve original visuals but center it within main) */
+/* Stage - tuned spacing & subtle downward offset to lower the visual anchor of the logo */
 .stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;  /* center internal items vertically */
   width: min(var(--max-content-width), 100%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap: var(--stage-gap);
   position: relative;
   z-index: 10;
   opacity: 1;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  transform: translateY(var(--stage-offset));
 }
+
+/* Logo - preserve original large styling + tightened letter spacing */
 .logo {
-  /* preserve original large logo style exactly */
   font-size: clamp(4rem, 18vw, 14rem);
   font-weight: bold;
   text-transform: uppercase;
@@ -145,24 +156,35 @@ main#main {
   filter: brightness(var(--flicker-brightness));
   text-shadow: var(--shadow-small), var(--shadow-medium), var(--shadow-large);
   transition: filter 0.1s ease, text-shadow 0.1s ease;
+
+  /* tightened tracking so 'synt' reads dense but not cramped */
+  letter-spacing: -0.05em;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  margin: 0;
 }
+
+/* Byline visually close to the logo but separated slightly for legibility */
 .byline {
   font-size: var(--byline-size);
-  opacity: 0.6;
-  margin-top: 1rem;
-  letter-spacing: 0.2em;
+  opacity: 0.65;
+  margin: 0;
+  padding-top: var(--logo-byline-gap);
+  letter-spacing: 0.18em;
 }
 
-/* Menu - keep button visuals same, but use smaller gap and margin-top so it sits closer beneath the logo */
+/* Menu sits a little closer to byline than before but not cramped */
 .menu {
-  display: flex;
+  display:flex;
   gap: var(--menu-gap);
-  margin-top: 1.6rem; /* reduced from 3rem */
+  margin-top: var(--byline-menu-gap);
+  justify-content: center;
+  flex-wrap: wrap;
   opacity: 0;
-  transition: opacity 1s ease;
+  transition: opacity 0.9s ease;
 }
 
-/* menu-box is applied to buttons — neutralize default button visuals while preserving semantics */
+/* Buttons preserved visually but slightly constrained to avoid edge hug */
 .menu-box {
   background: transparent;
   color: var(--fg);
@@ -178,6 +200,8 @@ main#main {
   text-align: center;
   -webkit-appearance: none;
   -moz-appearance: none;
+  border-radius: 6px;
+  min-width: var(--menu-min-width);
 }
 .menu-box::after {
   content: "";
@@ -185,15 +209,11 @@ main#main {
   inset: 0;
   background: var(--accent);
   transform: translateY(100%);
-  transition: transform 0.3s ease;
+  transition: transform 0.28s ease;
   pointer-events: none;
 }
-.menu-box:hover::after {
-  transform: translateY(0);
-}
-.menu-box:hover {
-  filter: brightness(1.5);
-}
+.menu-box:hover::after { transform: translateY(0); }
+.menu-box:hover { filter: brightness(1.45); }
 
 /* Popup Form */
 .popup {
@@ -207,13 +227,14 @@ main#main {
   z-index: 100;
 }
 .popup form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
+  display:flex;
+  flex-direction:column;
+  gap: 1rem;
   background: var(--card-bg);
   padding: 2rem;
   border: var(--border-width) solid var(--border-color);
-  width: 300px;
+  width: 320px;
+  border-radius: 8px;
 }
 .popup input, .popup textarea {
   background: var(--input-bg);
@@ -221,24 +242,20 @@ main#main {
   border: 1px solid var(--input-border);
   padding: var(--control-padding);
   font-family: var(--font-family);
+  border-radius: 6px;
 }
-.popup button {
+.popup button[type="submit"] {
   background: var(--fg);
   color: var(--bg);
   border: none;
-  padding: var(--control-padding);
+  padding: 0.6rem;
   cursor: pointer;
   font-weight: bold;
+  border-radius: 6px;
 }
-.popup button:hover {
-  background: #ccc;
-}
-.form-status {
-  font-size: 0.8rem;
-  color: var(--success);
-}
+.form-status { font-size: 0.9rem; color: var(--success); }
 
-/* Sections */
+/* Sections (unchanged behavior) */
 .section {
   position: fixed;
   inset: 0;
@@ -250,30 +267,24 @@ main#main {
   overflow-y: auto;
   z-index: 90;
 }
-.section h1 {
-  text-transform: uppercase;
-  margin-bottom: 2rem;
-}
+.section h1 { text-transform: uppercase; margin-bottom: 2rem; }
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
   gap: 1rem;
   width: 100%;
+  max-width: var(--max-content-width);
 }
 .track, .visual {
   background: var(--card-bg);
   padding: 1rem;
   border: var(--border-width) solid var(--border-color);
+  border-radius: 6px;
 }
-.track audio {
-  width: 100%;
-}
-.visual img {
-  width: 100%;
-  display: block;
-}
+.track audio { width:100%; }
+.visual img { width:100%; height:auto; display:block; }
 
-/* back button as semantic <button> */
+/* back button */
 .back-btn {
   margin-top: 2rem;
   cursor: pointer;
@@ -283,17 +294,26 @@ main#main {
   padding: 0.5rem 1rem;
   background: transparent;
   color: var(--fg);
-  -webkit-appearance: none;
-  -moz-appearance: none;
+  border-radius: 6px;
 }
-.back-btn:hover {
-  filter: brightness(1.5);
+.back-btn:hover { filter: brightness(1.45); }
+
+/* Responsive adjustments */
+@media (max-width: 880px) {
+  :root { --stage-offset: 3vh; --stage-gap: 0.9rem; }
+  .menu-box { min-width: 100px; padding-inline: 1.25rem; }
+}
+@media (max-width: 520px) {
+  :root { --stage-offset: 2vh; }
+  .logo { font-size: clamp(2.2rem, 14vw, 6.6rem); letter-spacing: -0.03em; }
+  .menu { gap: 0.45rem; margin-top: 0.45rem; }
+  .menu-box { min-width: 84px; padding: 0.7rem 1rem; font-size: 0.95rem; }
+  .popup form { width: 92%; max-width: 420px; padding: 1rem; }
 }
 
-/* Responsive caps: ensure the big logo wraps nicely on smaller viewports */
-@media (max-width: 520px) {
-  .logo { font-size: clamp(2.2rem, 14vw, 6.6rem); }
-  .menu { margin-top: 1rem; }
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .stage, .menu-box, .menu-box::after, body::before { transition: none !important; animation: none !important; }
 }
 </style>
 </head>
@@ -357,7 +377,7 @@ main#main {
       <h1 id="visuals-heading" tabindex="-1">Visuals</h1>
       <div class="grid">
         <div class="visual">
-          <img src="everything feels different in the dark.png" alt="Album artwork: everything feels different in the dark" width="800" height="600">
+          <img src="everything feels different in the dark.png" alt="Album artwork: everything feels different in the dark" width="800" height="600" loading="lazy">
         </div>
         <div class="visual">
           <img src="https://placehold.co/400x300" alt="Placeholder visual" loading="lazy" width="400" height="300">
@@ -405,7 +425,7 @@ let ambientFadeInterval;
 function fadeAudio(audio, targetVolume, duration) {
   clearInterval(ambientFadeInterval);
   const start = isFinite(audio.volume) ? audio.volume : 0;
-  const step = (targetVolume - start) / (duration / 50);
+  const step = (targetVolume - start) / Math.max(1, Math.floor(duration / 50));
   ambientFadeInterval = setInterval(() => {
     audio.volume = Math.min(Math.max(audio.volume + step, 0), 1);
     if ((step > 0 && audio.volume >= targetVolume) ||
@@ -425,7 +445,7 @@ function startAmbientOnInteraction() {
 document.addEventListener('click', startAmbientOnInteraction, { once: true });
 
 /* ======================
-   Flicker loop (unchanged behavior)
+   Flicker loop (preserve original behavior)
    ====================== */
 const flickerSounds = [
   document.getElementById('flickerSound1'),
@@ -453,10 +473,10 @@ function flickerLoop() {
 }
 flickerLoop();
 
-/* Reveal menu after a delay (no visual change) */
+/* Reveal menu after a short delay */
 setTimeout(() => {
   menu.style.opacity = 1;
-}, 3000);
+}, 900);
 
 /* ======================
    Section navigation (accessibility-minded)
@@ -482,12 +502,12 @@ document.querySelectorAll('button.menu-box[data-section]').forEach(box => {
       section.setAttribute('aria-hidden', 'false');
       const heading = section.querySelector('h1, h2');
       if (heading) heading.focus({preventScroll: true});
-    }, 500);
+    }, 450);
   });
 });
 
 /* ======================
-   Modal popup open/close with strict focus trap
+   Focus trap helpers for modal
    ====================== */
 function getFocusableElements(container) {
   const selectors = [
@@ -503,7 +523,9 @@ function getFocusableElements(container) {
     '[contenteditable]',
     '[tabindex]:not([tabindex="-1"])'
   ];
-  return Array.from(container.querySelectorAll(selectors.join(','))).filter(el => el.offsetParent !== null);
+  return Array.from(container.querySelectorAll(selectors.join(','))).filter(el => {
+    return el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length;
+  });
 }
 
 function trapFocus(container) {
@@ -534,18 +556,18 @@ function releaseFocusTrap() {
   }
 }
 
+/* ======================
+   Modal open/close with strict trap
+   ====================== */
 tellBtn.addEventListener('click', () => {
   lastFocusedElement = document.activeElement;
   popup.style.display = 'flex';
   popup.setAttribute('aria-hidden', 'false');
-  // hide main content from assistive tech
   document.querySelector('main').setAttribute('aria-hidden', 'true');
 
-  // focus first control in modal
   const firstControl = form.querySelector('input, textarea, button');
   if (firstControl) firstControl.focus();
 
-  // enable strict focus trap
   trapFocus(popup);
 });
 
@@ -559,7 +581,7 @@ function closePopupFn() {
   if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
 }
 
-/* Close modal with Escape (and return home if a section open) */
+/* Close modal/sections with Escape */
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (popup.style.display === 'flex') {
@@ -572,14 +594,11 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ======================
-   Robust form submission
-   - Attempts JSON POST first (common for APIs like Formspree / Netlify).
-   - If that fails (CORS, server rejects, or network failure), fall back to FormData POST.
-   - If all remote attempts fail, present a mailto fallback link with pre-filled subject/body.
+   Robust form submission (JSON -> FormData -> mailto fallback)
    ====================== */
 async function submitFormRobust(evt) {
   evt.preventDefault();
-  formStatus.style.color = ''; // reset color
+  formStatus.style.color = '';
   formStatus.textContent = "Sending...";
   const name = form.name.value.trim();
   const message = form.message.value.trim();
@@ -593,7 +612,6 @@ async function submitFormRobust(evt) {
   const endpoint = form.action;
   const method = (form.method || 'POST').toUpperCase();
 
-  // Try JSON POST
   const payload = { name, message };
   try {
     const res = await fetch(endpoint, {
@@ -605,28 +623,22 @@ async function submitFormRobust(evt) {
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      // Some endpoints return 200/201 with JSON or empty; accept that as success
       formStatus.style.color = 'var(--success)';
       formStatus.textContent = "Message sent ✔️";
       form.reset();
       return;
     } else {
-      // try to parse error details (APIs often return json with details)
       let info = '';
       try {
         const json = await res.json();
         info = json.error || json.message || JSON.stringify(json);
-      } catch (e) {
-        info = res.statusText || `HTTP ${res.status}`;
-      }
-      // If server rejects JSON POST, try FormData fallback
+      } catch (e) { info = res.statusText || `HTTP ${res.status}`; }
       console.warn('JSON POST rejected:', info);
     }
   } catch (jsonErr) {
     console.warn('JSON POST failed (network/CORS):', jsonErr);
   }
 
-  // Fallback: FormData POST
   try {
     const formData = new FormData();
     formData.append('name', name);
@@ -634,7 +646,7 @@ async function submitFormRobust(evt) {
     const res2 = await fetch(endpoint, {
       method,
       body: formData,
-      headers: { 'Accept': 'application/json' } // keep Accept to receive JSON responses if provided
+      headers: { 'Accept': 'application/json' }
     });
     if (res2.ok) {
       formStatus.style.color = 'var(--success)';
@@ -646,9 +658,7 @@ async function submitFormRobust(evt) {
       try {
         const json = await res2.json();
         info2 = json.error || json.message || JSON.stringify(json);
-      } catch (e) {
-        info2 = res2.statusText || `HTTP ${res2.status}`;
-      }
+      } catch (e) { info2 = res2.statusText || `HTTP ${res2.status}`; }
       console.warn('FormData POST rejected:', info2);
       formStatus.style.color = 'var(--error)';
       formStatus.textContent = `Server error: ${info2}`;
@@ -658,7 +668,6 @@ async function submitFormRobust(evt) {
     console.warn('FormData POST failed:', formDataErr);
   }
 
-  // Final fallback: mailto link prefilled so the user can still send the message manually
   formStatus.style.color = 'var(--error)';
   formStatus.innerHTML = 'Could not send via the server. <a href="#" id="mailto-fallback">Send by email instead</a>';
   const mailtoLink = document.getElementById('mailto-fallback');
@@ -671,11 +680,10 @@ async function submitFormRobust(evt) {
     }, { once: true });
   }
 }
-
 form.addEventListener('submit', submitFormRobust);
 
 /* ======================
-   goHome: hide sections and restore stage, focus management
+   goHome: hide sections and restore stage
    ====================== */
 function goHome() {
   sections.forEach(s => {
