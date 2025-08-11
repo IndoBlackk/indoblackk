@@ -350,6 +350,108 @@ main#main {
 @media (prefers-reduced-motion: reduce) {
   .stage, .menu-box, .menu-box::after, body::before, .scanline, .intro-overlay { transition: none !important; animation: none !important; }
 }
+
+/* Guestbook specific styles (kept same look) */
+:root {
+  --gb-bg: var(--card-bg);
+  --gb-text: var(--fg);
+  --gb-accent: var(--accent);
+  --gb-muted: rgba(255,255,255,0.36);
+  --gb-radius: 8px;
+  --gb-shadow: 0 18px 60px rgba(0,0,0,0.7);
+  --gb-font: var(--font-family);
+  --gb-line: rgba(255,255,255,0.04);
+}
+
+.gb-trigger {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display:flex; align-items:center; justify-content:center;
+  background: rgba(255,255,255,0.02);
+  color: var(--gb-text);
+  cursor:pointer;
+  z-index: 1500;
+  opacity: 0.22;
+  transition: opacity .18s ease, transform .12s ease;
+  border: 1px solid rgba(255,255,255,0.03);
+  backdrop-filter: blur(3px);
+  font-family: var(--gb-font);
+}
+.gb-trigger:hover { opacity:0.95; transform: translateY(-2px); }
+
+.gb-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none; align-items:center; justify-content:center;
+  z-index:1499;
+}
+.gb-backdrop.active { display:flex; }
+
+.gb-modal {
+  width: min(520px, calc(100% - 40px));
+  max-height: calc(100vh - 80px);
+  border-radius: var(--gb-radius);
+  background: var(--gb-bg);
+  color: var(--gb-text);
+  box-shadow: var(--gb-shadow);
+  overflow:hidden;
+  display:flex; flex-direction:column;
+  font-family: var(--gb-font);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+.gb-header {
+  padding:12px 14px; display:flex; align-items:center; justify-content:space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-weight:700; font-size:14px;
+}
+.gb-sub { color: var(--gb-muted); font-size:12px; font-weight:400; margin-left:8px; }
+
+.gb-close, .gb-admin-toggle {
+  background:transparent;border:0;color:var(--gb-muted);cursor:pointer;padding:8px;border-radius:6px;
+}
+.gb-close:hover, .gb-admin-toggle:hover { color:var(--gb-text); background: rgba(255,255,255,0.02); }
+
+.gb-body { padding:12px; overflow:auto; display:flex; gap:12px; flex-direction:column; }
+
+.gb-form { display:grid; gap:8px; }
+.gb-form input[type="text"], .gb-form textarea {
+  width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04);
+  font-size:13px; color:var(--gb-text); background: rgba(255,255,255,0.01); resize:vertical; font-family: var(--gb-font);
+}
+.gb-actions { display:flex; gap:8px; align-items:center; }
+.gb-btn { background: var(--gb-accent); color: var(--gb-text); border:0; padding:8px 10px; border-radius:8px; cursor:pointer; font-weight:700; }
+.gb-btn.ghost { background:transparent; color:var(--gb-text); border:1px solid rgba(255,255,255,0.04); }
+
+.gb-drawer { display:none; border-radius:8px; border:1px dashed rgba(255,255,255,0.03); padding:8px; background: rgba(255,255,255,0.01); }
+.gb-drawer.active { display:block; }
+
+.gb-canvas-wrap { display:flex; gap:8px; align-items:flex-start; }
+.gb-canvas { border:1px solid rgba(255,255,255,0.03); border-radius:6px; background:#fff; touch-action:none; }
+.gb-tools { display:flex; gap:6px; flex-direction:column; align-items:center; }
+.gb-tool { padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.03); background:transparent; color:var(--gb-text); cursor:pointer; font-size:12px; }
+
+.gb-messages { display:flex; gap:10px; flex-direction:column; }
+.gb-msg { border-radius:8px; padding:10px; background:transparent; display:flex; gap:10px; align-items:flex-start; border-bottom:1px solid var(--gb-line); }
+.gb-msg .meta { font-size:12px; color:var(--gb-muted); margin-bottom:6px; display:flex; justify-content:space-between; gap:8px; align-items:center; width:100%; }
+.gb-msg .content { white-space:pre-wrap; font-size:14px; color:var(--gb-text); font-family:var(--gb-font); }
+.gb-msg img { max-width:160px; border-radius:6px; border:1px solid rgba(255,255,255,0.03); }
+.gb-msg .controls { display:flex; gap:6px; align-items:center; }
+.gb-msg button.copy { background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--gb-text); padding:6px 8px; border-radius:6px; cursor:pointer; font-size:12px; }
+.gb-msg button.del { background:transparent; border:0; color:#ff7a7a; cursor:pointer; padding:6px; font-size:12px; border-radius:6px; }
+
+.gb-footer { padding:10px; border-top:1px solid rgba(255,255,255,0.03); display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.gb-muted { color:var(--gb-muted); font-size:12px; }
+
+@media (max-width:520px){
+  .gb-modal { width: calc(100% - 24px); }
+  .gb-canvas { width: 220px; height:150px; }
+  .gb-msg img { max-width:120px; }
+}
 </style>
 </head>
 <body>
@@ -1849,7 +1951,7 @@ main#main {
               <button class="gb-tool" id="gb-brush-medium" title="Medium brush">●●</button>
               <button class="gb-tool" id="gb-brush-large" title="Large brush">●●●</button>
               <button class="gb-tool" id="gb-undo" title="Undo last stroke">↶</button>
-              <button class="gb-tool" id="gb-clear" title="Clear drawing">⟲</button>
+              <button class="gb-tool" id="gb-clear" title="Clear drawing">⤲</button>
             </div>
           </div>
           <div style="font-size:12px;color:var(--gb-muted);margin-top:8px">Draw a small note. It will be attached as an image to your post.</div>
@@ -1868,330 +1970,430 @@ main#main {
   </div>
 </div>
 
-<script>
-(function(){
-  'use strict';
+<!-- GUESTBOOK WIDGET END -->
 
-  const CONFIG = {
-    USE_SERVER: false,
-    SERVER_ENDPOINT: '/api/guestbook',
-    ADMIN_PASSWORD: 'synt-guestbook',
-    LOCAL_STORAGE_KEY: 'guestbook_entries_v1'
+<!-- Firebase-backed guestbook script (module) -->
+<script type="module">
+/*
+  Firebase-backed guestbook widget
+  - Uses Firestore collection "notes"
+  - Stores drawings in Storage under "drawings/"
+  - Requires you to enable Firestore, Storage, and Anonymous Auth in your Firebase console.
+  - Adjust storageBucket below if your project uses a different bucket.
+*/
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc, getDoc
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+import {
+  getStorage, ref as storageRef, uploadString, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js";
+
+/* ==============
+   Your Firebase config (you provided earlier) — storageBucket corrected to typical format
+   ============== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBeXCRIeRdHr2C3EYnDwC1NoQNQxZygA0U",
+  authDomain: "guestbook-bfbdc.firebaseapp.com",
+  databaseURL: "https://guestbook-bfbdc-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "guestbook-bfbdc",
+  storageBucket: "guestbook-bfbdc.appspot.com", /* corrected to .appspot.com */
+  messagingSenderId: "710789947600",
+  appId: "1:710789947600:web:19014ef99d053f4c5dbed5",
+  measurementId: "G-E9XPN9563X"
+};
+
+/* Initialize Firebase */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+/* Auto anonymous auth (recommended to enable in console) */
+let currentUser = null;
+signInAnonymously(auth).catch((err) => {
+  console.warn("Anonymous sign-in failed:", err);
+});
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+});
+
+/* Elements */
+const trigger = document.getElementById('gb-trigger');
+const backdrop = document.getElementById('gb-backdrop');
+const modal = backdrop.querySelector('.gb-modal');
+const closeBtn = document.getElementById('gb-close');
+const adminBtn = document.getElementById('gb-admin-toggle');
+const form = document.getElementById('gb-form');
+const inputName = document.getElementById('gb-name');
+const inputText = document.getElementById('gb-text');
+const submitBtn = document.getElementById('gb-submit');
+const drawerToggle = document.getElementById('gb-toggle-draw');
+const drawer = document.getElementById('gb-drawer');
+const messagesWrap = document.getElementById('gb-messages');
+const countLabel = document.getElementById('gb-count');
+const clearLocalBtn = document.getElementById('gb-clear-all');
+
+const canvas = document.getElementById('gb-canvas');
+const ctx = canvas.getContext('2d');
+const colorInput = document.getElementById('gb-color');
+const brushSmall = document.getElementById('gb-brush-small');
+const brushMedium = document.getElementById('gb-brush-medium');
+const brushLarge = document.getElementById('gb-brush-large');
+const undoBtn = document.getElementById('gb-undo');
+const clearBtn = document.getElementById('gb-clear');
+
+let strokes = [];
+let currentStroke = null;
+let drawing = false;
+let adminMode = false;
+let messages = [];
+
+/* Utility */
+function makeId(){ return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8); }
+
+function resizeCanvasForDPR(){
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const w = 300, h = 200;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  redrawAll();
+}
+
+function drawStroke(ctxLocal, stroke){
+  if(!stroke || !stroke.points || stroke.points.length<1) return;
+  ctxLocal.beginPath();
+  ctxLocal.lineCap = 'round';
+  ctxLocal.lineJoin = 'round';
+  ctxLocal.strokeStyle = stroke.color || '#111';
+  ctxLocal.lineWidth = stroke.width || 3;
+  const p0 = stroke.points[0];
+  ctxLocal.moveTo(p0.x, p0.y);
+  for(let i=1;i<stroke.points.length;i++){
+    const p = stroke.points[i];
+    ctxLocal.lineTo(p.x, p.y);
+  }
+  ctxLocal.stroke();
+  ctxLocal.closePath();
+}
+
+function redrawAll(){
+  // note: canvas.width/height are device px; ctx transform handles DPR
+  ctx.clearRect(0,0,canvas.width, canvas.height);
+  ctx.save();
+  ctx.scale(1,1);
+  for(const s of strokes) drawStroke(ctx, s);
+  ctx.restore();
+}
+
+function getPointer(e){
+  const rect = canvas.getBoundingClientRect();
+  const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
+  const clientY = (e.touches ? e.touches[0].clientY : e.clientY);
+  return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+function startDraw(e){
+  e.preventDefault();
+  drawing = true;
+  const pt = getPointer(e);
+  currentStroke = { color: colorInput.value || '#111', width: Number(canvas.dataset.brush) || 3, points: [{x:pt.x, y:pt.y}] };
+  strokes.push(currentStroke);
+  redrawAll();
+}
+function moveDraw(e){
+  if(!drawing) return;
+  e.preventDefault();
+  const pt = getPointer(e);
+  currentStroke.points.push({x:pt.x, y:pt.y});
+  redrawAll();
+}
+function endDraw(e){
+  if(!drawing) return;
+  drawing = false;
+  currentStroke = null;
+  redrawAll();
+}
+
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('touchstart', startDraw, {passive:false});
+window.addEventListener('mousemove', moveDraw);
+window.addEventListener('touchmove', moveDraw, {passive:false});
+window.addEventListener('mouseup', endDraw);
+window.addEventListener('touchend', endDraw);
+
+function setBrushSize(sz){ canvas.dataset.brush = sz; }
+setBrushSize(3);
+brushSmall.addEventListener('click', ()=> setBrushSize(2));
+brushMedium.addEventListener('click', ()=> setBrushSize(4));
+brushLarge.addEventListener('click', ()=> setBrushSize(6));
+undoBtn.addEventListener('click', ()=> { strokes.pop(); redrawAll(); });
+clearBtn.addEventListener('click', ()=> { strokes = []; redrawAll(); });
+
+function canvasToDataUrl(){
+  if(strokes.length===0) return null;
+  // scale up slightly for nicer images, keep aspect ratio
+  const outW = 600, outH = 400;
+  const tmp = document.createElement('canvas');
+  tmp.width = outW; tmp.height = outH;
+  const tctx = tmp.getContext('2d');
+  tctx.fillStyle = '#fff';
+  tctx.fillRect(0,0,outW,outH);
+  // compute scale from canvas.style dims
+  const srcW = parseFloat(canvas.style.width), srcH = parseFloat(canvas.style.height);
+  const sx = outW / srcW, sy = outH / srcH;
+  tctx.save(); tctx.scale(sx, sy);
+  for(const s of strokes) drawStroke(tctx, s);
+  tctx.restore();
+  // compress to jpeg to save space (but keep alpha-free)
+  try {
+    return tmp.toDataURL('image/jpeg', 0.86);
+  } catch (e) {
+    return tmp.toDataURL('image/png');
+  }
+}
+
+/* Firebase interactions */
+
+/* Listen for notes in realtime */
+const notesCol = collection(db, 'notes');
+const notesQuery = query(notesCol, orderBy('createdAt', 'desc'));
+
+/* Render helper */
+function renderMessagesList(entries){
+  messagesWrap.innerHTML = '';
+  for(const m of entries){
+    const ent = document.createElement('div'); ent.className = 'gb-msg';
+    const left = document.createElement('div'); left.style.flex = '1';
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const who = document.createElement('div'); who.style.fontWeight = '600'; who.textContent = m.name || 'Anonymous';
+    const when = document.createElement('div'); when.style.color = 'var(--gb-muted)'; when.textContent = new Date(m.createdAt).toLocaleString();
+    meta.appendChild(who); meta.appendChild(when);
+    left.appendChild(meta);
+    if(m.text){
+      const p = document.createElement('div'); p.className = 'content'; p.textContent = m.text; left.appendChild(p);
+    }
+    if(m.imageUrl){
+      const img = document.createElement('img'); img.alt = 'drawing'; img.src = m.imageUrl; img.style.marginTop = '8px'; left.appendChild(img);
+    }
+    ent.appendChild(left);
+
+    const controls = document.createElement('div'); controls.className = 'controls';
+    const copyBtn = document.createElement('button'); copyBtn.className = 'copy'; copyBtn.textContent = 'Copy';
+    copyBtn.addEventListener('click', ()=> copyEntryToClipboard(m));
+    controls.appendChild(copyBtn);
+
+    if(adminMode){
+      const del = document.createElement('button'); del.className = 'del'; del.textContent = 'Delete';
+      del.addEventListener('click', ()=> removeMessage(m.id, m.storagePath));
+      controls.appendChild(del);
+    }
+
+    ent.appendChild(controls);
+    messagesWrap.appendChild(ent);
+  }
+  countLabel.textContent = entries.length + (entries.length === 1 ? ' message' : ' messages');
+}
+
+/* Real-time listener updates local 'messages' */
+let unsubscribeNotes = null;
+function attachRealtimeListener(){
+  if(unsubscribeNotes) unsubscribeNotes();
+  unsubscribeNotes = onSnapshot(notesQuery, (snap) => {
+    const arr = [];
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      arr.push({
+        id: docSnap.id,
+        name: d.name || '',
+        text: d.text || '',
+        imageUrl: d.imageUrl || null,
+        storagePath: d.storagePath || null,
+        createdAt: d.createdAt ? (d.createdAt.toDate ? d.createdAt.toDate().toISOString() : d.createdAt) : new Date().toISOString()
+      });
+    });
+    messages = arr;
+    renderMessagesList(messages);
+  }, (err) => {
+    console.error('notes listener error', err);
+  });
+}
+
+/* Add message (text + optional drawing) */
+async function addMessage(entry){
+  // entry: { name, text, imageDataUrl (optional) }
+  const docData = {
+    name: entry.name || '',
+    text: entry.text || '',
+    createdAt: serverTimestamp(),
+    uid: currentUser ? currentUser.uid : null
   };
-
-  // Elements
-  const trigger = document.getElementById('gb-trigger');
-  const backdrop = document.getElementById('gb-backdrop');
-  const modal = backdrop.querySelector('.gb-modal');
-  const closeBtn = document.getElementById('gb-close');
-  const adminBtn = document.getElementById('gb-admin-toggle');
-  const form = document.getElementById('gb-form');
-  const inputName = document.getElementById('gb-name');
-  const inputText = document.getElementById('gb-text');
-  const submitBtn = document.getElementById('gb-submit');
-  const drawerToggle = document.getElementById('gb-toggle-draw');
-  const drawer = document.getElementById('gb-drawer');
-  const messagesWrap = document.getElementById('gb-messages');
-  const countLabel = document.getElementById('gb-count');
-  const clearLocalBtn = document.getElementById('gb-clear-all');
-
-  // Canvas & drawing
-  const canvas = document.getElementById('gb-canvas');
-  const ctx = canvas.getContext('2d');
-  const colorInput = document.getElementById('gb-color');
-  const brushSmall = document.getElementById('gb-brush-small');
-  const brushMedium = document.getElementById('gb-brush-medium');
-  const brushLarge = document.getElementById('gb-brush-large');
-  const undoBtn = document.getElementById('gb-undo');
-  const clearBtn = document.getElementById('gb-clear');
-
-  let strokes = [];
-  let currentStroke = null;
-  let drawing = false;
-  let adminMode = false;
-  let messages = [];
-
-  // helpers
-  function makeId(){ return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8); }
-
-  function resizeCanvasForDPR(){
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    const w = 300, h = 200;
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-    canvas.width = Math.round(w * dpr);
-    canvas.height = Math.round(h * dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    redrawAll();
-  }
-
-  function drawStroke(ctxLocal, stroke){
-    if(!stroke || !stroke.points || stroke.points.length<1) return;
-    ctxLocal.beginPath();
-    ctxLocal.lineCap = 'round';
-    ctxLocal.lineJoin = 'round';
-    ctxLocal.strokeStyle = stroke.color || '#111';
-    ctxLocal.lineWidth = stroke.width || 3;
-    const p0 = stroke.points[0];
-    ctxLocal.moveTo(p0.x, p0.y);
-    for(let i=1;i<stroke.points.length;i++){
-      const p = stroke.points[i];
-      ctxLocal.lineTo(p.x, p.y);
+  try {
+    if(entry.imageDataUrl){
+      // store image to storage, then include URL and path in doc
+      const path = `drawings/${Date.now()}-${makeId()}.jpg`;
+      const sref = storageRef(storage, path);
+      // upload data url
+      await uploadString(sref, entry.imageDataUrl, 'data_url');
+      const url = await getDownloadURL(sref);
+      docData.imageUrl = url;
+      docData.storagePath = path;
     }
-    ctxLocal.stroke();
-    ctxLocal.closePath();
+    const added = await addDoc(notesCol, docData);
+    // addDoc returns ref; onSnapshot will refresh UI
+    return added.id;
+  } catch (err) {
+    console.error('addMessage failed', err);
+    throw err;
   }
+}
 
-  function redrawAll(){
-    ctx.clearRect(0,0,canvas.width, canvas.height);
-    ctx.save();
-    ctx.scale(1,1);
-    for(const s of strokes) drawStroke(ctx, s);
-    ctx.restore();
-  }
-
-  function getPointer(e){
-    const rect = canvas.getBoundingClientRect();
-    const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
-    const clientY = (e.touches ? e.touches[0].clientY : e.clientY);
-    return { x: clientX - rect.left, y: clientY - rect.top };
-  }
-
-  function startDraw(e){
-    e.preventDefault();
-    drawing = true;
-    const pt = getPointer(e);
-    currentStroke = { color: colorInput.value || '#111', width: Number(canvas.dataset.brush) || 3, points: [{x:pt.x, y:pt.y}] };
-    strokes.push(currentStroke);
-    redrawAll();
-  }
-  function moveDraw(e){
-    if(!drawing) return;
-    e.preventDefault();
-    const pt = getPointer(e);
-    currentStroke.points.push({x:pt.x, y:pt.y});
-    redrawAll();
-  }
-  function endDraw(e){
-    if(!drawing) return;
-    drawing = false;
-    currentStroke = null;
-    redrawAll();
-  }
-
-  canvas.addEventListener('mousedown', startDraw);
-  canvas.addEventListener('touchstart', startDraw, {passive:false});
-  window.addEventListener('mousemove', moveDraw);
-  window.addEventListener('touchmove', moveDraw, {passive:false});
-  window.addEventListener('mouseup', endDraw);
-  window.addEventListener('touchend', endDraw);
-
-  function setBrushSize(sz){ canvas.dataset.brush = sz; }
-  setBrushSize(3);
-  brushSmall.addEventListener('click', ()=> setBrushSize(2));
-  brushMedium.addEventListener('click', ()=> setBrushSize(4));
-  brushLarge.addEventListener('click', ()=> setBrushSize(6));
-  undoBtn.addEventListener('click', ()=> { strokes.pop(); redrawAll(); });
-  clearBtn.addEventListener('click', ()=> { strokes = []; redrawAll(); });
-
-  function canvasToDataUrl(){
-    if(strokes.length===0) return null;
-    const outW = 400, outH = 260;
-    const tmp = document.createElement('canvas');
-    tmp.width = outW; tmp.height = outH;
-    const tctx = tmp.getContext('2d');
-    tctx.fillStyle = '#fff'; tctx.fillRect(0,0,outW,outH);
-    const srcW = parseFloat(canvas.style.width), srcH = parseFloat(canvas.style.height);
-    const sx = outW / srcW, sy = outH / srcH;
-    tctx.save(); tctx.scale(sx, sy);
-    for(const s of strokes) drawStroke(tctx, s);
-    tctx.restore();
-    return tmp.toDataURL('image/png', 0.85);
-  }
-
-  // storage
-  async function loadMessages(){
-    if(CONFIG.USE_SERVER){
-      try{
-        const res = await fetch(CONFIG.SERVER_ENDPOINT);
-        if(res.ok){ messages = await res.json(); renderMessages(); return; }
-      }catch(e){ console.warn('server fetch failed', e); }
-    }
-    const raw = localStorage.getItem(CONFIG.LOCAL_STORAGE_KEY);
-    messages = raw ? JSON.parse(raw) : [];
-    renderMessages();
-  }
-
-  function saveLocal(){
-    localStorage.setItem(CONFIG.LOCAL_STORAGE_KEY, JSON.stringify(messages));
-  }
-
-  async function postToServer(entry){
-    const res = await fetch(CONFIG.SERVER_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(entry) });
-    if(!res.ok) throw new Error('server rejected POST');
-    return res.json();
-  }
-
-  async function deleteOnServer(id){
-    const url = CONFIG.SERVER_ENDPOINT + '/' + encodeURIComponent(id);
-    const headers = {};
-    if(window.__GUESTBOOK_ADMIN_TOKEN) headers['X-GB-ADMIN'] = window.__GUESTBOOK_ADMIN_TOKEN;
-    const res = await fetch(url, { method:'DELETE', headers });
-    if(!res.ok) throw new Error('delete failed');
-    return true;
-  }
-
-  async function addMessage(entry){
-    if(CONFIG.USE_SERVER){
-      try{
-        const saved = await postToServer(entry);
-        messages.unshift(saved);
-      }catch(e){
-        console.warn('server post failed, saving locally', e);
-        messages.unshift(entry); saveLocal();
+/* Remove message by id (admin only) */
+async function removeMessage(id, storagePath){
+  if(!confirm('Delete this entry? This action cannot be undone.')) return;
+  try {
+    await deleteDoc(doc(db, 'notes', id));
+    if(storagePath){
+      try {
+        const sref = storageRef(storage, storagePath);
+        await deleteObject(sref);
+      } catch (e) {
+        console.warn('Failed deleting storage object (may be already gone):', e);
       }
-    }else{
-      messages.unshift(entry); saveLocal();
     }
-    renderMessages();
+    // onSnapshot will refresh UI
+  } catch (err) {
+    console.error('removeMessage failed', err);
+    alert('Delete failed: ' + (err && err.message ? err.message : err));
   }
+}
 
-  async function removeMessage(id){
-    if(!confirm('Delete this entry? This action cannot be undone.')) return;
-    if(CONFIG.USE_SERVER){
-      try{
-        await deleteOnServer(id);
-        messages = messages.filter(m => m.id !== id);
-      }catch(e){ alert('Could not delete remotely: '+ e.message); return; }
-    }else{
-      messages = messages.filter(m => m.id !== id);
-      saveLocal();
+/* Copy entry to clipboard (tries to copy image + text if supported) */
+async function copyEntryToClipboard(entry){
+  const text = (entry.name ? entry.name + '\n\n' : '') + (entry.text || '');
+  try {
+    if(entry.imageUrl && navigator.clipboard && navigator.clipboard.write){
+      // fetch image blob and attempt multi-item clipboard write
+      const res = await fetch(entry.imageUrl);
+      const blob = await res.blob();
+      const items = {};
+      items['text/plain'] = new Blob([text], { type: 'text/plain' });
+      items[blob.type] = blob;
+      const clipboardItem = new ClipboardItem(items);
+      await navigator.clipboard.write([clipboardItem]);
+      alert('Copied text + image to clipboard.');
+      return;
     }
-    renderMessages();
+  } catch (e) {
+    console.warn('image copy failed', e);
   }
-
-  // copy helpers
-  async function copyEntryToClipboard(entry){
-    const text = (entry.name ? entry.name + '\n\n' : '') + (entry.text || '');
-    try{
-      if(entry.image && navigator.clipboard && navigator.clipboard.write){
-        // try to fetch blob then write both text and image
-        const res = await fetch(entry.image);
-        const blob = await res.blob();
-        const clipboardItems = [
-          new ClipboardItem({ 'text/plain': new Blob([text], { type: 'text/plain' }), [blob.type]: blob })
-        ];
-        await navigator.clipboard.write(clipboardItems);
-        alert('Copied text + image to clipboard.');
-        return;
-      }
-    }catch(e){
-      console.warn('image copy failed', e);
-    }
-    // fallback: copy text and include data URL if available
-    try{
-      const fallback = entry.image ? text + '\n\n' + entry.image : text;
-      await navigator.clipboard.writeText(fallback);
-      alert('Copied text to clipboard.');
-    }catch(e){
-      alert('Copy failed: ' + (e && e.message ? e.message : e));
-    }
+  try {
+    const fallback = entry.imageUrl ? text + '\n\n' + entry.imageUrl : text;
+    await navigator.clipboard.writeText(fallback);
+    alert('Copied text to clipboard.');
+  } catch (e) {
+    alert('Copy failed: ' + (e && e.message ? e.message : e));
   }
+}
 
-  // render
-  function renderMessages(){
-    messagesWrap.innerHTML = '';
-    for(const m of messages){
-      const ent = document.createElement('div'); ent.className = 'gb-msg';
-      const left = document.createElement('div'); left.style.flex = '1';
-      const meta = document.createElement('div'); meta.className = 'meta';
-      const who = document.createElement('div'); who.style.fontWeight = '600'; who.textContent = m.name || 'Anonymous';
-      const when = document.createElement('div'); when.style.color = 'var(--gb-muted)'; when.textContent = (new Date(m.createdAt)).toLocaleString();
-      meta.appendChild(who); meta.appendChild(when);
-      left.appendChild(meta);
-      if(m.text){
-        const p = document.createElement('div'); p.className = 'content'; p.textContent = m.text; left.appendChild(p);
-      }
-      if(m.image){
-        const img = document.createElement('img'); img.alt = 'drawing'; img.src = m.image; img.style.marginTop = '8px'; left.appendChild(img);
-      }
-      ent.appendChild(left);
+/* UI wiring */
 
-      const controls = document.createElement('div'); controls.className = 'controls';
-      const copyBtn = document.createElement('button'); copyBtn.className = 'copy'; copyBtn.textContent = 'Copy';
-      copyBtn.addEventListener('click', ()=> copyEntryToClipboard(m));
-      controls.appendChild(copyBtn);
+/* Toggle modal */
+trigger.addEventListener('click', ()=> {
+  backdrop.classList.add('active');
+  backdrop.setAttribute('aria-hidden','false');
+  // Attach realtime listener when modal opens
+  attachRealtimeListener();
+});
 
-      if(adminMode){
-        const del = document.createElement('button'); del.className = 'del'; del.textContent = 'Delete';
-        del.addEventListener('click', ()=> removeMessage(m.id));
-        controls.appendChild(del);
-      }
+closeBtn.addEventListener('click', ()=> {
+  backdrop.classList.remove('active');
+  backdrop.setAttribute('aria-hidden','true');
+  // detach listener
+  if(unsubscribeNotes) { unsubscribeNotes(); unsubscribeNotes = null; }
+});
 
-      ent.appendChild(controls);
-      messagesWrap.appendChild(ent);
-    }
-    countLabel.textContent = messages.length + (messages.length === 1 ? ' message' : ' messages');
+backdrop.addEventListener('click', (e)=> {
+  if(e.target===backdrop){
+    backdrop.classList.remove('active');
+    backdrop.setAttribute('aria-hidden','true');
+    if(unsubscribeNotes) { unsubscribeNotes(); unsubscribeNotes = null; }
   }
+});
 
-  // form submission
-  submitBtn.addEventListener('click', async ()=>{
-    const name = (inputName.value || '').trim().slice(0,50);
-    const text = (inputText.value || '').trim().slice(0,300);
-    if(!text && strokes.length===0){ alert('Please enter a message or draw something.'); return; }
-    const entry = { id: makeId(), name, text, image: canvasToDataUrl(), createdAt: new Date().toISOString() };
-    await addMessage(entry);
-    inputText.value = ''; inputName.value = '';
-    strokes = []; redrawAll(); drawer.classList.remove('active');
-  });
-
-  // UI wiring
-  drawerToggle.addEventListener('click', ()=>{
-    drawer.classList.toggle('active');
-    resizeCanvasForDPR();
-  });
-
-  trigger.addEventListener('click', ()=> {
-    backdrop.classList.add('active');
-    backdrop.setAttribute('aria-hidden','false');
-    loadMessages();
-  });
-  closeBtn.addEventListener('click', ()=> { backdrop.classList.remove('active'); backdrop.setAttribute('aria-hidden','true'); });
-
-  backdrop.addEventListener('click', (e)=> { if(e.target===backdrop){ backdrop.classList.remove('active'); backdrop.setAttribute('aria-hidden','true'); } });
-
-  clearLocalBtn.addEventListener('click', ()=>{
-    if(!confirm('Clear all local messages? This only affects this browser.')) return;
-    localStorage.removeItem(CONFIG.LOCAL_STORAGE_KEY);
-    messages = []; renderMessages();
-  });
-
-  adminBtn.addEventListener('click', ()=>{
-    if(adminMode){ adminMode=false; renderMessages(); adminBtn.textContent='⚙️'; return; }
-    if(!CONFIG.ADMIN_PASSWORD){ adminMode=true; adminBtn.textContent='🔒'; renderMessages(); return; }
-    const attempt = prompt('Enter guestbook admin password:');
-    if(attempt===null) return;
-    if(attempt === CONFIG.ADMIN_PASSWORD){
-      adminMode = true; adminBtn.textContent = '🔒'; window.__GUESTBOOK_ADMIN_TOKEN = attempt; renderMessages();
-    } else { alert('Incorrect password'); }
-  });
-
-  // keyboard open (Ctrl/Cmd+G)
-  window.addEventListener('keydown', (e)=>{
-    if((e.key === 'g' || e.key === 'G') && (e.ctrlKey || e.metaKey)){
-      e.preventDefault();
-      if(backdrop.classList.contains('active')) { backdrop.classList.remove('active'); backdrop.setAttribute('aria-hidden','true'); }
-      else { backdrop.classList.add('active'); backdrop.setAttribute('aria-hidden','false'); loadMessages(); }
-    }
-  });
-
-  // init
+/* Toggle drawing area */
+drawerToggle.addEventListener('click', ()=>{
+  drawer.classList.toggle('active');
   resizeCanvasForDPR();
-  loadMessages();
-  window.addEventListener('resize', resizeCanvasForDPR);
+});
 
-})();
+/* Submit post */
+submitBtn.addEventListener('click', async ()=>{
+  const name = (inputName.value || '').trim().slice(0,50);
+  const text = (inputText.value || '').trim().slice(0,300);
+  if(!text && strokes.length===0){ alert('Please enter a message or draw something.'); return; }
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Posting...';
+  try {
+    const imageData = canvasToDataUrl(); // returns data URL or null
+    await addMessage({ name, text, imageDataUrl: imageData });
+    inputText.value = ''; inputName.value = '';
+    strokes = []; redrawAll();
+    drawer.classList.remove('active');
+  } catch (err) {
+    alert('Failed to post: ' + (err && err.message ? err.message : err));
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Post';
+  }
+});
+
+/* Clear local (does not remove remote data) */
+clearLocalBtn.addEventListener('click', ()=>{
+  if(!confirm('Clear all local messages? This only affects this browser.')) return;
+  // local-only: simply clear the UI cache (messages are live from Firestore so this is cosmetic)
+  messages = [];
+  renderMessagesList(messages);
+});
+
+/* Admin toggle (client-side toggle only; server-side deletion still requires Firebase console or this client if adminMode true) */
+adminBtn.addEventListener('click', ()=>{
+  if(adminMode){
+    adminMode = false; adminBtn.textContent = '⚙️'; renderMessagesList(messages); return;
+  }
+  const attempt = prompt('Enter guestbook admin password (client-side):');
+  // NOTE: This is purely UI-side gate. For secure admin control, use the Firebase console.
+  if(attempt && attempt === 'synt-guestbook'){ // simple local comparison; replace with secure flow as needed
+    adminMode = true; adminBtn.textContent = '🔒';
+    renderMessagesList(messages);
+  } else {
+    alert('Incorrect password (or cancel). For secure moderation use the Firebase console.');
+  }
+});
+
+/* Keyboard open (Ctrl/Cmd+G) */
+window.addEventListener('keydown', (e)=>{
+  if((e.key === 'g' || e.key === 'G') && (e.ctrlKey || e.metaKey)){
+    e.preventDefault();
+    if(backdrop.classList.contains('active')) { backdrop.classList.remove('active'); backdrop.setAttribute('aria-hidden','true'); if(unsubscribeNotes) { unsubscribeNotes(); unsubscribeNotes = null; } }
+    else { backdrop.classList.add('active'); backdrop.setAttribute('aria-hidden','false'); attachRealtimeListener(); }
+  }
+});
+
+/* Initialize */
+resizeCanvasForDPR();
+window.addEventListener('resize', resizeCanvasForDPR);
+
+// Optionally attach listener even when modal not open to show live count; uncomment if desired:
+// attachRealtimeListener();
+
 </script>
+
 <!-- GUESTBOOK WIDGET END -->
 
 </body>
