@@ -197,7 +197,7 @@ body::before {
 
 <!-- Popup Form -->
 <div class="popup" id="popup">
-  <form id="tellMeForm" action="YOUR_ENDPOINT_HERE" method="POST">
+  <form id="tellMeForm" action="https://formspree.io/forms/meozvvon" method="POST">
     <input type="text" name="name" placeholder="Your name" required>
     <textarea rows="4" name="message" placeholder="Your message" required></textarea>
     <button type="submit">Send</button>
@@ -260,12 +260,26 @@ const closePopup = document.getElementById('closePopup');
 const form = document.getElementById('tellMeForm');
 const formStatus = document.getElementById('formStatus');
 
-// Ambient audio setup
+// Ambient audio setup with fade in/out
 const ambientAudio = document.getElementById('ambientAudio');
+let ambientFadeInterval;
+function fadeAudio(audio, targetVolume, duration) {
+  clearInterval(ambientFadeInterval);
+  const step = (targetVolume - audio.volume) / (duration / 50);
+  ambientFadeInterval = setInterval(() => {
+    audio.volume = Math.min(Math.max(audio.volume + step, 0), 1);
+    if ((step > 0 && audio.volume >= targetVolume) ||
+        (step < 0 && audio.volume <= targetVolume)) {
+      clearInterval(ambientFadeInterval);
+    }
+  }, 50);
+}
+
 document.addEventListener('click', () => {
   if (ambientAudio.paused) {
-    ambientAudio.volume = 0.3;
+    ambientAudio.volume = 0;
     ambientAudio.play().catch(err => console.warn("Autoplay blocked:", err));
+    fadeAudio(ambientAudio, 0.3, 3000); // fade in to 0.3 over 3s
   }
 });
 
@@ -316,6 +330,7 @@ closePopup.addEventListener('click', () => {
   popup.style.display = 'none';
 });
 
+// Silent form submission to Formspree
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   formStatus.textContent = "Sending...";
@@ -323,7 +338,8 @@ form.addEventListener('submit', async (e) => {
     const formData = new FormData(form);
     const res = await fetch(form.action, {
       method: form.method,
-      body: formData
+      body: formData,
+      headers: { 'Accept': 'application/json' }
     });
     if (res.ok) {
       formStatus.textContent = "Message sent ✔️";
