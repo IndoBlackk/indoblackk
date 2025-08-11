@@ -3,22 +3,102 @@
 <head>
 <meta charset="utf-8">
 <title>synt — everything feels different in the dark</title>
+<meta name="description" content="synt — ambient sounds and visuals. Everything feels different in the dark.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="https://example.com/">
+<meta property="og:title" content="synt — everything feels different in the dark">
+<meta property="og:description" content="synt — ambient sounds and visuals. Everything feels different in the dark.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://example.com/">
+<meta name="twitter:card" content="summary_large_image">
+
 <style>
-:root {
+:root{
+  /* Colors & visual tokens */
   --bg: #0a0a0a;
-  --fg: #fff;
+  --fg: #ffffff;
+  --muted: rgba(255,255,255,0.6);
+  --card-bg: #111;
+  --input-bg: #000;
+  --input-border: #444;
+  --accent: rgba(255,255,255,0.1);
+  --success: #0f0;
+  --error: #ff5c5c;
+
+  /* Borders & sizes */
+  --border-width: 2px;
+  --border-color: var(--fg);
+
+  /* Spacing & layout */
+  --gap: 1rem;
+  /* reduced menu gap so buttons are closer, but keep original look */
+  --menu-gap: 0.8rem;             /* was 2rem in original, now tighter */
+  /* slightly smaller button padding so they're not so large or close to edges */
+  --menu-padding-vertical: 0.65rem; /* reduced from 1rem */
+  --menu-padding-horizontal: 1.2rem; /* reduced from 2rem */
+  --control-padding: 0.5rem;
+
+  /* Page padding to keep things away from the screen edge */
+  --page-padding: clamp(1rem, 3vw, 2.5rem);
+
+  /* Content width control so layout feels central without changing visuals */
+  --max-content-width: 1200px;
+
+  /* Typography */
+  --font-family: monospace, ui-monospace, "SFMono-Regular", Menlo, Monaco, "Roboto Mono", "Segoe UI Mono", monospace;
+  --byline-size: 0.9rem;
+
+  /* Effects */
+  --shadow-small: 0 0 5px #fff;
+  --shadow-medium: 0 0 15px #fff;
+  --shadow-large: 0 0 30px rgba(255,255,255,0.6);
+
+  /* Flicker base */
   --flicker-brightness: 1;
 }
+
+/* Base */
 html, body {
   margin: 0;
   padding: 0;
   background: var(--bg);
   color: var(--fg);
   height: 100%;
-  font-family: monospace;
+  font-family: var(--font-family);
+  /* preserve original behavior: no scrolling of background if overlays open */
   overflow: hidden;
 }
+
+/* visually-hidden: screen-reader-only utility */
+.visually-hidden {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
+}
+
+/* Skip link - visually hidden until focused */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  background: #222;
+  color: var(--fg);
+  z-index: 9999;
+  text-decoration: none;
+}
+
+/* Subtle film grain */
 body::before {
   content: "";
   position: fixed;
@@ -34,56 +114,79 @@ body::before {
   z-index: 5;
 }
 
+/* Centering container: ensures equal space above and below and keeps content away from edges */
+main#main {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;            /* vertical centering */
+  justify-content: center;        /* horizontal centering */
+  padding: var(--page-padding);
+  position: relative;
+}
+
+/* Stage / header (preserve original visuals but center it within main) */
 .stage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100%;
+  justify-content: center;  /* center internal items vertically */
+  width: min(var(--max-content-width), 100%);
   position: relative;
   z-index: 10;
   opacity: 1;
   transition: opacity 0.5s ease;
 }
 .logo {
+  /* preserve original large logo style exactly */
   font-size: clamp(4rem, 18vw, 14rem);
   font-weight: bold;
   text-transform: uppercase;
   color: var(--fg);
   filter: brightness(var(--flicker-brightness));
-  text-shadow: 0 0 5px #fff, 0 0 15px #fff, 0 0 30px rgba(255,255,255,0.6);
+  text-shadow: var(--shadow-small), var(--shadow-medium), var(--shadow-large);
   transition: filter 0.1s ease, text-shadow 0.1s ease;
 }
 .byline {
-  font-size: 0.9rem;
+  font-size: var(--byline-size);
   opacity: 0.6;
   margin-top: 1rem;
   letter-spacing: 0.2em;
 }
 
+/* Menu - keep button visuals same, but use smaller gap and margin-top so it sits closer beneath the logo */
 .menu {
   display: flex;
-  gap: 2rem;
-  margin-top: 3rem;
+  gap: var(--menu-gap);
+  margin-top: 1.6rem; /* reduced from 3rem */
   opacity: 0;
   transition: opacity 1s ease;
 }
+
+/* menu-box is applied to buttons — neutralize default button visuals while preserving semantics */
 .menu-box {
-  padding: 1rem 2rem;
-  border: 2px solid var(--fg);
+  background: transparent;
+  color: var(--fg);
+  border: var(--border-width) solid var(--border-color);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  padding: var(--menu-padding-vertical) var(--menu-padding-horizontal);
+  font-family: inherit;
+  font-size: inherit;
+  text-align: center;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 .menu-box::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.1);
+  background: var(--accent);
   transform: translateY(100%);
   transition: transform 0.3s ease;
+  pointer-events: none;
 }
 .menu-box:hover::after {
   transform: translateY(0);
@@ -106,24 +209,24 @@ body::before {
 .popup form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  background: #111;
+  gap: var(--gap);
+  background: var(--card-bg);
   padding: 2rem;
-  border: 2px solid var(--fg);
+  border: var(--border-width) solid var(--border-color);
   width: 300px;
 }
 .popup input, .popup textarea {
-  background: #000;
+  background: var(--input-bg);
   color: var(--fg);
-  border: 1px solid #444;
-  padding: 0.5rem;
-  font-family: monospace;
+  border: 1px solid var(--input-border);
+  padding: var(--control-padding);
+  font-family: var(--font-family);
 }
 .popup button {
   background: var(--fg);
   color: var(--bg);
   border: none;
-  padding: 0.5rem;
+  padding: var(--control-padding);
   cursor: pointer;
   font-weight: bold;
 }
@@ -132,7 +235,7 @@ body::before {
 }
 .form-status {
   font-size: 0.8rem;
-  color: #0f0;
+  color: var(--success);
 }
 
 /* Sections */
@@ -158,9 +261,9 @@ body::before {
   width: 100%;
 }
 .track, .visual {
-  background: #111;
+  background: var(--card-bg);
   padding: 1rem;
-  border: 2px solid var(--fg);
+  border: var(--border-width) solid var(--border-color);
 }
 .track audio {
   width: 100%;
@@ -170,86 +273,117 @@ body::before {
   display: block;
 }
 
+/* back button as semantic <button> */
 .back-btn {
   margin-top: 2rem;
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  border: 2px solid var(--fg);
+  border: var(--border-width) solid var(--border-color);
   padding: 0.5rem 1rem;
+  background: transparent;
+  color: var(--fg);
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 .back-btn:hover {
   filter: brightness(1.5);
 }
+
+/* Responsive caps: ensure the big logo wraps nicely on smaller viewports */
+@media (max-width: 520px) {
+  .logo { font-size: clamp(2.2rem, 14vw, 6.6rem); }
+  .menu { margin-top: 1rem; }
+}
 </style>
 </head>
 <body>
+  <a href="#main" class="skip-link">Skip to content</a>
 
-<div class="stage" id="stage">
-  <div id="logo" class="logo">synt</div>
-  <div class="byline">everything feels different in the dark</div>
-  <div class="menu" id="menu">
-    <div class="menu-box" data-section="sounds">Sounds</div>
-    <div class="menu-box" data-section="visuals">Visuals</div>
-    <div class="menu-box" id="tellBtn">Tell me something</div>
-  </div>
-</div>
+  <main id="main">
+    <header class="stage" id="stage" role="banner" aria-hidden="false">
+      <h1 id="logo" class="logo" tabindex="-1">synt</h1>
+      <p class="byline">everything feels different in the dark</p>
 
-<!-- Popup Form -->
-<div class="popup" id="popup">
-  <form id="tellMeForm" action="https://formspree.io/forms/meozvvon" method="POST">
-    <input type="text" name="name" placeholder="Your name" required>
-    <textarea rows="4" name="message" placeholder="Your message" required></textarea>
-    <button type="submit">Send</button>
-    <p id="formStatus" class="form-status"></p>
-    <div class="back-btn" id="closePopup">Close</div>
-  </form>
-</div>
+      <nav class="menu" id="menu" aria-label="Primary">
+        <button class="menu-box" data-section="sounds" type="button">Sounds</button>
+        <button class="menu-box" data-section="visuals" type="button">Visuals</button>
+        <button class="menu-box" id="tellBtn" type="button">Tell me something</button>
+      </nav>
+    </header>
 
-<!-- Sounds Section -->
-<div class="section" id="sounds">
-  <h1>Sounds</h1>
-  <div class="grid">
-    <div class="track">
-      <strong>Track 1</strong>
-      <audio controls>
-        <source src="your-audio.mp3" type="audio/mpeg">
-      </audio>
+    <!-- Popup Form -->
+    <div class="popup" id="popup" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="tell-heading">
+      <form id="tellMeForm" action="https://formspree.io/f/meozvvon" method="POST" novalidate>
+        <h2 id="tell-heading" class="visually-hidden">Send a message</h2>
+
+        <label class="visually-hidden" for="name">Your name</label>
+        <input id="name" type="text" name="name" placeholder="Your name" required aria-required="true">
+
+        <label class="visually-hidden" for="message">Your message</label>
+        <textarea id="message" rows="4" name="message" placeholder="Your message" required aria-required="true"></textarea>
+
+        <button type="submit">Send</button>
+        <p id="formStatus" class="form-status" role="status" aria-live="polite"></p>
+
+        <button class="back-btn" id="closePopup" type="button">Close</button>
+      </form>
     </div>
-    <div class="track">
-      <strong>Track 2</strong>
-      <audio controls>
-        <source src="your-audio2.mp3" type="audio/mpeg">
-      </audio>
-    </div>
-  </div>
-  <div class="back-btn" onclick="goHome()">Back</div>
-</div>
 
-<!-- Visuals Section -->
-<div class="section" id="visuals">
-  <h1>Visuals</h1>
-  <div class="grid">
-    <div class="visual"><img src="everything feels different in the dark.png" alt="eftitd"></div>
-    <div class="visual"><img src="https://placehold.co/400x300" alt=""></div>
-  </div>
-  <div class="back-btn" onclick="goHome()">Back</div>
-</div>
+    <!-- Sounds Section -->
+    <section class="section" id="sounds" role="region" aria-labelledby="sounds-heading" aria-hidden="true">
+      <h1 id="sounds-heading" tabindex="-1">Sounds</h1>
+      <div class="grid">
+        <div class="track">
+          <strong>Track 1</strong>
+          <audio controls preload="none">
+            <source src="your-audio.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+          </audio>
+        </div>
+        <div class="track">
+          <strong>Track 2</strong>
+          <audio controls preload="none">
+            <source src="your-audio2.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+          </audio>
+        </div>
+      </div>
+      <button class="back-btn" type="button" onclick="goHome()">Back</button>
+    </section>
 
-<!-- Ambient background audio -->
-<audio id="ambientAudio" loop>
-  <source src="ambient.mp3" type="audio/mpeg">
-</audio>
+    <!-- Visuals Section -->
+    <section class="section" id="visuals" role="region" aria-labelledby="visuals-heading" aria-hidden="true">
+      <h1 id="visuals-heading" tabindex="-1">Visuals</h1>
+      <div class="grid">
+        <div class="visual">
+          <img src="everything feels different in the dark.png" alt="Album artwork: everything feels different in the dark" width="800" height="600">
+        </div>
+        <div class="visual">
+          <img src="https://placehold.co/400x300" alt="Placeholder visual" loading="lazy" width="400" height="300">
+        </div>
+      </div>
+      <button class="back-btn" type="button" onclick="goHome()">Back</button>
+    </section>
+  </main>
 
-<!-- Hidden flicker sound effects -->
-<audio id="flickerSound1">
-  <source src="flicker1.mp3" type="audio/mpeg">
-</audio>
-<audio id="flickerSound2">
-  <source src="flicker2.mp3" type="audio/mpeg">
-</audio>
+  <!-- Ambient background audio -->
+  <audio id="ambientAudio" loop preload="none">
+    <source src="ambient.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Hidden flicker sound effects -->
+  <audio id="flickerSound1" preload="none">
+    <source src="flicker1.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="flickerSound2" preload="none">
+    <source src="flicker2.mp3" type="audio/mpeg">
+  </audio>
 
 <script>
+/* ======================
+   DOM references
+   ====================== */
 const logo = document.getElementById('logo');
 const menu = document.getElementById('menu');
 const stage = document.getElementById('stage');
@@ -260,12 +394,18 @@ const closePopup = document.getElementById('closePopup');
 const form = document.getElementById('tellMeForm');
 const formStatus = document.getElementById('formStatus');
 
-// Ambient audio setup with fade in/out
+let lastFocusedElement = null;
+let modalKeyHandler = null;
+
+/* ======================
+   Ambient audio fade
+   ====================== */
 const ambientAudio = document.getElementById('ambientAudio');
 let ambientFadeInterval;
 function fadeAudio(audio, targetVolume, duration) {
   clearInterval(ambientFadeInterval);
-  const step = (targetVolume - audio.volume) / (duration / 50);
+  const start = isFinite(audio.volume) ? audio.volume : 0;
+  const step = (targetVolume - start) / (duration / 50);
   ambientFadeInterval = setInterval(() => {
     audio.volume = Math.min(Math.max(audio.volume + step, 0), 1);
     if ((step > 0 && audio.volume >= targetVolume) ||
@@ -274,29 +414,32 @@ function fadeAudio(audio, targetVolume, duration) {
     }
   }, 50);
 }
-
-document.addEventListener('click', () => {
+function startAmbientOnInteraction() {
   if (ambientAudio.paused) {
     ambientAudio.volume = 0;
     ambientAudio.play().catch(err => console.warn("Autoplay blocked:", err));
-    fadeAudio(ambientAudio, 0.3, 3000); // fade in to 0.3 over 3s
+    fadeAudio(ambientAudio, 0.3, 3000);
   }
-});
+  document.removeEventListener('click', startAmbientOnInteraction);
+}
+document.addEventListener('click', startAmbientOnInteraction, { once: true });
 
-// Flicker sound effects pool
+/* ======================
+   Flicker loop (unchanged behavior)
+   ====================== */
 const flickerSounds = [
   document.getElementById('flickerSound1'),
   document.getElementById('flickerSound2')
 ];
-
 function playFlickerSound() {
   const sound = flickerSounds[Math.floor(Math.random() * flickerSounds.length)];
   if (sound) {
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
+    try {
+      sound.currentTime = 0;
+      sound.play().catch(() => {});
+    } catch (e) {}
   }
 }
-
 function flickerLoop() {
   if (Math.random() < 0.1) {
     logo.style.setProperty('--flicker-brightness', 3 + Math.random()*2);
@@ -308,56 +451,241 @@ function flickerLoop() {
   }
   setTimeout(flickerLoop, 50 + Math.random()*200);
 }
+flickerLoop();
 
+/* Reveal menu after a delay (no visual change) */
 setTimeout(() => {
   menu.style.opacity = 1;
 }, 3000);
 
-document.querySelectorAll('.menu-box[data-section]').forEach(box => {
+/* ======================
+   Section navigation (accessibility-minded)
+   ====================== */
+document.querySelectorAll('button.menu-box[data-section]').forEach(box => {
   box.addEventListener('click', () => {
+    const sectionId = box.dataset.section;
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+
+    // hide stage (visual timing)
     stage.style.opacity = 0;
+
+    // hide all sections first
+    sections.forEach(s => {
+      s.style.display = 'none';
+      s.setAttribute('aria-hidden', 'true');
+    });
+
+    // reveal requested section after fade
     setTimeout(() => {
-      document.getElementById(box.dataset.section).style.display = 'flex';
+      section.style.display = 'flex';
+      section.setAttribute('aria-hidden', 'false');
+      const heading = section.querySelector('h1, h2');
+      if (heading) heading.focus({preventScroll: true});
     }, 500);
   });
 });
 
-tellBtn.addEventListener('click', () => {
-  popup.style.display = 'flex';
-});
+/* ======================
+   Modal popup open/close with strict focus trap
+   ====================== */
+function getFocusableElements(container) {
+  const selectors = [
+    'a[href]',
+    'area[href]',
+    'input:not([disabled]):not([type="hidden"])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    'button:not([disabled])',
+    'iframe',
+    'object',
+    'embed',
+    '[contenteditable]',
+    '[tabindex]:not([tabindex="-1"])'
+  ];
+  return Array.from(container.querySelectorAll(selectors.join(','))).filter(el => el.offsetParent !== null);
+}
 
-closePopup.addEventListener('click', () => {
-  popup.style.display = 'none';
-});
+function trapFocus(container) {
+  const focusable = getFocusableElements(container);
+  if (!focusable.length) return;
 
-// Silent form submission to Formspree
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  formStatus.textContent = "Sending...";
-  try {
-    const formData = new FormData(form);
-    const res = await fetch(form.action, {
-      method: form.method,
-      body: formData,
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res.ok) {
-      formStatus.textContent = "Message sent ✔️";
-      form.reset();
-    } else {
-      formStatus.textContent = "Error sending message ❗";
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  modalKeyHandler = function(e) {
+    if (e.key === 'Tab') {
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
-  } catch (err) {
-    formStatus.textContent = "Network error ❗";
+  };
+  document.addEventListener('keydown', modalKeyHandler);
+}
+
+function releaseFocusTrap() {
+  if (modalKeyHandler) {
+    document.removeEventListener('keydown', modalKeyHandler);
+    modalKeyHandler = null;
+  }
+}
+
+tellBtn.addEventListener('click', () => {
+  lastFocusedElement = document.activeElement;
+  popup.style.display = 'flex';
+  popup.setAttribute('aria-hidden', 'false');
+  // hide main content from assistive tech
+  document.querySelector('main').setAttribute('aria-hidden', 'true');
+
+  // focus first control in modal
+  const firstControl = form.querySelector('input, textarea, button');
+  if (firstControl) firstControl.focus();
+
+  // enable strict focus trap
+  trapFocus(popup);
+});
+
+closePopup.addEventListener('click', closePopupFn);
+
+function closePopupFn() {
+  popup.style.display = 'none';
+  popup.setAttribute('aria-hidden', 'true');
+  document.querySelector('main').setAttribute('aria-hidden', 'false');
+  releaseFocusTrap();
+  if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
+}
+
+/* Close modal with Escape (and return home if a section open) */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (popup.style.display === 'flex') {
+      closePopupFn();
+      return;
+    }
+    const anyVisibleSection = Array.from(sections).some(s => s.style.display === 'flex');
+    if (anyVisibleSection) goHome();
   }
 });
 
-function goHome() {
-  sections.forEach(s => s.style.display = 'none');
-  stage.style.opacity = 1;
+/* ======================
+   Robust form submission
+   - Attempts JSON POST first (common for APIs like Formspree / Netlify).
+   - If that fails (CORS, server rejects, or network failure), fall back to FormData POST.
+   - If all remote attempts fail, present a mailto fallback link with pre-filled subject/body.
+   ====================== */
+async function submitFormRobust(evt) {
+  evt.preventDefault();
+  formStatus.style.color = ''; // reset color
+  formStatus.textContent = "Sending...";
+  const name = form.name.value.trim();
+  const message = form.message.value.trim();
+
+  if (!name || !message) {
+    formStatus.style.color = 'var(--error)';
+    formStatus.textContent = "Please fill out both fields.";
+    return;
+  }
+
+  const endpoint = form.action;
+  const method = (form.method || 'POST').toUpperCase();
+
+  // Try JSON POST
+  const payload = { name, message };
+  try {
+    const res = await fetch(endpoint, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      // Some endpoints return 200/201 with JSON or empty; accept that as success
+      formStatus.style.color = 'var(--success)';
+      formStatus.textContent = "Message sent ✔️";
+      form.reset();
+      return;
+    } else {
+      // try to parse error details (APIs often return json with details)
+      let info = '';
+      try {
+        const json = await res.json();
+        info = json.error || json.message || JSON.stringify(json);
+      } catch (e) {
+        info = res.statusText || `HTTP ${res.status}`;
+      }
+      // If server rejects JSON POST, try FormData fallback
+      console.warn('JSON POST rejected:', info);
+    }
+  } catch (jsonErr) {
+    console.warn('JSON POST failed (network/CORS):', jsonErr);
+  }
+
+  // Fallback: FormData POST
+  try {
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('message', message);
+    const res2 = await fetch(endpoint, {
+      method,
+      body: formData,
+      headers: { 'Accept': 'application/json' } // keep Accept to receive JSON responses if provided
+    });
+    if (res2.ok) {
+      formStatus.style.color = 'var(--success)';
+      formStatus.textContent = "Message sent ✔️";
+      form.reset();
+      return;
+    } else {
+      let info2 = '';
+      try {
+        const json = await res2.json();
+        info2 = json.error || json.message || JSON.stringify(json);
+      } catch (e) {
+        info2 = res2.statusText || `HTTP ${res2.status}`;
+      }
+      console.warn('FormData POST rejected:', info2);
+      formStatus.style.color = 'var(--error)';
+      formStatus.textContent = `Server error: ${info2}`;
+      return;
+    }
+  } catch (formDataErr) {
+    console.warn('FormData POST failed:', formDataErr);
+  }
+
+  // Final fallback: mailto link prefilled so the user can still send the message manually
+  formStatus.style.color = 'var(--error)';
+  formStatus.innerHTML = 'Could not send via the server. <a href="#" id="mailto-fallback">Send by email instead</a>';
+  const mailtoLink = document.getElementById('mailto-fallback');
+  if (mailtoLink) {
+    const subject = encodeURIComponent('Message from synt website');
+    const body = encodeURIComponent(`Name: ${name}\n\nMessage:\n${message}`);
+    mailtoLink.href = `mailto:hello@example.com?subject=${subject}&body=${body}`;
+    mailtoLink.addEventListener('click', () => {
+      formStatus.textContent = 'Opening email client...';
+    }, { once: true });
+  }
 }
 
-flickerLoop();
+form.addEventListener('submit', submitFormRobust);
+
+/* ======================
+   goHome: hide sections and restore stage, focus management
+   ====================== */
+function goHome() {
+  sections.forEach(s => {
+    s.style.display = 'none';
+    s.setAttribute('aria-hidden', 'true');
+  });
+  stage.style.opacity = 1;
+  document.querySelector('main').setAttribute('aria-hidden', 'false');
+  if (logo && typeof logo.focus === 'function') logo.focus();
+}
 </script>
 </body>
 </html>
