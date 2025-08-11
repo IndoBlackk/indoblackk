@@ -387,6 +387,8 @@ main#main {
         <button class="menu-box" data-section="sounds" type="button">Sounds</button>
         <button class="menu-box" data-section="visuals" type="button">Visuals</button>
         <button class="menu-box" id="tellBtn" type="button">Tell me something</button>
+        <!-- Embedded synth button (added) -->
+        <button class="menu-box" id="synthBtn" type="button" aria-controls="synthOverlay" aria-expanded="false">Make some noise</button>
       </nav>
     </header>
 
@@ -593,10 +595,12 @@ main#main {
 
   /* flash overlay */
   function flashIntro(duration = 90) {
-    introFlash.style.transition = `opacity ${duration}ms ease-out`;
-    introFlash.style.opacity = '0.95';
-    // tiny timeout to let transition apply then clear
-    setTimeout(() => { introFlash.style.opacity = '0'; }, 30);
+    if (introFlash) {
+      introFlash.style.transition = `opacity ${duration}ms ease-out`;
+      introFlash.style.opacity = '0.95';
+      // tiny timeout to let transition apply then clear
+      setTimeout(() => { introFlash.style.opacity = '0'; }, 30);
+    }
   }
 
   /* hide intro overlay and tidy */
@@ -928,6 +932,8 @@ main#main {
     mainEl.setAttribute('aria-hidden', 'false');
     if (logo && typeof logo.focus === 'function') logo.focus();
   }
+  // expose globally so onclick="goHome()" works
+  window.goHome = goHome;
 
   /* ===============
      Intro sequence (play once; respects reduced motion)
@@ -1074,5 +1080,632 @@ main#main {
 
 })(); /* IIFE end */
 </script>
+
+<!-- ==========================
+     SYNTH OVERLAY (merged, scoped)
+     - Only this block was added to your file.
+     - No other styles or markup were changed.
+     - Open it with window.openSynthOverlay(), the menu button, or press Alt+M.
+   ========================== -->
+<style>
+/* Scoped synth styles only */
+#synthOverlay { position: fixed; inset: 6vh 8vw; z-index: 1200; display: none; background: linear-gradient(180deg,#050505,#0b0b0b); border-radius: 8px; padding: 10px; box-shadow: 0 30px 80px rgba(0,0,0,0.85); color:#fff; font-family: monospace; border: 3px solid rgba(255,255,255,0.04); overflow:auto; max-height:88vh; }
+#synthOverlay .synth-head { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.03) }
+#synthOverlay .synth-brand { font-weight:900; letter-spacing: .18em; text-transform:uppercase; font-size:.92rem }
+#synthOverlay .synth-leds { display:flex; gap:8px; align-items:center }
+#synthOverlay .synth-led { width:10px; height:10px; border-radius:50%; background:#222; box-shadow: 0 0 8px rgba(0,0,0,0.6) inset; border:1px solid rgba(255,255,255,0.04); opacity:.35 }
+#synthOverlay .synth-led.red { background: linear-gradient(180deg,#400,#ff5c5c); box-shadow: 0 0 8px rgba(255,64,64,0.22) }
+#synthOverlay .synth-led.amber { background: linear-gradient(180deg,#744400,#ffb84d); box-shadow: 0 0 8px rgba(255,160,64,0.18) }
+#synthOverlay .synth-led.green { background: linear-gradient(180deg,#003300,#5eff8a); box-shadow: 0 0 8px rgba(64,255,144,0.18) }
+
+#synthOverlay .synth-body { display:grid; grid-template-columns: 360px 1fr 320px; gap:12px; padding:12px; align-items:start }
+@media (max-width:1100px){ #synthOverlay .synth-body { grid-template-columns: 1fr; } #synthOverlay { inset: 6vh 4vw; } }
+#synthOverlay .synth-controls { background: linear-gradient(180deg,#0a0a0a,#0f0f0f); padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.03) }
+#synthOverlay .ctrl { display:flex; align-items:center; gap:8px; margin-bottom:8px }
+#synthOverlay .ctrl label { min-width:84px; font-size:.88rem; color:#ddd }
+#synthOverlay .ctrl input[type=range] { flex:1; appearance:none; height:8px; background:linear-gradient(90deg,#1c1c1c,#2b2b2b); border-radius:8px; border:1px solid rgba(255,255,255,0.02) }
+#synthOverlay .ctrl input[type=range]::-webkit-slider-thumb{ appearance:none; width:14px;height:14px;background:#fff;border-radius:50%;border:2px solid #111 }
+#synthOverlay .ctrl select { background:#0b0b0b;color:#fff;border:1px solid rgba(255,255,255,0.03);padding:6px;border-radius:6px }
+
+#synthOverlay .synth-box { background: linear-gradient(180deg,#060606,#0b0b0b); padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.03); box-shadow: inset 0 -8px 18px rgba(0,0,0,0.6) }
+#synthOverlay .synth-box-top { display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:10px }
+#synthOverlay .oled { width:320px; height:56px; background:#00110a; border-radius:6px; border:2px solid rgba(255,255,255,0.03); overflow:hidden; box-shadow: inset 0 6px 14px rgba(0,0,0,0.6) }
+#synthOverlay .oled canvas { width:100%; height:100%; display:block; image-rendering: pixelated }
+#synthOverlay .keys { display:block; position:relative; user-select:none; padding:6px 10px; border-radius:6px; background: linear-gradient(180deg,#070707,#0b0b0b); border:1px solid rgba(255,255,255,0.02); box-shadow: inset 0 -8px 18px rgba(0,0,0,0.5); flex-wrap:wrap }
+#synthOverlay .keys-row { display:flex; gap:6px; align-items:flex-end; padding-bottom:6px; flex-wrap:wrap }
+#synthOverlay .key { width:54px; height:170px; background:linear-gradient(180deg,#fff,#efefef); border-radius:6px; border:2px solid #111; box-shadow: 0 14px 36px rgba(0,0,0,0.6); display:flex; align-items:flex-end; justify-content:center; font-weight:800; color:#111; font-size:12px; padding-bottom:8px; cursor:pointer; transition: transform .06s, box-shadow .06s }
+#synthOverlay .key.down { transform: translateY(4px); box-shadow: 0 8px 18px rgba(0,0,0,0.6); background: linear-gradient(180deg,#ffe,#ddd) }
+#synthOverlay .key.black { width:40px; height:110px; margin-left:-20px; margin-right:-20px; background:linear-gradient(180deg,#0b0b0b,#141414); color:#fff; z-index:2; border-radius:4px; box-shadow: 0 18px 38px rgba(0,0,0,0.8) }
+#synthOverlay .analyzer { width:100%; height:140px; background: linear-gradient(180deg,#020202,#050505); border-radius:6px; border:1px solid rgba(255,255,255,0.03); overflow:hidden }
+
+#synthOverlay .synth-effects { background: linear-gradient(180deg,#0a0a0a,#0e0e0e); padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,0.03); }
+#synthOverlay .btn { padding:8px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:transparent;color:#fff; cursor:pointer; margin-right:6px }
+#synthOverlay .footer-row { display:flex; gap:8px; align-items:center; justify-content:space-between; margin-top:10px }
+@media (max-width:700px){
+  #synthOverlay .key { width:40px; height:130px; font-size:11px }
+  #synthOverlay .key.black { width:26px; height:84px; margin-left:-13px; margin-right:-13px }
+}
+</style>
+
+<!-- Synth overlay HTML (scoped) -->
+<div id="synthOverlay" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Gritty digital synthesizer (box)">
+  <div class="synth-head">
+    <div class="synth-brand">Noise Station • MKII</div>
+    <div class="synth-leds" aria-hidden="true">
+      <span class="synth-led red" id="s-led-red"></span>
+      <span class="synth-led amber" id="s-led-amber"></span>
+      <span class="synth-led green" id="s-led-green"></span>
+    </div>
+  </div>
+
+  <div class="synth-body">
+    <!-- Left controls -->
+    <div class="synth-controls" aria-hidden="false">
+      <div class="ctrl"><label for="s-osc">Osc</label><select id="s-osc"><option value="sawtooth">sawtooth</option><option value="square">square</option><option value="triangle">triangle</option><option value="sine">sine</option><option value="pulse">pulse</option></select></div>
+      <div class="ctrl"><label for="s-master">Master</label><input id="s-master" type="range" min="0" max="1" step="0.01" value="0.45"></div>
+      <div class="ctrl"><label for="s-cut">Filter</label><input id="s-cut" type="range" min="40" max="12000" step="1" value="2000"></div>
+      <div class="ctrl"><label for="s-q">Q</label><input id="s-q" type="range" min="0.1" max="20" step="0.1" value="1.8"></div>
+      <div class="ctrl"><label for="s-dist">Dist</label><input id="s-dist" type="range" min="0" max="80" step="1" value="18"></div>
+      <div class="ctrl"><label for="s-bits">Bits</label><input id="s-bits" type="range" min="2" max="16" step="1" value="8"></div>
+      <div class="ctrl"><label for="s-sr">Samp</label><input id="s-sr" type="range" min="1" max="20" step="1" value="6"></div>
+      <div class="ctrl"><label for="s-noise">Noise</label><input id="s-noise" type="range" min="0" max="1" step="0.01" value="0.08"></div>
+      <div style="height:6px"></div>
+      <div class="ctrl"><label for="s-atk">A</label><input id="s-atk" type="range" min="0" max="1" step="0.01" value="0.002"></div>
+      <div class="ctrl"><label for="s-dec">D</label><input id="s-dec" type="range" min="0" max="2" step="0.01" value="0.12"></div>
+      <div class="ctrl"><label for="s-sus">S</label><input id="s-sus" type="range" min="0" max="1" step="0.01" value="0.46"></div>
+      <div class="ctrl"><label for="s-rel">R</label><input id="s-rel" type="range" min="0" max="3" step="0.01" value="0.4"></div>
+    </div>
+
+    <!-- Center hardware box -->
+    <div class="synth-box" role="region" aria-label="synth hardware">
+      <div class="synth-box-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-weight:700">NOISE-CORE</div>
+          <div style="opacity:.8;font-size:.82rem">Gritty digital</div>
+        </div>
+        <div class="oled" aria-hidden="true"><canvas id="s-oled" width="320" height="56"></canvas><div class="scan"></div></div>
+      </div>
+
+      <!-- Keys -->
+      <div class="keys" id="s-keys">
+        <div class="keys-row" id="s-white-keys"></div>
+        <div style="height:8px"></div>
+      </div>
+
+      <!-- Analyzer -->
+      <canvas id="s-analyzer" class="analyzer" width="900" height="140" aria-hidden="true"></canvas>
+
+      <div class="footer-row" style="margin-top:8px">
+        <div>
+          <button id="s-play" class="btn">Play demo</button>
+          <button id="s-stop" class="btn">Stop</button>
+        </div>
+        <div>
+          <button id="s-random" class="btn">Randomize</button>
+          <button id="s-close" class="btn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right effects -->
+    <div class="synth-effects">
+      <div style="font-weight:700;margin-bottom:8px">Effects</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="s-grit" class="btn">Grit</button>
+        <button id="s-lfo" class="btn">LFO→F</button>
+        <button id="s-delay" class="btn">Delay</button>
+        <button id="s-rev" class="btn">Reverb</button>
+      </div>
+      <div style="margin-top:12px;font-size:.86rem;opacity:.85">Tip: click keys or press keyboard (z..m / q..u).</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Synth overlay script (scoped, IIFE) */
+/* Exposes window.openSynthOverlay() and responds to Alt+M to toggle. */
+(function () {
+  'use strict';
+
+  // DOM refs (synth)
+  const overlay = document.getElementById('synthOverlay');
+  const ledRed = document.getElementById('s-led-red');
+  const ledAmber = document.getElementById('s-led-amber');
+  const ledGreen = document.getElementById('s-led-green');
+
+  const oscSel = document.getElementById('s-osc');
+  const master = document.getElementById('s-master');
+  const cut = document.getElementById('s-cut');
+  const q = document.getElementById('s-q');
+  const dist = document.getElementById('s-dist');
+  const bits = document.getElementById('s-bits');
+  const sr = document.getElementById('s-sr');
+  const noiseMix = document.getElementById('s-noise');
+  const atk = document.getElementById('s-atk'), dcy = document.getElementById('s-dec'), sus = document.getElementById('s-sus'), rel = document.getElementById('s-rel');
+
+  const oledCanvas = document.getElementById('s-oled'), oledCtx = oledCanvas.getContext('2d');
+  const analyzerCanvas = document.getElementById('s-analyzer'), analyzerCtx = analyzerCanvas.getContext('2d');
+  const whiteKeysRow = document.getElementById('s-white-keys');
+
+  const btnPlay = document.getElementById('s-play'), btnStop = document.getElementById('s-stop'), btnRandom = document.getElementById('s-random'), btnClose = document.getElementById('s-close');
+  const btnGrit = document.getElementById('s-grit'), btnLFO = document.getElementById('s-lfo'), btnDelay = document.getElementById('s-delay'), btnRev = document.getElementById('s-rev');
+
+  // Optional: wire any existing button with id="synthBtn" if present
+  const openButton = document.getElementById('synthBtn');
+
+  // Audio nodes & state
+  let audioCtx = null;
+  let masterGain = null, filter = null, shaper = null, bitCrusher = null, delayNode = null, delayFB = null, convolver = null, analyser = null, analyserData = null;
+  let lfoOsc = null, lfoGain = null;
+  let noiseBuf = null;
+  let activeVoices = new Set();
+
+  // Animation control
+  let rafId = null;
+  const TARGET_FPS = 40;
+  const FRAME_INTERVAL = 1000 / TARGET_FPS;
+  let lastFrame = 0;
+
+  // Notes array (C3 .. B4)
+  const NOTES = [];
+  for (let m = 48; m <= 71; m++) {
+    const freq = 440 * Math.pow(2, (m - 69) / 12);
+    const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    NOTES.push({ midi: m, freq, name: names[m % 12] + (Math.floor(m / 12) - 1) });
+  }
+  const KEYMAP = ['z','s','x','d','c','v','g','b','h','n','j','m','q','2','w','3','e','r','5','t','6','y','7','u'];
+
+  const ANALYSER_FFT = 512;
+
+  // ensure audio context and nodes (create once)
+  function ensureAudio() {
+    if (audioCtx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = new AC();
+
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = parseFloat(master.value || 0.45);
+    masterGain.connect(audioCtx.destination);
+
+    filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = parseFloat(cut.value || 2000);
+    filter.Q.value = parseFloat(q.value || 1.8);
+
+    shaper = audioCtx.createWaveShaper();
+    shaper.curve = makeDistortion(parseFloat(dist.value || 18));
+    shaper.oversample = '4x';
+
+    createBitCrusher();
+
+    delayNode = audioCtx.createDelay(5.0);
+    delayNode.delayTime.value = 0.28;
+    delayFB = audioCtx.createGain();
+    delayFB.gain.value = 0.32;
+    delayNode.connect(delayFB); delayFB.connect(delayNode);
+
+    convolver = audioCtx.createConvolver();
+    convolver.buffer = createReverbImpulse(2.0, 2.4);
+
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = ANALYSER_FFT;
+    analyserData = new Uint8Array(analyser.frequencyBinCount);
+
+    // routing
+    filter.connect(analyser);
+    analyser.connect(masterGain);
+    delayNode.connect(analyser);
+    convolver.connect(analyser);
+
+    // LFO
+    lfoOsc = audioCtx.createOscillator();
+    lfoOsc.type = 'sine';
+    lfoOsc.frequency.value = 3.2;
+    lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = 0;
+    lfoOsc.connect(lfoGain);
+    try { lfoOsc.start(); } catch (e) {}
+  }
+
+  function createBitCrusher() {
+    if (!audioCtx) return;
+    if (bitCrusher) try { bitCrusher.disconnect(); } catch(e) {}
+    try {
+      const bufferSize = 2048;
+      const node = audioCtx.createScriptProcessor(bufferSize, 1, 1);
+      node.onaudioprocess = function(e) {
+        const input = e.inputBuffer.getChannelData(0);
+        const output = e.outputBuffer.getChannelData(0);
+        const bitDepth = Math.max(2, Math.min(16, parseInt(bits.value || 8,10)));
+        const step = Math.pow(0.5, bitDepth);
+        const reduction = Math.max(1, parseInt(sr.value || 6,10));
+        let ph = 0; let last = 0;
+        for (let i=0;i<input.length;i++){
+          ph++;
+          if (ph >= reduction) { ph = 0; last = step * Math.floor(input[i] / step + 0.5); }
+          output[i] = last;
+        }
+      };
+      bitCrusher = node;
+    } catch (err) {
+      console.warn('bitcrusher failed', err);
+      bitCrusher = null;
+    }
+  }
+
+  function makeDistortion(amount) {
+    const k = typeof amount === 'number' ? amount : 50;
+    const samples = 44100;
+    const curve = new Float32Array(samples);
+    const deg = Math.PI / 180;
+    for (let i=0;i<samples;i++){
+      const x = (i*2)/samples - 1;
+      curve[i] = ((3+k)*x*20*deg) / (Math.PI + k*Math.abs(x));
+    }
+    return curve;
+  }
+
+  function createReverbImpulse(duration = 2.0, decay = 2.0) {
+    if (!audioCtx) return null;
+    const rate = audioCtx.sampleRate;
+    const len = rate * duration;
+    const buff = audioCtx.createBuffer(2, len, rate);
+    for (let ch=0; ch<2; ch++){
+      const data = buff.getChannelData(ch);
+      for (let i=0;i<len;i++) data[i] = (Math.random()*2 -1) * Math.pow(1 - i/len, decay);
+    }
+    return buff;
+  }
+
+  function ensureNoiseBuffer() {
+    if (noiseBuf || !audioCtx) return;
+    const len = audioCtx.sampleRate * 2;
+    noiseBuf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i=0;i<len;i++) d[i] = Math.random()*2 - 1;
+  }
+
+  // voice play
+  function playVoice(freq) {
+    if (!audioCtx) ensureAudio();
+    if (!audioCtx) return null;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const type = oscSel.value;
+    osc.type = (type === 'pulse') ? 'square' : type;
+    osc.frequency.value = freq;
+
+    const localShaper = shaper;
+    localShaper.curve = makeDistortion(parseFloat(dist.value || 0));
+    osc.connect(localShaper);
+
+    if (bitCrusher) {
+      localShaper.connect(bitCrusher);
+      bitCrusher.connect(filter);
+    } else {
+      localShaper.connect(filter);
+    }
+
+    ensureNoiseBuffer();
+    let noiseSrc = null;
+    if (noiseBuf && parseFloat(noiseMix.value) > 0.0001) {
+      noiseSrc = audioCtx.createBufferSource();
+      noiseSrc.buffer = noiseBuf;
+      const ng = audioCtx.createGain();
+      ng.gain.value = parseFloat(noiseMix.value || 0.08);
+      noiseSrc.loop = true;
+      noiseSrc.connect(ng);
+      ng.connect(filter);
+      noiseSrc.start();
+    }
+
+    const outGain = audioCtx.createGain(); outGain.gain.value = 0;
+    filter.connect(outGain);
+    outGain.connect(analyser);
+    if (delayOn) outGain.connect(delayNode);
+    if (revOn) outGain.connect(convolver);
+
+    // ADSR
+    const attack = parseFloat(atk.value) || 0.01;
+    const decay = parseFloat(dcy.value) || 0.1;
+    const sustain = parseFloat(sus.value) || 0.6;
+    const release = parseFloat(rel.value) || 0.5;
+
+    outGain.gain.cancelScheduledValues(now);
+    outGain.gain.setValueAtTime(0.0001, now);
+    outGain.gain.linearRampToValueAtTime(1.0, now + attack);
+    outGain.gain.exponentialRampToValueAtTime(Math.max(0.001, sustain), now + attack + decay);
+
+    try { osc.start(); } catch(e) {}
+
+    const voice = {
+      osc, outGain, noiseSrc,
+      stop: (when = 0) => {
+        const t = audioCtx.currentTime + when;
+        outGain.gain.cancelScheduledValues(t);
+        outGain.gain.setValueAtTime(outGain.gain.value, t);
+        outGain.gain.exponentialRampToValueAtTime(0.0001, t + release);
+        setTimeout(() => {
+          try { osc.stop(); } catch(e) {}
+          if (noiseSrc) try { noiseSrc.stop(); } catch(e) {}
+          try { osc.disconnect(); } catch(e) {}
+          try { outGain.disconnect(); } catch(e) {}
+        }, (release + 0.05) * 1000 + 30);
+      }
+    };
+    activeVoices.add(voice);
+    return voice;
+  }
+
+  function stopAllVoices() {
+    activeVoices.forEach(v => { try { v.stop(0); } catch(e){} });
+    activeVoices.clear();
+  }
+
+  // Build key UI
+  function buildKeys() {
+    if (whiteKeysRow.children.length) return;
+    NOTES.forEach((n, idx) => {
+      const el = document.createElement('div');
+      const isSharp = n.name.includes('#');
+      el.className = isSharp ? 'key black' : 'key';
+      el.dataset.index = idx;
+      el.dataset.freq = n.freq;
+      el.innerHTML = `<div style="padding-bottom:8px;font-size:12px;font-weight:800">${n.name}</div>`;
+      // events
+      el.addEventListener('pointerdown', ev => { ev.preventDefault(); keyDown(el); }, { passive:false });
+      el.addEventListener('pointerup', ev => { ev.preventDefault(); keyUp(el); }, { passive:false });
+      el.addEventListener('pointerleave', ev => { if (ev.buttons === 1) keyUp(el); }, { passive:true });
+      whiteKeysRow.appendChild(el);
+    });
+  }
+
+  // live map
+  const live = new Map();
+  function keyDown(keyEl) {
+    const idx = parseInt(keyEl.dataset.index,10);
+    const note = NOTES[idx];
+    if (!note) return;
+    if (live.has(keyEl)) return;
+    keyEl.classList.add('down');
+    const voice = playVoice(note.freq);
+    live.set(keyEl, voice);
+    startAnimations();
+  }
+  function keyUp(keyEl) {
+    const v = live.get(keyEl);
+    if (v) { try { v.stop(0); } catch(e){} live.delete(keyEl); }
+    keyEl.classList.remove('down');
+    if (live.size === 0) {
+      setTimeout(() => { if (live.size === 0 && activeVoices.size === 0) stopAnimations(); }, 250);
+    }
+  }
+
+  // demo arpeggio
+  let demoHandle = null;
+  function startDemo() {
+    stopAllVoices();
+    if (!audioCtx) ensureAudio();
+    const seq = [0,3,7,10,7,3];
+    let i = 0;
+    demoHandle = setInterval(() => {
+      const midiBase = 60;
+      const midi = midiBase + seq[i % seq.length];
+      const freq = 440 * Math.pow(2, (midi - 69) / 12);
+      const v = playVoice(freq);
+      setTimeout(()=>{ try { v.stop(0); } catch(e){} }, 300);
+      i++;
+    }, 220);
+    startAnimations();
+  }
+  function stopDemo() {
+    if (demoHandle) { clearInterval(demoHandle); demoHandle = null; }
+    stopAllVoices();
+  }
+
+  // effects toggles
+  let gritOn = true, lfoOn = false, delayOn = false, revOn = false;
+  btnGrit.addEventListener('click', () => {
+    gritOn = !gritOn;
+    btnGrit.textContent = gritOn ? 'Grit (on)' : 'Grit';
+    if (gritOn) dist.value = Math.max(12, dist.value), bits.value = Math.max(6, bits.value);
+    else { dist.value = 0; bits.value = 16; }
+    if (shaper) shaper.curve = makeDistortion(parseFloat(dist.value));
+  });
+  btnLFO.addEventListener('click', () => {
+    lfoOn = !lfoOn;
+    btnLFO.textContent = lfoOn ? 'LFO→F (on)' : 'LFO→F';
+    if (!audioCtx) ensureAudio();
+    if (lfoOn) {
+      lfoGain.gain.setValueAtTime(600, audioCtx.currentTime);
+      try { lfoGain.connect(filter.frequency); } catch(e) {}
+    } else {
+      try { lfoGain.disconnect(filter.frequency); } catch(e) {}
+    }
+  });
+  btnDelay.addEventListener('click', () => { delayOn = !delayOn; btnDelay.textContent = delayOn ? 'Delay (on)' : 'Delay'; });
+  btnRev.addEventListener('click', () => { revOn = !revOn; btnRev.textContent = revOn ? 'Reverb (on)' : 'Reverb'; });
+
+  // controls wiring
+  master.addEventListener('input', () => { if (masterGain) masterGain.gain.setValueAtTime(parseFloat(master.value), audioCtx.currentTime); });
+  cut.addEventListener('input', () => { if (filter) filter.frequency.setValueAtTime(parseFloat(cut.value), audioCtx.currentTime); });
+  q.addEventListener('input', () => { if (filter) filter.Q.setValueAtTime(parseFloat(q.value), audioCtx.currentTime); });
+  dist.addEventListener('input', () => { if (shaper) shaper.curve = makeDistortion(parseFloat(dist.value)); });
+  bits.addEventListener('input', () => { if (audioCtx) { try { if (bitCrusher) bitCrusher.disconnect(); } catch(e){} createBitCrusher(); }});
+  sr.addEventListener('input', () => { if (audioCtx) { try { if (bitCrusher) bitCrusher.disconnect(); } catch(e){} createBitCrusher(); }});
+
+  // synth UI buttons
+  btnPlay.addEventListener('click', startDemo);
+  btnStop.addEventListener('click', stopDemo);
+  btnRandom.addEventListener('click', () => {
+    oscSel.value = ['sawtooth','square','triangle','sine','pulse'][Math.floor(Math.random()*5)];
+    master.value = (0.2 + Math.random()*0.7).toFixed(2);
+    cut.value = Math.round(200 + Math.random()*8000);
+    q.value = (0.5 + Math.random()*8).toFixed(2);
+    dist.value = Math.round(Math.random()*70);
+    bits.value = 2 + Math.floor(Math.random()*14);
+    sr.value = 1 + Math.floor(Math.random()*19);
+    noiseMix.value = (Math.random()*0.35).toFixed(2);
+    atk.value = (Math.random()*0.06).toFixed(3);
+    dcy.value = (Math.random()*0.6).toFixed(2);
+    sus.value = (0.2 + Math.random()*0.8).toFixed(2);
+    rel.value = (0.05 + Math.random()*1.6).toFixed(2);
+    if (shaper) shaper.curve = makeDistortion(parseFloat(dist.value));
+    createBitCrusher();
+  });
+  document.getElementById('s-close').addEventListener('click', () => {
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden','true');
+    stopDemo(); stopAllVoices(); stopAnimations();
+    if (openButton) openButton.setAttribute('aria-expanded','false');
+  });
+
+  // keyboard mapping
+  document.addEventListener('keydown', (ev) => {
+    if (overlay.style.display !== 'block') return;
+    const k = ev.key.toLowerCase();
+    const idx = KEYMAP.indexOf(k);
+    if (idx >= 0 && NOTES[idx]) {
+      const keyEl = document.querySelector(`#s-white-keys .key[data-index="${idx}"]`);
+      if (keyEl && !keyEl.classList.contains('down')) keyDown(keyEl);
+    }
+  });
+  document.addEventListener('keyup', (ev) => {
+    if (overlay.style.display !== 'block') return;
+    const k = ev.key.toLowerCase();
+    const idx = KEYMAP.indexOf(k);
+    if (idx >= 0 && NOTES[idx]) {
+      const keyEl = document.querySelector(`#s-white-keys .key[data-index="${idx}"]`);
+      if (keyEl) keyUp(keyEl);
+    }
+  });
+
+  // animations (one RAF throttled)
+  let ledTick = 0;
+  function startAnimations() {
+    if (rafId) return;
+    lastFrame = performance.now();
+    function loop(now) {
+      const dt = now - lastFrame;
+      if (dt >= FRAME_INTERVAL) {
+        drawOLED(now);
+        drawAnalyzer();
+        ledTick = (ledTick + 1) % 60;
+        ledGreen.style.opacity = (ledTick % 47 === 0) ? '1' : '0.35';
+        ledAmber.style.opacity = (ledTick % 13 === 0) ? '1' : '0.35';
+        ledRed.style.opacity = activeVoices.size ? '1' : (ledTick % 19 === 0 ? '0.85' : '0.35');
+        lastFrame = now;
+      }
+      rafId = requestAnimationFrame(loop);
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+  function stopAnimations() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    if (oledCtx) { oledCtx.clearRect(0,0,oledCanvas.width, oledCanvas.height); }
+    if (analyzerCtx) { analyzerCtx.clearRect(0,0,analyzerCanvas.width, analyzerCanvas.height); }
+  }
+
+  function drawOLED(now) {
+    if (!oledCtx) return;
+    const w = oledCanvas.width, h = oledCanvas.height;
+    oledCtx.fillStyle = '#00140b';
+    oledCtx.fillRect(0,0,w,h);
+    const t = now * 0.002;
+    oledCtx.strokeStyle = '#8bffb6';
+    oledCtx.lineWidth = 1.2;
+    oledCtx.beginPath();
+    for (let x=0;x<w;x+=2) {
+      const y = h/2 + Math.sin((x*0.06) + t) * (h/3) * 0.35;
+      if (x===0) oledCtx.moveTo(x,y); else oledCtx.lineTo(x,y);
+    }
+    oledCtx.stroke();
+    oledCtx.fillStyle = '#2fe3a0';
+    oledCtx.font = '11px monospace';
+    const osc = (oscSel.value || 'saw').substring(0,6);
+    oledCtx.fillText(`${osc}  F:${Math.round(cut.value)}`, 8, 14);
+    oledCtx.fillText(`D:${Math.round(dist.value)} B:${bits.value}`, 8, 30);
+    oledCtx.fillStyle = 'rgba(255,255,255,0.02)';
+    for (let y=0;y<h;y+=2) oledCtx.fillRect(0,y,w,1);
+  }
+
+  function drawAnalyzer() {
+    if (!analyser || !analyserData) return;
+    analyser.getByteTimeDomainData(analyserData);
+    const w = analyzerCanvas.width, h = analyzerCanvas.height;
+    analyzerCtx.fillStyle = '#050505';
+    analyzerCtx.fillRect(0,0,w,h);
+    analyzerCtx.lineWidth = 2;
+    analyzerCtx.strokeStyle = '#fff';
+    analyzerCtx.beginPath();
+    const slice = w / analyserData.length;
+    for (let i=0;i<analyserData.length;i++){
+      const v = analyserData[i] / 128.0;
+      const y = v * h / 2;
+      const x = i * slice;
+      if (i===0) analyzerCtx.moveTo(x,y); else analyzerCtx.lineTo(x,y);
+    }
+    analyzerCtx.stroke();
+    analyzerCtx.globalCompositeOperation = 'lighter';
+    analyzerCtx.fillStyle = 'rgba(0,255,160,0.02)';
+    analyzerCtx.fillRect(0,0,w,h);
+    analyzerCtx.globalCompositeOperation = 'source-over';
+  }
+
+  // open/close helpers
+  function openOverlay() {
+    ensureAudio();
+    overlay.style.display = 'block';
+    overlay.setAttribute('aria-hidden','false');
+    buildKeys();
+    startAnimations();
+    if (openButton) openButton.setAttribute('aria-expanded','true');
+  }
+  function closeOverlay() {
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden','true');
+    stopDemo(); stopAllVoices(); stopAnimations();
+    if (openButton) openButton.setAttribute('aria-expanded','false');
+  }
+
+  // Expose for console or other scripts
+  window.openSynthOverlay = openOverlay;
+  window.closeSynthOverlay = closeOverlay;
+
+  // wire optional button if present
+  if (openButton) {
+    openButton.addEventListener('click', () => {
+      if (overlay.style.display === 'block') closeOverlay(); else openOverlay();
+    });
+    // ensure initial aria attributes
+    openButton.setAttribute('aria-controls', 'synthOverlay');
+    openButton.setAttribute('aria-expanded', overlay.style.display === 'block' ? 'true' : 'false');
+  }
+
+  // Alt+M quick toggle (non-visual)
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey && e.key.toLowerCase() === 'm') {
+      e.preventDefault();
+      if (overlay.style.display === 'block') closeOverlay(); else openOverlay();
+    }
+  });
+
+  // ensure keys built
+  buildKeys();
+
+  // cleanup on pagehide
+  window.addEventListener('pagehide', () => {
+    stopAllVoices(); stopAnimations();
+    try { if (audioCtx) audioCtx.close(); } catch(e) {}
+    audioCtx = null;
+  }, { passive: true });
+
+  // expose internals cheaply for debugging
+  window._synth = { ensureAudio, playVoice, stopAllVoices, openOverlay, closeOverlay };
+
+})();
+</script>
+
 </body>
 </html>
