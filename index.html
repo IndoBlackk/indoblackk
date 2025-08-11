@@ -1,47 +1,36 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8" />
 <title>synt — everything feels different in the dark</title>
 <meta name="description" content="synt — ambient sounds and visuals. Everything feels different in the dark.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="canonical" href="https://example.com/">
 <meta property="og:title" content="synt — everything feels different in the dark">
 <meta property="og:description" content="synt — ambient sounds and visuals. Everything feels different in the dark.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://example.com/">
 <meta name="twitter:card" content="summary_large_image">
 
 <style>
 :root{
-  /* Colors & visual tokens */
   --bg: #0a0a0a;
   --fg: #ffffff;
-  --muted: rgba(255,255,255,0.6);
   --card-bg: #111;
   --input-bg: #000;
   --input-border: #444;
-  --accent: rgba(255,255,255,0.1);
+  --accent: rgba(255,255,255,0.06);
   --success: #0f0;
   --error: #ff5c5c;
 
-  /* Borders & sizes */
   --border-width: 2px;
   --border-color: var(--fg);
 
-  /* Spacing & layout (tuned for visually balanced layout) */
-  --page-padding: clamp(1rem, 3vw, 2.25rem); /* keeps content from hugging edges */
+  --page-padding: clamp(1rem, 3vw, 2.25rem);
   --max-content-width: 1200px;
-
-  /* Stage spacing: offset moves the centered block slightly downward for better visual weight */
-  --stage-offset: 3.5vh;   /* primary downward offset to address "synt" being too high */
-
-  /* Internal spacing tuned visually */
-  --stage-gap: 1.05rem;    /* space between logo, byline and menu */
+  --stage-offset: 3.2vh;
+  --stage-gap: 1.05rem;
   --logo-byline-gap: 0.18rem;
-  --byline-menu-gap: 0.6rem;
+  --byline-menu-gap: 0.7rem;
 
-  /* Menu/button spacing */
   --menu-gap: 0.72rem;
   --menu-padding-vertical: 0.85rem;
   --menu-padding-horizontal: 1.6rem;
@@ -49,38 +38,35 @@
 
   --control-padding: 0.5rem;
 
-  /* Typography */
   --font-family: monospace, ui-monospace, "SFMono-Regular", Menlo, Monaco, "Roboto Mono", "Segoe UI Mono", monospace;
   --byline-size: 0.95rem;
 
-  /* Effects */
-  --shadow-small: 0 0 5px #fff;
-  --shadow-medium: 0 0 15px #fff;
-  --shadow-large: 0 0 30px rgba(255,255,255,0.6);
+  --shadow-small: 0 0 6px #fff;
+  --shadow-medium: 0 0 18px #fff;
+  --shadow-large: 0 0 40px rgba(255,255,255,0.6);
 
-  /* Flicker base */
   --flicker-brightness: 1;
 }
 
 /* Base */
-html, body {
+html,body {
+  height: 100%;
   margin: 0;
   padding: 0;
   background: var(--bg);
   color: var(--fg);
-  height: 100%;
   font-family: var(--font-family);
-  overflow: hidden; /* keep original behavior */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
 }
 
 /* Accessibility helper */
 .visually-hidden {
   position: absolute !important;
-  height: 1px; width: 1px;
+  width: 1px; height: 1px;
   overflow: hidden;
-  clip: rect(1px, 1px, 1px, 1px);
+  clip: rect(1px,1px,1px,1px);
   white-space: nowrap;
 }
 
@@ -88,51 +74,178 @@ html, body {
 .skip-link {
   position: absolute;
   left: -9999px;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
+  width: 1px; height: 1px; overflow: hidden;
 }
 .skip-link:focus {
-  left: 1rem;
-  top: 1rem;
-  width: auto;
-  height: auto;
-  padding: 0.5rem 1rem;
-  background: #222;
-  color: var(--fg);
-  z-index: 9999;
-  text-decoration: none;
-  border-radius: 6px;
+  left: 1rem; top: 1rem;
+  width: auto; height: auto;
+  padding: .5rem 1rem;
+  background: #222; color: var(--fg);
+  z-index: 9999; text-decoration: none; border-radius: 6px;
 }
 
-/* Film grain */
+/* Strong film grain for grittier look */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(255,255,255,0.04) 0px,
-    rgba(255,255,255,0.04) 1px,
-    transparent 1px,
-    transparent 3px
-  );
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,0.03) 0 1px, transparent 1px 3px),
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.01), transparent 10%),
+    radial-gradient(circle at 70% 80%, rgba(255,255,255,0.01), transparent 8%);
   pointer-events: none;
   z-index: 5;
   mix-blend-mode: overlay;
+  opacity: 0.95;
 }
 
-/* Main centering - keeps equal space above/below but stage is visually nudged down a little */
+/* Main centering */
 main#main {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   padding: var(--page-padding);
   position: relative;
 }
 
-/* Stage - tuned spacing & subtle downward offset to lower the visual anchor of the logo */
+/* ---------- INTRO OVERLAY (monochrome & gritty) ---------- */
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  flex-direction: column;
+  color: #fff; /* strictly white text */
+  font-family: var(--font-family);
+  text-align: center;
+  gap: 0.8rem;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* noise and pixel textures */
+.intro-noise {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(255,255,255,0.02) 0 1px, transparent 1px),
+    radial-gradient(circle at 80% 30%, rgba(255,255,255,0.02) 0 1px, transparent 1px),
+    radial-gradient(circle at 40% 70%, rgba(255,255,255,0.02) 0 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 2px);
+  background-size: 6px 6px, 6px 6px, 6px 6px, 4px 4px;
+  opacity: 0.12;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* scan sweep faster */
+.scanline {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 28vh;
+  top: -40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  transform: skewY(-10deg);
+  opacity: 0.06;
+  filter: blur(6px) contrast(120%);
+  animation: sweep 1.6s linear 0s 1;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+@keyframes sweep { to { transform: translateY(240%) skewY(-10deg); opacity: 0; } }
+
+.scan-vert {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(90deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px);
+  opacity: 0.045;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.pixel-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(transparent 0 95%, rgba(255,255,255,0.01) 95% 100%),
+    linear-gradient(90deg, transparent 0 95%, rgba(255,255,255,0.01) 95% 100%);
+  background-size: 6px 6px, 6px 6px;
+  opacity: 0.08;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* flash overlay */
+.intro-flash {
+  position: absolute; inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Boot text - monochrome, bold */
+.boot {
+  z-index: 1000;
+  max-width: 80ch;
+  font-size: clamp(0.95rem, 1.9vw, 1.1rem);
+  line-height: 1.18;
+  text-align: left;
+  color: #fff;
+  letter-spacing: 0.02em;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.06));
+  transform: translateZ(0);
+  font-weight: 700;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: none;
+}
+.boot-line { display:block; white-space: pre; font-variant-numeric: tabular-nums; }
+
+/* glitch logo (monochrome duplicates for roughness) */
+.glitch {
+  position: relative;
+  display: inline-block;
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.06));
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute; left: 0; top: 0; width: 100%;
+  pointer-events: none;
+  color: #fff;
+  opacity: 0.9;
+  mix-blend-mode: normal;
+}
+.glitch::before { transform: translateX(-1px) translateY(-1px) scale(1.003); opacity: 0.6; }
+.glitch::after  { transform: translateX(1px) translateY(1px) scale(0.997); opacity: 0.5; }
+
+/* small sound enable button (only shown if audio blocked) */
+.sound-enable {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1010;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: .35rem .6rem;
+  font-family: var(--font-family);
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: .85rem;
+  backdrop-filter: blur(4px);
+  display: none;
+}
+.sound-enable:active { transform: translateY(1px); }
+
+/* ---------- STAGE (site) ---------- */
 .stage {
   width: min(var(--max-content-width), 100%);
   display:flex;
@@ -140,14 +253,12 @@ main#main {
   align-items:center;
   justify-content:center;
   gap: var(--stage-gap);
-  position: relative;
-  z-index: 10;
+  position: relative; z-index: 10;
   opacity: 1;
-  transition: opacity 0.45s ease, transform 0.45s ease;
+  transition: opacity .35s ease, transform .35s ease;
   transform: translateY(var(--stage-offset));
 }
 
-/* Logo - preserve original large styling + tightened letter spacing */
 .logo {
   font-size: clamp(4rem, 18vw, 14rem);
   font-weight: bold;
@@ -155,16 +266,13 @@ main#main {
   color: var(--fg);
   filter: brightness(var(--flicker-brightness));
   text-shadow: var(--shadow-small), var(--shadow-medium), var(--shadow-large);
-  transition: filter 0.1s ease, text-shadow 0.1s ease;
-
-  /* tightened tracking so 'synt' reads dense but not cramped */
+  transition: filter .1s ease, text-shadow .1s ease;
   letter-spacing: -0.05em;
   font-kerning: normal;
   text-rendering: optimizeLegibility;
   margin: 0;
 }
 
-/* Byline visually close to the logo but separated slightly for legibility */
 .byline {
   font-size: var(--byline-size);
   opacity: 0.65;
@@ -173,18 +281,16 @@ main#main {
   letter-spacing: 0.18em;
 }
 
-/* Menu sits a little closer to byline than before but not cramped */
 .menu {
   display:flex;
   gap: var(--menu-gap);
   margin-top: var(--byline-menu-gap);
-  justify-content: center;
-  flex-wrap: wrap;
+  justify-content:center;
+  flex-wrap:wrap;
   opacity: 0;
-  transition: opacity 0.9s ease;
+  transition: opacity .6s ease;
 }
 
-/* Buttons preserved visually but slightly constrained to avoid edge hug */
 .menu-box {
   background: transparent;
   color: var(--fg);
@@ -209,118 +315,70 @@ main#main {
   inset: 0;
   background: var(--accent);
   transform: translateY(100%);
-  transition: transform 0.28s ease;
+  transition: transform .22s ease;
   pointer-events: none;
 }
 .menu-box:hover::after { transform: translateY(0); }
-.menu-box:hover { filter: brightness(1.45); }
+.menu-box:hover { filter: brightness(1.4); }
 
-/* Popup Form */
+/* Popup + sections */
 .popup {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.9);
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+  display: none; flex-direction: column; align-items: center; justify-content:center; z-index:100;
 }
 .popup form {
-  display:flex;
-  flex-direction:column;
-  gap: 1rem;
-  background: var(--card-bg);
-  padding: 2rem;
-  border: var(--border-width) solid var(--border-color);
-  width: 320px;
-  border-radius: 8px;
+  display:flex; flex-direction:column; gap:1rem; background:var(--card-bg); padding:2rem; border:var(--border-width) solid var(--border-color); width:320px; border-radius:8px;
 }
-.popup input, .popup textarea {
-  background: var(--input-bg);
-  color: var(--fg);
-  border: 1px solid var(--input-border);
-  padding: var(--control-padding);
-  font-family: var(--font-family);
-  border-radius: 6px;
-}
-.popup button[type="submit"] {
-  background: var(--fg);
-  color: var(--bg);
-  border: none;
-  padding: 0.6rem;
-  cursor: pointer;
-  font-weight: bold;
-  border-radius: 6px;
-}
-.form-status { font-size: 0.9rem; color: var(--success); }
+.popup input, .popup textarea { background:var(--input-bg); color:var(--fg); border:1px solid var(--input-border); padding:var(--control-padding); font-family:var(--font-family); border-radius:6px; }
+.popup button[type="submit"] { background:var(--fg); color:var(--bg); border:none; padding:.6rem; cursor:pointer; font-weight:bold; border-radius:6px; }
+.form-status { font-size:.9rem; color:var(--success); }
 
-/* Sections (unchanged behavior) */
-.section {
-  position: fixed;
-  inset: 0;
-  background: var(--bg);
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-  overflow-y: auto;
-  z-index: 90;
-}
-.section h1 { text-transform: uppercase; margin-bottom: 2rem; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
-  gap: 1rem;
-  width: 100%;
-  max-width: var(--max-content-width);
-}
-.track, .visual {
-  background: var(--card-bg);
-  padding: 1rem;
-  border: var(--border-width) solid var(--border-color);
-  border-radius: 6px;
-}
-.track audio { width:100%; }
-.visual img { width:100%; height:auto; display:block; }
+.section { position:fixed; inset:0; background:var(--bg); display:none; flex-direction:column; align-items:center; padding:2rem; overflow-y:auto; z-index:90; }
+.section h1 { text-transform:uppercase; margin-bottom:2rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; width:100%; max-width:var(--max-content-width); }
+.track, .visual { background:var(--card-bg); padding:1rem; border:var(--border-width) solid var(--border-color); border-radius:6px; }
+.track audio { width:100% } .visual img { width:100%; height:auto; display:block; }
 
-/* back button */
-.back-btn {
-  margin-top: 2rem;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  border: var(--border-width) solid var(--border-color);
-  padding: 0.5rem 1rem;
-  background: transparent;
-  color: var(--fg);
-  border-radius: 6px;
-}
-.back-btn:hover { filter: brightness(1.45); }
+.back-btn { margin-top:2rem; cursor:pointer; text-transform:uppercase; letter-spacing:.1em; border:var(--border-width) solid var(--border-color); padding:.5rem 1rem; background:transparent; color:var(--fg); border-radius:6px; }
+.back-btn:hover { filter:brightness(1.4); }
 
-/* Responsive adjustments */
-@media (max-width: 880px) {
-  :root { --stage-offset: 3vh; --stage-gap: 0.9rem; }
-  .menu-box { min-width: 100px; padding-inline: 1.25rem; }
-}
-@media (max-width: 520px) {
-  :root { --stage-offset: 2vh; }
-  .logo { font-size: clamp(2.2rem, 14vw, 6.6rem); letter-spacing: -0.03em; }
-  .menu { gap: 0.45rem; margin-top: 0.45rem; }
-  .menu-box { min-width: 84px; padding: 0.7rem 1rem; font-size: 0.95rem; }
-  .popup form { width: 92%; max-width: 420px; padding: 1rem; }
-}
+/* Responsive */
+@media (max-width:880px){ :root{--stage-offset:3vh;--stage-gap:0.9rem} .menu-box{min-width:100px;padding-inline:1.25rem} }
+@media (max-width:520px){ :root{--stage-offset:2vh} .logo{font-size:clamp(2.2rem,14vw,6.6rem);letter-spacing:-0.03em} .menu{gap:0.45rem;margin-top:0.45rem} .menu-box{min-width:84px;padding:.7rem 1rem;font-size:.95rem} .popup form{width:92%;max-width:420px;padding:1rem} }
 
-/* Respect reduced motion */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .stage, .menu-box, .menu-box::after, body::before { transition: none !important; animation: none !important; }
+  .stage, .menu-box, .menu-box::after, body::before, .scanline, .intro-overlay { transition: none !important; animation: none !important; }
 }
 </style>
 </head>
 <body>
   <a href="#main" class="skip-link">Skip to content</a>
 
-  <main id="main">
+  <!-- Intro overlay -->
+  <div id="intro" class="intro-overlay" aria-hidden="true" role="dialog" aria-label="Startup">
+    <div class="intro-noise" aria-hidden="true"></div>
+    <div class="scanline" aria-hidden="true"></div>
+    <div class="scan-vert" aria-hidden="true"></div>
+    <div class="pixel-grid" aria-hidden="true"></div>
+    <div class="intro-flash" id="introFlash" aria-hidden="true"></div>
+
+    <!-- optional small button to enable sound if browser blocks autoplay -->
+    <button id="soundEnableBtn" class="sound-enable" aria-hidden="true">Enable sound</button>
+
+    <div class="boot" id="bootText" aria-hidden="false" role="status" aria-live="polite">
+      <span class="boot-line" id="line1"></span>
+      <span class="boot-line" id="line2"></span>
+      <span class="boot-line" id="line3"></span>
+      <span class="boot-line" id="line4"></span>
+    </div>
+
+    <div style="font-size:.85rem;opacity:.95;color:#fff;margin-top:6vh">
+      <span class="glitch" id="bootLogo" data-text="S Y N T">S Y N T</span>
+    </div>
+  </div>
+
+  <main id="main" aria-hidden="false">
     <header class="stage" id="stage" role="banner" aria-hidden="false">
       <h1 id="logo" class="logo" tabindex="-1">synt</h1>
       <p class="byline">everything feels different in the dark</p>
@@ -387,313 +445,634 @@ main#main {
     </section>
   </main>
 
+  <!-- Intro audio: replace 'boot.wav' with your small chiptune/boot sample -->
+  <audio id="introAudio" preload="auto">
+    <source src="boot.wav" type="audio/wav">
+    <source src="boot.mp3" type="audio/mpeg">
+  </audio>
+
   <!-- Ambient background audio -->
   <audio id="ambientAudio" loop preload="none">
     <source src="ambient.mp3" type="audio/mpeg">
   </audio>
 
   <!-- Hidden flicker sound effects -->
-  <audio id="flickerSound1" preload="none">
-    <source src="flicker1.mp3" type="audio/mpeg">
-  </audio>
-  <audio id="flickerSound2" preload="none">
-    <source src="flicker2.mp3" type="audio/mpeg">
-  </audio>
+  <audio id="flickerSound1" preload="none"><source src="flicker1.mp3" type="audio/mpeg"></audio>
+  <audio id="flickerSound2" preload="none"><source src="flicker2.mp3" type="audio/mpeg"></audio>
 
 <script>
-/* ======================
-   DOM references
-   ====================== */
-const logo = document.getElementById('logo');
-const menu = document.getElementById('menu');
-const stage = document.getElementById('stage');
-const popup = document.getElementById('popup');
-const sections = document.querySelectorAll('.section');
-const tellBtn = document.getElementById('tellBtn');
-const closePopup = document.getElementById('closePopup');
-const form = document.getElementById('tellMeForm');
-const formStatus = document.getElementById('formStatus');
+(() => {
+  'use strict';
 
-let lastFocusedElement = null;
-let modalKeyHandler = null;
-
-/* ======================
-   Ambient audio fade
-   ====================== */
-const ambientAudio = document.getElementById('ambientAudio');
-let ambientFadeInterval;
-function fadeAudio(audio, targetVolume, duration) {
-  clearInterval(ambientFadeInterval);
-  const start = isFinite(audio.volume) ? audio.volume : 0;
-  const step = (targetVolume - start) / Math.max(1, Math.floor(duration / 50));
-  ambientFadeInterval = setInterval(() => {
-    audio.volume = Math.min(Math.max(audio.volume + step, 0), 1);
-    if ((step > 0 && audio.volume >= targetVolume) ||
-        (step < 0 && audio.volume <= targetVolume)) {
-      clearInterval(ambientFadeInterval);
-    }
-  }, 50);
-}
-function startAmbientOnInteraction() {
-  if (ambientAudio.paused) {
-    ambientAudio.volume = 0;
-    ambientAudio.play().catch(err => console.warn("Autoplay blocked:", err));
-    fadeAudio(ambientAudio, 0.3, 3000);
-  }
-  document.removeEventListener('click', startAmbientOnInteraction);
-}
-document.addEventListener('click', startAmbientOnInteraction, { once: true });
-
-/* ======================
-   Flicker loop (preserve original behavior)
-   ====================== */
-const flickerSounds = [
-  document.getElementById('flickerSound1'),
-  document.getElementById('flickerSound2')
-];
-function playFlickerSound() {
-  const sound = flickerSounds[Math.floor(Math.random() * flickerSounds.length)];
-  if (sound) {
-    try {
-      sound.currentTime = 0;
-      sound.play().catch(() => {});
-    } catch (e) {}
-  }
-}
-function flickerLoop() {
-  if (Math.random() < 0.1) {
-    logo.style.setProperty('--flicker-brightness', 3 + Math.random()*2);
-    logo.style.textShadow = "0 0 10px #fff,0 0 40px #fff,0 0 80px rgba(255,255,255,0.8)";
-    playFlickerSound();
-  } else {
-    logo.style.setProperty('--flicker-brightness', 0.6 + Math.random()*0.3);
-    logo.style.textShadow = "0 0 4px #fff,0 0 12px rgba(255,255,255,0.5)";
-  }
-  setTimeout(flickerLoop, 50 + Math.random()*200);
-}
-flickerLoop();
-
-/* Reveal menu after a short delay */
-setTimeout(() => {
-  menu.style.opacity = 1;
-}, 900);
-
-/* ======================
-   Section navigation (accessibility-minded)
-   ====================== */
-document.querySelectorAll('button.menu-box[data-section]').forEach(box => {
-  box.addEventListener('click', () => {
-    const sectionId = box.dataset.section;
-    const section = document.getElementById(sectionId);
-    if (!section) return;
-
-    // hide stage (visual timing)
-    stage.style.opacity = 0;
-
-    // hide all sections first
-    sections.forEach(s => {
-      s.style.display = 'none';
-      s.setAttribute('aria-hidden', 'true');
-    });
-
-    // reveal requested section after fade
-    setTimeout(() => {
-      section.style.display = 'flex';
-      section.setAttribute('aria-hidden', 'false');
-      const heading = section.querySelector('h1, h2');
-      if (heading) heading.focus({preventScroll: true});
-    }, 450);
-  });
-});
-
-/* ======================
-   Focus trap helpers for modal
-   ====================== */
-function getFocusableElements(container) {
-  const selectors = [
-    'a[href]',
-    'area[href]',
-    'input:not([disabled]):not([type="hidden"])',
-    'select:not([disabled])',
-    'textarea:not([disabled])',
-    'button:not([disabled])',
-    'iframe',
-    'object',
-    'embed',
-    '[contenteditable]',
-    '[tabindex]:not([tabindex="-1"])'
+  /* ===============
+     Cached elements & state
+     =============== */
+  const mainEl = document.querySelector('main');
+  const introOverlay = document.getElementById('intro');
+  const bootLinesEls = [
+    document.getElementById('line1'),
+    document.getElementById('line2'),
+    document.getElementById('line3'),
+    document.getElementById('line4')
   ];
-  return Array.from(container.querySelectorAll(selectors.join(','))).filter(el => {
-    return el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length;
-  });
-}
+  const bootLogo = document.getElementById('bootLogo');
+  const introFlash = document.getElementById('introFlash');
+  const soundEnableBtn = document.getElementById('soundEnableBtn');
 
-function trapFocus(container) {
-  const focusable = getFocusableElements(container);
-  if (!focusable.length) return;
+  const introAudio = document.getElementById('introAudio');
+  const ambientAudio = document.getElementById('ambientAudio');
 
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
+  const logo = document.getElementById('logo');
+  const menu = document.getElementById('menu');
+  const stage = document.getElementById('stage');
+  const popup = document.getElementById('popup');
+  const sections = Array.from(document.querySelectorAll('.section'));
+  const tellBtn = document.getElementById('tellBtn');
+  const closePopup = document.getElementById('closePopup');
+  const form = document.getElementById('tellMeForm');
+  const formStatus = document.getElementById('formStatus');
 
-  modalKeyHandler = function(e) {
-    if (e.key === 'Tab') {
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
+  let lastFocusedElement = null;
+  let modalKeyHandler = null;
+  let flickerLoopTimer = null;
+  let ambientFadeInterval = null;
+  let introAudioAllowed = false;
+  let activeTimeouts = new Set();
+  let activeIntervals = new Set();
+
+  /* ===============
+     Helper utilities
+     =============== */
+  const safe = {
+    setItem(key, value) {
+      try { localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+    },
+    getItem(key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
     }
   };
-  document.addEventListener('keydown', modalKeyHandler);
-}
 
-function releaseFocusTrap() {
-  if (modalKeyHandler) {
-    document.removeEventListener('keydown', modalKeyHandler);
-    modalKeyHandler = null;
+  function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
-}
 
-/* ======================
-   Modal open/close with strict trap
-   ====================== */
-tellBtn.addEventListener('click', () => {
-  lastFocusedElement = document.activeElement;
-  popup.style.display = 'flex';
-  popup.setAttribute('aria-hidden', 'false');
-  document.querySelector('main').setAttribute('aria-hidden', 'true');
+  function setIntroPlayedFlag() {
+    safe.setItem('synt_intro_played', '1');
+  }
+  function introWasPlayed() {
+    return safe.getItem('synt_intro_played') === '1';
+  }
 
-  const firstControl = form.querySelector('input, textarea, button');
-  if (firstControl) firstControl.focus();
+  function wait(ms) {
+    return new Promise(resolve => {
+      const t = setTimeout(() => {
+        activeTimeouts.delete(t);
+        resolve();
+      }, ms);
+      activeTimeouts.add(t);
+    });
+  }
 
-  trapFocus(popup);
-});
+  function setTimeoutTracked(fn, ms) {
+    const id = setTimeout(() => {
+      activeTimeouts.delete(id);
+      fn();
+    }, ms);
+    activeTimeouts.add(id);
+    return id;
+  }
+  function clearAllTrackedTimeouts() {
+    activeTimeouts.forEach(id => clearTimeout(id));
+    activeTimeouts.clear();
+  }
 
-closePopup.addEventListener('click', closePopupFn);
+  function setIntervalTracked(fn, ms) {
+    const id = setInterval(fn, ms);
+    activeIntervals.add(id);
+    return id;
+  }
+  function clearAllTrackedIntervals() {
+    activeIntervals.forEach(id => clearInterval(id));
+    activeIntervals.clear();
+  }
 
-function closePopupFn() {
-  popup.style.display = 'none';
-  popup.setAttribute('aria-hidden', 'true');
-  document.querySelector('main').setAttribute('aria-hidden', 'false');
-  releaseFocusTrap();
-  if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
-}
+  /* typed text (fast, with jitter). Slightly optimized: precompute length check */
+  function typeText(el, text, charDelay = 18) {
+    return new Promise(resolve => {
+      el.textContent = '';
+      let i = 0;
+      function step() {
+        if (i >= text.length) return resolve();
+        el.textContent += text[i++];
+        // jittered delay, keep small for snappy feel
+        setTimeout(step, charDelay + Math.random() * 14);
+      }
+      step();
+    });
+  }
 
-/* Close modal/sections with Escape */
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
+  /* gritty micro-glitch, returns promise so caller can await if desired */
+  function grittyGlitch(el, repeats = 6, intensity = 1.6, speed = 60) {
+    return new Promise(resolve => {
+      let count = 0;
+      const id = setInterval(() => {
+        el.style.transform = `translate(${(Math.random() - 0.5) * intensity}px, ${(Math.random() - 0.5) * intensity}px) skew(${(Math.random() - 0.5) * 0.8}deg)`;
+        el.style.opacity = 0.85 + Math.random() * 0.18;
+        count++;
+        if (count >= repeats) {
+          clearInterval(id);
+          el.style.transform = '';
+          el.style.opacity = '';
+          activeIntervals.delete(id);
+          resolve();
+        }
+      }, speed);
+      activeIntervals.add(id);
+    });
+  }
+
+  /* flash overlay */
+  function flashIntro(duration = 90) {
+    introFlash.style.transition = `opacity ${duration}ms ease-out`;
+    introFlash.style.opacity = '0.95';
+    // tiny timeout to let transition apply then clear
+    setTimeout(() => { introFlash.style.opacity = '0'; }, 30);
+  }
+
+  /* hide intro overlay and tidy */
+  function hideIntroOverlay() {
+    introOverlay.style.transition = 'opacity 300ms ease';
+    introOverlay.style.opacity = 0;
+    // clear timers/intervals associated with intro
+    clearAllTrackedIntervals();
+    setTimeout(() => {
+      introOverlay.style.display = 'none';
+      introOverlay.setAttribute('aria-hidden', 'true');
+      // remove any event listeners specific to the intro if needed
+    }, 360);
+  }
+
+  /* show main UI */
+  function showMainUI() {
+    mainEl.setAttribute('aria-hidden', 'false');
+    stage.style.opacity = 1;
+    // reveal menu after a short, consistent delay
+    setTimeout(() => { menu.style.opacity = 1; }, 420);
+    startFlickerLoop();
+  }
+
+  /* ===============
+     Audio helpers
+     =============== */
+
+  async function tryPlayIntroAudio() {
+    if (!introAudio) return false;
+    try {
+      introAudio.volume = 0.9;
+      // unmute if necessary
+      await introAudio.play();
+      introAudioAllowed = true;
+      soundEnableBtn.style.display = 'none';
+      // listen for natural end so we can clear state
+      introAudio.addEventListener('ended', () => { introAudioAllowed = false; }, { once: true });
+      return true;
+    } catch (err) {
+      // autoplay is blocked; show enable button for user interaction
+      introAudioAllowed = false;
+      soundEnableBtn.style.display = 'inline-block';
+      return false;
+    }
+  }
+
+  soundEnableBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    try {
+      await introAudio.play();
+      introAudioAllowed = true;
+      soundEnableBtn.style.display = 'none';
+      // also attempt to start ambient
+      ambientAudio.volume = 0;
+      ambientAudio.play().catch(()=>{});
+      fadeAudio(ambientAudio, 0.28, 1500);
+    } catch (err) {
+      console.warn('Sound enable failed:', err);
+    }
+  }, { passive: true });
+
+  function fadeAudio(audio, targetVolume, duration) {
+    clearInterval(ambientFadeInterval);
+    const start = isFinite(audio.volume) ? audio.volume : 0;
+    const steps = Math.max(1, Math.floor(duration / 50));
+    const stepDelta = (targetVolume - start) / steps;
+    let stepCount = 0;
+    ambientFadeInterval = setInterval(() => {
+      stepCount++;
+      audio.volume = Math.min(Math.max(start + stepDelta * stepCount, 0), 1);
+      if (stepCount >= steps) {
+        clearInterval(ambientFadeInterval);
+      }
+    }, 50);
+  }
+
+  function startAmbientOnInteraction() {
+    if (!ambientAudio) return;
+    if (ambientAudio.paused) {
+      ambientAudio.volume = 0;
+      ambientAudio.play().catch(() => {});
+      fadeAudio(ambientAudio, 0.28, 1800);
+    }
+    document.removeEventListener('pointerdown', startAmbientOnInteraction);
+  }
+
+  /* ===============
+     Flicker behavior (post-intro)
+     =============== */
+  const flickerSounds = [
+    document.getElementById('flickerSound1'),
+    document.getElementById('flickerSound2')
+  ];
+
+  function playFlickerSound() {
+    const sound = flickerSounds[Math.floor(Math.random() * flickerSounds.length)];
+    if (sound) {
+      try { sound.currentTime = 0; sound.play().catch(()=>{}); } catch(e) {}
+    }
+  }
+
+  function flickerLoop() {
+    // use requestAnimationFrame but throttle with a timeout to preserve randomness and performance
+    if (Math.random() < 0.12) {
+      logo.style.setProperty('--flicker-brightness', 3 + Math.random() * 2.2);
+      logo.style.textShadow = "0 0 10px #fff,0 0 40px #fff,0 0 80px rgba(255,255,255,0.85)";
+      playFlickerSound();
+    } else {
+      logo.style.setProperty('--flicker-brightness', 0.6 + Math.random() * 0.35);
+      logo.style.textShadow = "0 0 4px #fff,0 0 12px rgba(255,255,255,0.5)";
+    }
+    // schedule next run
+    const t = setTimeout(() => {
+      activeTimeouts.delete(t);
+      flickerLoop();
+    }, 40 + Math.random() * 180);
+    activeTimeouts.add(t);
+  }
+
+  function startFlickerLoop() {
+    if (!flickerLoopTimer) {
+      flickerLoopTimer = true; // flag that it started; actual timers are tracked
+      flickerLoop();
+    }
+  }
+
+  function stopFlickerLoop() {
+    flickerLoopTimer = null;
+    clearAllTrackedTimeouts();
+  }
+
+  /* ===============
+     Section navigation / accessibility
+     =============== */
+  document.querySelectorAll('button.menu-box[data-section]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const sectionId = btn.dataset.section;
+      const section = document.getElementById(sectionId);
+      if (!section) return;
+      stage.style.opacity = 0;
+      sections.forEach(s => { s.style.display = 'none'; s.setAttribute('aria-hidden', 'true'); });
+      // small delay for visual fade
+      setTimeout(() => {
+        section.style.display = 'flex';
+        section.setAttribute('aria-hidden', 'false');
+        const heading = section.querySelector('h1, h2');
+        if (heading) heading.focus({preventScroll: true});
+      }, 300);
+    }, { passive: true });
+  });
+
+  /* ===============
+     Focus trap utilities (modal)
+     =============== */
+  function getFocusableElements(container) {
+    const selectors = [
+      'a[href]','area[href]','input:not([disabled]):not([type="hidden"])','select:not([disabled])',
+      'textarea:not([disabled])','button:not([disabled])','iframe','object','embed',
+      '[contenteditable]','[tabindex]:not([tabindex="-1"])'
+    ];
+    return Array.from(container.querySelectorAll(selectors.join(','))).filter(el => {
+      return el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length;
+    });
+  }
+
+  function trapFocus(container) {
+    const focusable = getFocusableElements(container);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    modalKeyHandler = function(e) {
+      if (e.key === 'Tab') {
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', modalKeyHandler);
+  }
+
+  function releaseFocusTrap() {
+    if (modalKeyHandler) {
+      document.removeEventListener('keydown', modalKeyHandler);
+      modalKeyHandler = null;
+    }
+  }
+
+  /* ===============
+     Modal popup handling
+     =============== */
+  tellBtn.addEventListener('click', () => {
+    lastFocusedElement = document.activeElement;
+    popup.style.display = 'flex';
+    popup.setAttribute('aria-hidden', 'false');
+    mainEl.setAttribute('aria-hidden', 'true');
+    const firstControl = form.querySelector('input, textarea, button');
+    if (firstControl) firstControl.focus();
+    trapFocus(popup);
+  });
+
+  closePopup.addEventListener('click', closePopupFn);
+
+  function closePopupFn() {
+    popup.style.display = 'none';
+    popup.setAttribute('aria-hidden', 'true');
+    mainEl.setAttribute('aria-hidden', 'false');
+    releaseFocusTrap();
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
+  }
+
+  /* centralized Escape handling (intro, modal, sections) */
+  function onGlobalKeydown(e) {
+    if (e.key !== 'Escape') return;
+    if (introOverlay && introOverlay.style.display !== 'none') {
+      skipIntro();
+      return;
+    }
     if (popup.style.display === 'flex') {
       closePopupFn();
       return;
     }
-    const anyVisibleSection = Array.from(sections).some(s => s.style.display === 'flex');
-    if (anyVisibleSection) goHome();
+    const anyVisible = sections.some(s => s.style.display === 'flex');
+    if (anyVisible) goHome();
   }
-});
+  document.addEventListener('keydown', onGlobalKeydown);
 
-/* ======================
-   Robust form submission (JSON -> FormData -> mailto fallback)
-   ====================== */
-async function submitFormRobust(evt) {
-  evt.preventDefault();
-  formStatus.style.color = '';
-  formStatus.textContent = "Sending...";
-  const name = form.name.value.trim();
-  const message = form.message.value.trim();
+  /* ===============
+     Form submission (robust)
+     =============== */
+  let formSubmitting = false;
+  async function submitFormRobust(evt) {
+    evt.preventDefault();
+    if (formSubmitting) return;
+    formSubmitting = true;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
 
-  if (!name || !message) {
-    formStatus.style.color = 'var(--error)';
-    formStatus.textContent = "Please fill out both fields.";
-    return;
-  }
+    formStatus.style.color = '';
+    formStatus.textContent = "Sending...";
 
-  const endpoint = form.action;
-  const method = (form.method || 'POST').toUpperCase();
+    const name = form.name.value.trim();
+    const message = form.message.value.trim();
 
-  const payload = { name, message };
-  try {
-    const res = await fetch(endpoint, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-    if (res.ok) {
-      formStatus.style.color = 'var(--success)';
-      formStatus.textContent = "Message sent ✔️";
-      form.reset();
+    if (!name || !message) {
+      formStatus.style.color = 'var(--error)';
+      formStatus.textContent = "Please fill out both fields.";
+      formSubmitting = false;
+      if (submitBtn) submitBtn.disabled = false;
       return;
-    } else {
-      let info = '';
-      try {
-        const json = await res.json();
-        info = json.error || json.message || JSON.stringify(json);
-      } catch (e) { info = res.statusText || `HTTP ${res.status}`; }
-      console.warn('JSON POST rejected:', info);
     }
-  } catch (jsonErr) {
-    console.warn('JSON POST failed (network/CORS):', jsonErr);
-  }
 
-  try {
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('message', message);
-    const res2 = await fetch(endpoint, {
-      method,
-      body: formData,
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res2.ok) {
-      formStatus.style.color = 'var(--success)';
-      formStatus.textContent = "Message sent ✔️";
-      form.reset();
-      return;
-    } else {
-      let info2 = '';
-      try {
-        const json = await res2.json();
-        info2 = json.error || json.message || JSON.stringify(json);
-      } catch (e) { info2 = res2.statusText || `HTTP ${res2.status}`; }
+    const endpoint = form.action;
+    const method = (form.method || 'POST').toUpperCase();
+
+    // Try JSON POST first
+    try {
+      const res = await fetch(endpoint, {
+        method,
+        headers: {'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify({ name, message })
+      });
+      if (res.ok) {
+        formStatus.style.color = 'var(--success)';
+        formStatus.textContent = "Message sent ✔️";
+        form.reset();
+        formSubmitting = false;
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+      // Collect error info if not ok
+      let info = res.statusText || `HTTP ${res.status}`;
+      try { const json = await res.json(); info = json.error || json.message || info; } catch (e) {}
+      console.warn('JSON POST rejected:', info);
+    } catch (err) {
+      console.warn('JSON POST failed:', err);
+    }
+
+    // Fallback: FormData POST
+    try {
+      const fd = new FormData();
+      fd.append('name', name);
+      fd.append('message', message);
+      const res2 = await fetch(endpoint, { method, body: fd, headers: {'Accept':'application/json'} });
+      if (res2.ok) {
+        formStatus.style.color = 'var(--success)';
+        formStatus.textContent = "Message sent ✔️";
+        form.reset();
+        formSubmitting = false;
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+      let info2 = res2.statusText || `HTTP ${res2.status}`;
+      try { const json2 = await res2.json(); info2 = json2.error || json2.message || info2; } catch (e) {}
       console.warn('FormData POST rejected:', info2);
       formStatus.style.color = 'var(--error)';
       formStatus.textContent = `Server error: ${info2}`;
+    } catch (err2) {
+      console.warn('FormData POST failed:', err2);
+    }
+
+    // Final fallback: mailto link
+    formStatus.style.color = 'var(--error)';
+    formStatus.innerHTML = 'Could not send via the server. <a href="#" id="mailto-fallback">Send by email instead</a>';
+    const mailtoLink = document.getElementById('mailto-fallback');
+    if (mailtoLink) {
+      const subject = encodeURIComponent('Message from synt website');
+      const body = encodeURIComponent(`Name: ${name}\n\nMessage:\n${message}`);
+      mailtoLink.href = `mailto:hello@example.com?subject=${subject}&body=${body}`;
+      mailtoLink.addEventListener('click', () => { formStatus.textContent = 'Opening email client...'; }, { once: true });
+    }
+
+    formSubmitting = false;
+    if (submitBtn) submitBtn.disabled = false;
+  }
+  form.addEventListener('submit', submitFormRobust);
+
+  /* ===============
+     goHome (restore stage)
+     =============== */
+  function goHome() {
+    sections.forEach(s => { s.style.display = 'none'; s.setAttribute('aria-hidden', 'true'); });
+    stage.style.opacity = 1;
+    mainEl.setAttribute('aria-hidden', 'false');
+    if (logo && typeof logo.focus === 'function') logo.focus();
+  }
+
+  /* ===============
+     Intro sequence (play once; respects reduced motion)
+     =============== */
+  async function playIntroSequence() {
+    if (prefersReducedMotion() || introWasPlayed()) {
+      introOverlay.style.display = 'none';
+      introOverlay.setAttribute('aria-hidden', 'true');
+      showMainUI();
+      setIntroPlayedFlag();
       return;
     }
-  } catch (formDataErr) {
-    console.warn('FormData POST failed:', formDataErr);
+
+    introOverlay.setAttribute('aria-hidden', 'false');
+    introOverlay.style.display = 'flex';
+
+    // try to start intro audio (will show enable button if blocked)
+    tryPlayIntroAudio();
+
+    const bootLines = [
+      ">>> BIOS: SYNTH-8BIT v0.9.7",
+      ">>> PERIPHERALS: OK  [GPU::CHIPGRID 0xFF]",
+      ">>> LOADING: core.modules [████████░░] 80%",
+      ">>> USER: WELCOME."
+    ];
+
+    for (let i = 0; i < bootLines.length; i++) {
+      await typeText(bootLinesEls[i], bootLines[i], 12 + Math.random() * 8);
+      await wait(140 + Math.max(0, 100 - i * 20));
+      if (i === 1) {
+        await grittyGlitch(bootLogo, 8, 2.6, 48);
+        await wait(120);
+      }
+      if (i === 2) {
+        await grittyGlitch(bootLinesEls[i], 10, 2.2, 42);
+        await wait(110);
+      }
+    }
+
+    for (let j = 0; j < 3; j++) {
+      bootLogo.classList.toggle('flick');
+      await wait(50 + Math.random() * 40);
+    }
+
+    await grittyGlitch(bootLogo, 10, 3.2, 36);
+    flashIntro(90);
+
+    // gracefully stop intro audio (fade then pause) if it was started
+    if (introAudioAllowed && introAudio) {
+      try {
+        const startVol = isFinite(introAudio.volume) ? introAudio.volume : 1;
+        const steps = 8;
+        for (let s = 1; s <= steps; s++) {
+          introAudio.volume = Math.max(0, startVol * (1 - s / steps));
+          // small await to create fade
+          // eslint-disable-next-line no-await-in-loop
+          await wait(30);
+        }
+        try { introAudio.pause(); introAudio.currentTime = 0; } catch (err) {}
+      } catch (err) {
+        try { introAudio.pause(); introAudio.currentTime = 0; } catch (e) {}
+      }
+    }
+
+    await wait(160);
+    setIntroPlayedFlag();
+    hideIntroOverlay();
+    await wait(320);
+
+    // if intro audio allowed, start ambient automatically; otherwise wait for interaction
+    if (introAudioAllowed) {
+      try {
+        ambientAudio.volume = 0;
+        ambientAudio.play().catch(()=>{});
+        fadeAudio(ambientAudio, 0.28, 1600);
+      } catch (e) {}
+    } else {
+      // listen for user to start ambient
+      document.addEventListener('pointerdown', startAmbientOnInteraction, { once: true });
+      soundEnableBtn.style.display = 'inline-block';
+    }
+
+    showMainUI();
   }
 
-  formStatus.style.color = 'var(--error)';
-  formStatus.innerHTML = 'Could not send via the server. <a href="#" id="mailto-fallback">Send by email instead</a>';
-  const mailtoLink = document.getElementById('mailto-fallback');
-  if (mailtoLink) {
-    const subject = encodeURIComponent('Message from synt website');
-    const body = encodeURIComponent(`Name: ${name}\n\nMessage:\n${message}`);
-    mailtoLink.href = `mailto:hello@example.com?subject=${subject}&body=${body}`;
-    mailtoLink.addEventListener('click', () => {
-      formStatus.textContent = 'Opening email client...';
-    }, { once: true });
+  /* allow skipping intro via click (but prevent accidental focus triggers) */
+  function skipIntro() {
+    setIntroPlayedFlag();
+    hideIntroOverlay();
+    try { introAudio.pause(); introAudio.currentTime = 0; } catch (e) {}
+    // allow ambient to be started on next interaction
+    document.addEventListener('pointerdown', startAmbientOnInteraction, { once: true });
+    showMainUI();
   }
-}
-form.addEventListener('submit', submitFormRobust);
 
-/* ======================
-   goHome: hide sections and restore stage
-   ====================== */
-function goHome() {
-  sections.forEach(s => {
-    s.style.display = 'none';
-    s.setAttribute('aria-hidden', 'true');
+  // use pointerdown for immediate skipping (more responsive)
+  introOverlay.addEventListener('pointerdown', (e) => {
+    // skip if clicking outside interactive controls (soundEnableBtn handled separately)
+    if (e.target === soundEnableBtn) return;
+    skipIntro();
+  }, { passive: true });
+
+  /* ===============
+     Init on DOM ready
+     =============== */
+  document.addEventListener('DOMContentLoaded', () => {
+    // initial UI state
+    menu.style.opacity = 0;
+    mainEl.setAttribute('aria-hidden', 'true');
+
+    if (prefersReducedMotion()) {
+      // avoid animations for users who prefer reduced motion
+      introOverlay.style.display = 'none';
+      introOverlay.setAttribute('aria-hidden', 'true');
+      showMainUI();
+      setIntroPlayedFlag();
+      return;
+    }
+
+    if (!introWasPlayed()) {
+      playIntroSequence().catch(err => {
+        console.error('Intro sequence failed:', err);
+        // fallback to ensure the site remains usable
+        setIntroPlayedFlag();
+        introOverlay.style.display = 'none';
+        showMainUI();
+      });
+    } else {
+      introOverlay.style.display = 'none';
+      introOverlay.setAttribute('aria-hidden', 'true');
+      showMainUI();
+    }
   });
-  stage.style.opacity = 1;
-  document.querySelector('main').setAttribute('aria-hidden', 'false');
-  if (logo && typeof logo.focus === 'function') logo.focus();
-}
+
+  /* ===============
+     Clean up on page hide/unload
+     =============== */
+  window.addEventListener('pagehide', () => {
+    clearAllTrackedIntervals();
+    clearAllTrackedTimeouts();
+    try { if (introAudio && !introAudio.paused) { introAudio.pause(); } } catch (_) {}
+    try { if (ambientAudio && !ambientAudio.paused) { ambientAudio.pause(); } } catch (_) {}
+  }, { passive: true });
+
+})(); /* IIFE end */
 </script>
 </body>
 </html>
