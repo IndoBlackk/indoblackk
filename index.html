@@ -5,7 +5,6 @@
 <title>synt — everything feels different in the dark</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-/* --- ROOT & GLOBAL --- */
 :root {
   --bg: #0a0a0a;
   --fg: #fff;
@@ -35,7 +34,6 @@ body::before {
   z-index: 5;
 }
 
-/* --- STAGE & LOGO --- */
 .stage {
   display: flex;
   flex-direction: column;
@@ -63,7 +61,6 @@ body::before {
   letter-spacing: 0.2em;
 }
 
-/* --- MENU --- */
 .menu {
   display: flex;
   gap: 2rem;
@@ -95,21 +92,7 @@ body::before {
   filter: brightness(1.5);
 }
 
-/* --- HIDDEN EASTER EGG --- */
-#easter-egg {
-  position: fixed;
-  bottom: 5px;
-  right: 8px;
-  font-size: 0.8rem;
-  opacity: 0.05;
-  cursor: pointer;
-  z-index: 50;
-}
-#easter-egg:hover {
-  opacity: 0.3;
-}
-
-/* --- POPUP FORM --- */
+/* Popup Form */
 .popup {
   position: fixed;
   inset: 0;
@@ -127,6 +110,7 @@ body::before {
   background: #111;
   padding: 2rem;
   border: 2px solid var(--fg);
+  width: 300px;
 }
 .popup input, .popup textarea {
   background: #000;
@@ -146,8 +130,12 @@ body::before {
 .popup button:hover {
   background: #ccc;
 }
+.form-status {
+  font-size: 0.8rem;
+  color: #0f0;
+}
 
-/* --- CONTENT SECTIONS --- */
+/* Sections */
 .section {
   position: fixed;
   inset: 0;
@@ -182,7 +170,6 @@ body::before {
   display: block;
 }
 
-/* --- BACK BUTTON --- */
 .back-btn {
   margin-top: 2rem;
   cursor: pointer;
@@ -204,18 +191,18 @@ body::before {
   <div class="menu" id="menu">
     <div class="menu-box" data-section="sounds">Sounds</div>
     <div class="menu-box" data-section="visuals">Visuals</div>
+    <div class="menu-box" id="tellBtn">Tell me something</div>
   </div>
 </div>
 
-<div id="easter-egg">tell me something</div>
-
 <!-- Popup Form -->
 <div class="popup" id="popup">
-  <form id="tellMeForm">
+  <form id="tellMeForm" action="YOUR_ENDPOINT_HERE" method="POST">
     <input type="text" name="name" placeholder="Your name" required>
     <textarea rows="4" name="message" placeholder="Your message" required></textarea>
     <button type="submit">Send</button>
     <p id="formStatus" class="form-status"></p>
+    <div class="back-btn" id="closePopup">Close</div>
   </form>
 </div>
 
@@ -249,26 +236,51 @@ body::before {
   <div class="back-btn" onclick="goHome()">Back</div>
 </div>
 
+<!-- Ambient background audio -->
+<audio id="ambientAudio" loop>
+  <source src="ambient.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Hidden flicker sound effects -->
+<audio id="flickerSound1">
+  <source src="flicker1.mp3" type="audio/mpeg">
+</audio>
+<audio id="flickerSound2">
+  <source src="flicker2.mp3" type="audio/mpeg">
+</audio>
+
 <script>
 const logo = document.getElementById('logo');
 const menu = document.getElementById('menu');
 const stage = document.getElementById('stage');
-const easterEgg = document.getElementById('easter-egg');
 const popup = document.getElementById('popup');
 const sections = document.querySelectorAll('.section');
-let audioCtx;
+const tellBtn = document.getElementById('tellBtn');
+const closePopup = document.getElementById('closePopup');
+const form = document.getElementById('tellMeForm');
+const formStatus = document.getElementById('formStatus');
+
+// Ambient audio setup
+const ambientAudio = document.getElementById('ambientAudio');
+document.addEventListener('click', () => {
+  if (ambientAudio.paused) {
+    ambientAudio.volume = 0.3;
+    ambientAudio.play().catch(err => console.warn("Autoplay blocked:", err));
+  }
+});
+
+// Flicker sound effects pool
+const flickerSounds = [
+  document.getElementById('flickerSound1'),
+  document.getElementById('flickerSound2')
+];
 
 function playFlickerSound() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = 'square';
-  osc.frequency.value = 100 + Math.random()*50;
-  gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.1);
-  osc.connect(gain).connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime+0.1);
+  const sound = flickerSounds[Math.floor(Math.random() * flickerSounds.length)];
+  if (sound) {
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+  }
 }
 
 function flickerLoop() {
@@ -283,15 +295,11 @@ function flickerLoop() {
   setTimeout(flickerLoop, 50 + Math.random()*200);
 }
 
-document.addEventListener('click', () => {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-});
-
 setTimeout(() => {
   menu.style.opacity = 1;
 }, 3000);
 
-document.querySelectorAll('.menu-box').forEach(box => {
+document.querySelectorAll('.menu-box[data-section]').forEach(box => {
   box.addEventListener('click', () => {
     stage.style.opacity = 0;
     setTimeout(() => {
@@ -300,16 +308,37 @@ document.querySelectorAll('.menu-box').forEach(box => {
   });
 });
 
+tellBtn.addEventListener('click', () => {
+  popup.style.display = 'flex';
+});
+
+closePopup.addEventListener('click', () => {
+  popup.style.display = 'none';
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  formStatus.textContent = "Sending...";
+  try {
+    const formData = new FormData(form);
+    const res = await fetch(form.action, {
+      method: form.method,
+      body: formData
+    });
+    if (res.ok) {
+      formStatus.textContent = "Message sent ✔️";
+      form.reset();
+    } else {
+      formStatus.textContent = "Error sending message ❗";
+    }
+  } catch (err) {
+    formStatus.textContent = "Network error ❗";
+  }
+});
+
 function goHome() {
   sections.forEach(s => s.style.display = 'none');
   stage.style.opacity = 1;
-}
-
-easterEgg.addEventListener('click', () => {
-  popup.style.display = 'flex';
-});
-function closePopup() {
-  popup.style.display = 'none';
 }
 
 flickerLoop();
