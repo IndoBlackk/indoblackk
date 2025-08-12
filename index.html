@@ -422,7 +422,7 @@ body::before {
       <nav class="menu" id="menu" aria-label="Primary">
         <button class="menu-box" data-section="sounds" type="button">Sounds</button>
         <button class="menu-box" data-section="visuals" type="button">Visuals</button>
-        <button class="menu-box" id="gbTrigger" type="button">Talk</button>
+        <button class="menu-box" id="talkTrigger" type="button">Talk</button>
         <!-- Embedded synth button (preserved) -->
       </nav>
     </header>
@@ -1544,6 +1544,25 @@ gbClearLocal.addEventListener('click', () => {
 const { doc: _doc } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js').catch(()=>({}));
 
 /* Done */
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const talkBtn = document.getElementById('talkTrigger');
+  if (talkBtn) {
+    const newBtn = talkBtn.cloneNode(true); // ensure no old listeners
+    talkBtn.parentNode.replaceChild(newBtn, talkBtn);
+    newBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.body.style.transition = 'opacity 0.6s ease';
+      document.body.style.opacity = 0;
+      setTimeout(() => {
+        window.location.href = 'talk.html';
+      }, 600);
+    });
+  }
+});
 </script>
 
 </body>
