@@ -365,6 +365,27 @@ main#main {
 
 /* ---------- keep the rest of your original site CSS intact ---------- */
 /* (Everything above remains the same as your original file) */
+
+/* Subtle TV grain enhancement */
+body::before {
+  background:
+    repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px),
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.01), transparent 10%),
+    radial-gradient(circle at 70% 80%, rgba(255,255,255,0.01), transparent 8%);
+  opacity: 0.75;
+}
+
+/* Flicker effect */
+@keyframes subtleFlicker {
+  0%, 100% { filter: brightness(1); }
+  45% { filter: brightness(1.05); }
+  50% { filter: brightness(0.98); }
+  55% { filter: brightness(1.04); }
+}
+.intro-overlay {
+  animation: subtleFlicker 1.8s infinite;
+}
+
 </style>
 </head>
 <body>
@@ -401,9 +422,8 @@ main#main {
       <nav class="menu" id="menu" aria-label="Primary">
         <button class="menu-box" data-section="sounds" type="button">Sounds</button>
         <button class="menu-box" data-section="visuals" type="button">Visuals</button>
-        <button class="menu-box" id="tellBtn" type="button">Tell me something</button>
+        <button class="menu-box" id="gbTrigger" type="button">Talk</button>
         <!-- Embedded synth button (preserved) -->
-        <button class="menu-box" id="synthBtn" type="button" aria-controls="synthOverlay" aria-expanded="false">Make some noise</button>
       </nav>
     </header>
 
@@ -936,25 +956,7 @@ main#main {
   --gb-font: monospace;
 }
 
-.gb-trigger {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  display:flex; align-items:center; justify-content:center;
-  background: #000;
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.08);
-  cursor:pointer;
-  z-index: 2000;
-  opacity: 0.92;
-  transition: transform .12s ease, opacity .12s;
-  font-family: var(--gb-font);
-  font-size:18px;
-}
-.gb-trigger:hover { transform: translateY(-3px); opacity: 1; }
+
 
 .gb-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items:center; justify-content:center; z-index:1999;
@@ -1029,7 +1031,7 @@ main#main {
 </style>
 
 <!-- Guestbook trigger -->
-<button class="gb-trigger" id="gbTrigger" aria-label="Open guestbook" title="Open guestbook">✉️</button>
+
 
 <!-- Guestbook modal -->
 <div class="gb-backdrop" id="gbBackdrop" aria-hidden="true">
