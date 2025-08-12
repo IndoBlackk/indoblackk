@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talk - Graffiti Wall</title>
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+  font-family: monospace;
+  color: #fff;
+}
+#fadeOverlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 1000;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+#controls {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.7);
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+#chat {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  width: 300px;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid #444;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  height: 200px;
+}
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 5px;
+  font-size: 14px;
+}
+#chat input {
+  border: none;
+  padding: 8px;
+  font-family: monospace;
+  font-size: 14px;
+  outline: none;
+  background: #111;
+  color: #fff;
+}
+.noise-bg {
+  position: fixed;
+  inset: 0;
+  background-image: url('https://media.giphy.com/media/oEI9uBYSzLpBK/giphy.gif');
+  background-size: cover;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: -1;
+}
+</style>
+</head>
+<body>
+<div id="fadeOverlay"></div>
+<div class="noise-bg"></div>
+<canvas id="drawCanvas"></canvas>
+
+<div id="controls">
+  Color: <input type="color" id="colorPicker" value="#ffffff"><br>
+  Size: <input type="range" id="sizePicker" min="1" max="20" value="4">
+</div>
+
+<div id="chat">
+  <div id="messages"></div>
+  <input type="text" id="chatInput" placeholder="Type message...">
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+// Firebase config from your original site
+var firebaseConfig = {
+  apiKey: "AIzaSyBeXCRIeRdHr2C3EYnDwC1NoQNQxZygA0U",
+  authDomain: "guestbook-bfbdc.firebaseapp.com",
+  databaseURL: "https://guestbook-bfbdc-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "guestbook-bfbdc",
+  storageBucket: "guestbook-bfbdc.firebasestorage.app",
+  messagingSenderId: "710789947600",
+  appId: "1:710789947600:web:19014ef99d053f4c5dbed5",
+  measurementId: "G-E9XPN9563X"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Prompt for username
+let username = sessionStorage.getItem('talkUsername');
+if(!username) {
+  username = prompt("Enter your nickname:") || "Anonymous";
+  sessionStorage.setItem('talkUsername', username);
+}
+
+// Canvas setup
+const canvas = document.getElementById('drawCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
+  const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.putImageData(imgData, 0, 0);
+});
+
+let drawing = false;
+let brushColor = document.getElementById('colorPicker').value;
+let brushSize = document.getElementById('sizePicker').value;
+
+document.getElementById('colorPicker').addEventListener('input', e => brushColor = e.target.value);
+document.getElementById('sizePicker').addEventListener('input', e => brushSize = e.target.value);
+
+function startDraw(e) {
+  drawing = true;
+  draw(e);
+}
+function endDraw() {
+  drawing = false;
+  ctx.beginPath();
+}
+function draw(e) {
+  if(!drawing) return;
+  let x = e.clientX || e.touches[0].clientX;
+  let y = e.clientY || e.touches[0].clientY;
+  ctx.lineWidth = brushSize;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = brushColor;
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+
+  // Push stroke to Firebase
+  db.ref('strokes').push({
+    x, y, color: brushColor, size: brushSize
+  });
+}
+
+// Event listeners
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('mouseup', endDraw);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('touchstart', startDraw);
+canvas.addEventListener('touchend', endDraw);
+canvas.addEventListener('touchmove', draw);
+
+// Listen for strokes from Firebase
+db.ref('strokes').on('child_added', data => {
+  const s = data.val();
+  ctx.lineWidth = s.size;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = s.color;
+  ctx.lineTo(s.x, s.y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(s.x, s.y);
+});
+
+// Chat system
+const messagesDiv = document.getElementById('messages');
+const chatInput = document.getElementById('chatInput');
+
+chatInput.addEventListener('keypress', e => {
+  if(e.key === 'Enter' && chatInput.value.trim()) {
+    db.ref('messages').push({
+      user: username,
+      text: chatInput.value.trim()
+    });
+    chatInput.value = '';
+  }
+});
+
+db.ref('messages').on('child_added', data => {
+  const m = data.val();
+  const div = document.createElement('div');
+  div.textContent = m.user + ": " + m.text;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+});
+
+// Fade in effect
+window.addEventListener('load', () => {
+  document.getElementById('fadeOverlay').style.opacity = 0;
+  setTimeout(() => document.getElementById('fadeOverlay').remove(), 500);
+});
+</script>
+</body>
+</html>
