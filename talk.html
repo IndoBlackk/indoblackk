@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Talk — Community Mural</title>
+<title>Talk — Community Mural (Final v3)</title>
 
 <!-- Fabric.js CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.6.0/fabric.min.js"></script>
@@ -12,112 +12,77 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-  /* ----------------- AESTHETIC (retro CRT / pixel vibe) ----------------- */
-  :root{
-    --bg:#030303; --panel:#0b0b0b; --muted:#9a9a9a; --accent:#dfeffb;
-    --mono: "Roboto Mono", ui-monospace, monospace;
-  }
+  :root{ --bg:#030303; --panel:#0b0b0b; --muted:#9a9a9a; --accent:#dfeffb; --mono: "Roboto Mono", monospace; }
   html,body{height:100%;margin:0;background:linear-gradient(#050507,#020203);color:#fff;font-family:var(--mono);-webkit-font-smoothing:antialiased;overflow:hidden;}
-  /* subtle film grain overlay */
-  body::after{
-    content:""; position:fixed; inset:0; pointer-events:none;
-    background:
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.006) 0 1px, transparent 1px 3px),
-      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.01), transparent 10%);
-    mix-blend-mode:screen; opacity:0.08;
-    z-index:1000;
-  }
-  /* scanlines */
+  body::after{content:""; position:fixed; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,0.006) 0 1px, transparent 1px 3px), radial-gradient(circle at 20% 20%, rgba(255,255,255,0.01), transparent 10%);
+    mix-blend-mode:screen; opacity:0.08; z-index:1000;}
   .scanlines{position:fixed; inset:0; pointer-events:none; z-index:999; opacity:0.06; background-image:linear-gradient(180deg, rgba(255,255,255,0.01) 0 1px, transparent 1px 3px); background-size:100% 3px;}
-  /* subtle flicker */
   @keyframes flicker{0%{filter:brightness(1);}50%{filter:brightness(1.03);}100%{filter:brightness(0.98);}}
   .flicker{animation:flicker 2s ease-in-out infinite;}
-
-  /* Intro overlay */
   .intro { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:2000; background:rgba(0,0,0,0.95); flex-direction:column; gap:18px; }
   .intro .panel{width:min(880px,92%); padding:28px; border-radius:10px; background:linear-gradient(#060606,#0a0a0a); border:1px solid rgba(255,255,255,0.04); box-shadow:0 30px 120px rgba(0,0,0,0.8);}
   .intro h1{font-size:1.5rem; margin:0; letter-spacing:0.18em; color:var(--accent); text-transform:uppercase;}
   .intro p{color:#cfcfcf;margin:10px 0 0;font-size:1rem;line-height:1.3}
   .btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:.6rem .9rem;border-radius:6px;color:var(--accent);cursor:pointer;font-weight:700}
   .btn:active{transform:translateY(1px)}
-  .subtle{color:var(--muted);font-size:.88rem}
-
-  /* Main layout */
+  #nameOverlay{position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2100; background:rgba(0,0,0,0.85)}
+  .nameBox{width:320px;padding:18px;border-radius:10px;background:linear-gradient(#070707,#0b0b0b);border:1px solid rgba(255,255,255,0.04);}
+  .nameBox input{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:#050505;color:#fff;font-family:var(--mono)}
+  /* Layout */
   #app{position:fixed; inset:0; display:flex; flex-direction:column; z-index:1;}
   header.topbar{height:62px; display:flex; align-items:center; gap:14px; padding:10px 18px; background:linear-gradient(#050505,#0b0b0b); border-bottom:1px solid rgba(255,255,255,0.03); z-index:50;}
   .brand{font-size:1.1rem;font-weight:900;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase}
   .byline{opacity:.7;font-size:.85rem;margin-left:6px;color:var(--muted)}
-
-  /* main stage */
   .stage{flex:1; position:relative; display:flex; gap:12px; padding:18px; align-items:stretch; justify-content:stretch;}
   .leftPanel{width:320px; background:linear-gradient(#060606,#0d0d0d); border:1px solid rgba(255,255,255,0.04); border-radius:10px; padding:12px; box-shadow:0 20px 60px rgba(0,0,0,0.6); overflow:auto}
   .canvasWrap{flex:1; position:relative; display:flex; align-items:center; justify-content:center; border-radius:10px; overflow:hidden}
   #mural{background:#050505; width:100%; height:100%; display:block; }
-
   .sectionTitle{font-weight:800;color:var(--accent);letter-spacing:0.12em;margin-bottom:8px}
   label.small{display:block;font-size:.78rem;color:var(--muted);margin-top:10px}
-
-  /* toolbar rows */
   .toolbar{display:flex;flex-wrap:wrap;gap:8px}
   .tool{padding:8px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.04);cursor:pointer;color:#fff;font-weight:700}
   .tool.active{outline:2px solid rgba(223,239,251,0.06); box-shadow:0 6px 20px rgba(0,0,0,0.6)}
   input[type=color]{width:44px;height:36px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);padding:0;background:#000}
   input[type=range]{width:120px}
-
-  /* stamps row */
   .stamps{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
   .stampBtn{width:48px;height:48px;border-radius:6px;background:#070707;border:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px}
-
-  /* message form */
   .messageForm{margin-top:12px;display:flex;flex-direction:column;gap:8px}
   .messageForm input, .messageForm textarea{background:#050505;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:6px;color:#fff;font-family:var(--mono)}
-  .messageForm .row{display:flex;gap:8px}
-
-  /* floating messages container */
   #floating{position:absolute; inset:10px; pointer-events:none; z-index:30}
-  .bubble{
-    position:absolute; pointer-events:auto; padding:8px 10px; background:linear-gradient(#080808,#0c0c0c);
-    border:1px solid rgba(255,255,255,0.04); border-radius:10px; color:#fff; max-width:240px;
-    box-shadow:0 18px 60px rgba(0,0,0,0.6); touch-action:none; cursor:grab; user-select:none;
-  }
+  .bubble{position:absolute; pointer-events:auto; padding:8px 10px; background:linear-gradient(#080808,#0c0c0c); border:1px solid rgba(255,255,255,0.04); border-radius:10px; color:#fff; max-width:240px; box-shadow:0 18px 60px rgba(0,0,0,0.6); touch-action:none; cursor:grab; user-select:none;}
   .bubble .meta{font-size:11px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between}
   .bubble .adminDelete{display:none}
   .adminMode .bubble .adminDelete{display:inline-block}
-
-  /* admin gear */
   #adminGear{position:fixed; right:14px; top:14px; z-index:60; width:40px; height:40px; border-radius:8px; background:#070707; border:1px solid rgba(255,255,255,0.04); display:flex;align-items:center;justify-content:center; cursor:pointer}
   #adminGear:hover{transform:translateY(-2px)}
-
-  /* responsive */
-  @media (max-width:880px){
-    .stage{flex-direction:column}
-    .leftPanel{width:100%;order:2}
-    .canvasWrap{order:1;height:60vh}
-  }
-
-  /* pixel-ish text for headings */
-  @font-face{font-family:PixelLike; src: local("Courier New");}
-  .pixel{font-family:PixelLike, var(--mono)}
+  .commentBox{position:fixed; z-index:2200; background:#0b0b0b;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px; min-width:220px}
+  @media (max-width:880px){ .stage{flex-direction:column} .leftPanel{width:100%;order:2} .canvasWrap{order:1;height:60vh} }
 </style>
 </head>
 <body>
-  <!-- scanlines -->
   <div class="scanlines" aria-hidden="true"></div>
 
-  <!-- Intro overlay -->
   <div id="intro" class="intro" role="dialog" aria-label="Welcome overlay">
     <div class="panel flicker">
-      <h1 id="introTitle">PLACEHOLDER WELCOME MESSAGE</h1>
-      <p id="introBody" class="subtle">This is a placeholder — write whatever you like. A subtle glitch animation and grain set the mood.</p>
-
+      <h1 id="introTitle">WELCOME — PLACEHOLDER</h1>
+      <p id="introBody" class="subtle">This is a placeholder welcome message. Click the button below to join the mural.</p>
       <div style="display:flex;gap:10px;align-items:center;margin-top:18px;justify-content:center">
         <button id="agreeBtn" class="btn">Sure thing</button>
-        <button id="peekBtn" class="btn" title="Peek">Peek (no drawing)</button>
       </div>
     </div>
   </div>
 
-  <!-- App -->
+  <div id="nameOverlay" aria-hidden="true">
+    <div class="nameBox">
+      <div style="font-weight:800;margin-bottom:8px;color:var(--accent)">Choose a display name</div>
+      <input id="chooseName" placeholder="Your name (or anon)" maxlength="60">
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+        <button id="nameOk" class="btn">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="app" aria-hidden="true">
     <header class="topbar">
       <div class="brand">S Y N T</div>
@@ -172,21 +137,22 @@
     </div>
   </div>
 
-  <!-- admin gear -->
   <div id="adminGear" title="Admin" aria-hidden="false">⚙️</div>
 
 <script>
-/* =======================
-   talk.html — Phase 1 mural
-   - Uses Fabric.js for drawing
-   - Saves canvas JSON to Firebase Realtime DB under /canvasState
-   - Saves messages to /messages
-   - Floating bubbles with simple bounce physics
-   - Admin password (indobingo) toggles admin controls
-   ======================= */
+// Wrap full app initialization to run after window load and after fabric & firebase are available
+window.addEventListener('load', () => {
+  // small safety checks
+  if(typeof fabric === 'undefined'){
+    alert('fabric.js failed to load. Please check network or use a modern browser.');
+    return;
+  }
+  if(typeof firebase === 'undefined'){
+    alert('firebase failed to load. Please check network or use a modern browser.');
+    return;
+  }
 
-(function(){
-  // ---------- Firebase config (from your original site) ----------
+  // Firebase config (from your original site)
   const firebaseConfig = {
     apiKey: "AIzaSyBeXCRIeRdHr2C3EYnDwC1NoQNQxZygA0U",
     authDomain: "guestbook-bfbdc.firebaseapp.com",
@@ -200,10 +166,12 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // ---------- DOM ----------
+  // DOM refs
   const intro = document.getElementById('intro');
   const agreeBtn = document.getElementById('agreeBtn');
-  const peekBtn = document.getElementById('peekBtn');
+  const nameOverlay = document.getElementById('nameOverlay');
+  const chooseName = document.getElementById('chooseName');
+  const nameOk = document.getElementById('nameOk');
   const app = document.getElementById('app');
   const muralEl = document.getElementById('mural');
   const floating = document.getElementById('floating');
@@ -219,346 +187,239 @@
   const messageEl = document.getElementById('message');
   const adminGear = document.getElementById('adminGear');
 
-  // ---------- state ----------
+  // state
   let adminMode = false;
-  const ADMIN_PASSWORD = 'indobingo'; // change if you want
-  let myName = sessionStorage.getItem('mural_name') || ('anon-'+Math.floor(Math.random()*9000));
-  nameEl.value = myName;
+  const ADMIN_PASSWORD = 'indobingo';
+  let displayName = sessionStorage.getItem('mural_name') || ('anon-'+Math.floor(Math.random()*9000));
+  nameEl.value = displayName;
 
-  // ---------- init Fabric canvas ----------
-  const fabricCanvas = new fabric.Canvas('mural', {
-    backgroundColor: '#050505',
-    isDrawingMode: true,
-    selection: false,
-    renderOnAddRemove: true
-  });
-
-  // resize canvas to container
+  // Fabric canvas
+  const fabricCanvas = new fabric.Canvas('mural', { backgroundColor: '#050505', isDrawingMode: true, selection:false, renderOnAddRemove:true });
   function fitCanvas(){
     const rect = muralEl.parentElement.getBoundingClientRect();
-    muralEl.width = Math.max(300, Math.floor(rect.width));
+    muralEl.width = Math.max(400, Math.floor(rect.width));
     muralEl.height = Math.max(300, Math.floor(rect.height));
     fabricCanvas.setWidth(muralEl.width);
     fabricCanvas.setHeight(muralEl.height);
     fabricCanvas.renderAll();
+    Object.values(bubbles).forEach(b => {
+      b.w = b.el.getBoundingClientRect().width;
+      b.h = b.el.getBoundingClientRect().height;
+      b.x = Math.min(Math.max(6, b.x), fabricCanvas.getWidth()-b.w-6);
+      b.y = Math.min(Math.max(6, b.y), fabricCanvas.getHeight()-b.h-6);
+      b.el.style.left = b.x+'px'; b.el.style.top = b.y+'px';
+    });
   }
   window.addEventListener('resize', fitCanvas, {passive:true});
-  setTimeout(fitCanvas, 60);
+  setTimeout(fitCanvas, 80);
 
-  // ---------- tool controls ----------
+  // tools
   let currentTool = 'pen';
   function setTool(tool){
     currentTool = tool;
     Array.from(toolsRow.querySelectorAll('.tool')).forEach(t => t.classList.toggle('active', t.dataset.tool===tool));
     fabricCanvas.isDrawingMode = (tool !== 'shape' && tool !== 'eraser');
-    if(tool==='eraser'){ // emulate eraser by setting globalCompositeOperation when drawing; simpler: use fabric.EraserBrush if available
+    if(tool==='eraser'){
       fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
       fabricCanvas.freeDrawingBrush.width = parseInt(sizeEl.value,10) || 6;
       fabricCanvas.freeDrawingBrush.color = '#000000';
     } else if(tool==='marker'){
-      const b = new fabric.PencilBrush(fabricCanvas);
-      b.width = parseInt(sizeEl.value,10) * 1.8;
-      b.color = colorEl.value;
-      b.decimate = 0.4;
-      fabricCanvas.freeDrawingBrush = b;
-    } else if(tool==='pixel'){
-      const b = new fabric.PencilBrush(fabricCanvas);
-      b.width = Math.max(1, Math.round(sizeEl.value/1.6));
-      b.color = colorEl.value;
-      fabricCanvas.freeDrawingBrush = b;
-    } else if(tool==='spray'){
-      // simple spray approximation using randomized short strokes in pointer events
-      const b = new fabric.PencilBrush(fabricCanvas);
-      b.width = Math.max(1, Math.round(sizeEl.value/1.6));
-      b.color = colorEl.value;
-      fabricCanvas.freeDrawingBrush = b;
-    } else { // pen/fallback
-      const b = new fabric.PencilBrush(fabricCanvas);
-      b.width = parseInt(sizeEl.value,10) || 6;
-      b.color = colorEl.value;
-      fabricCanvas.freeDrawingBrush = b;
+      const b = new fabric.PencilBrush(fabricCanvas); b.width = parseInt(sizeEl.value,10) * 1.8; b.color = colorEl.value; fabricCanvas.freeDrawingBrush = b;
+    } else {
+      const b = new fabric.PencilBrush(fabricCanvas); b.width = parseInt(sizeEl.value,10) || 6; b.color = colorEl.value; fabricCanvas.freeDrawingBrush = b;
     }
   }
-  toolsRow.addEventListener('click', (e) => {
-    const btn = e.target.closest('.tool');
-    if(!btn) return;
-    setTool(btn.dataset.tool);
-  });
+  toolsRow.addEventListener('click',(e)=>{ const btn = e.target.closest('.tool'); if(!btn) return; setTool(btn.dataset.tool); });
   setTool('pen');
+  colorEl.addEventListener('input', ()=> setTool(currentTool)); sizeEl.addEventListener('input', ()=> setTool(currentTool));
 
-  colorEl.addEventListener('input', ()=> setTool(currentTool));
-  sizeEl.addEventListener('input', ()=> setTool(currentTool));
-
-  // undo (fabric history simple)
-  undoBtn.addEventListener('click', ()=> {
-    const objs = fabricCanvas.getObjects();
-    if(objs.length) {
-      fabricCanvas.remove(objs[objs.length-1]);
-      fabricCanvas.renderAll();
-    }
-  });
-
-  clearLocalBtn.addEventListener('click', ()=> {
-    if(!confirm('Clear local canvas? This does not delete server copy.')) return;
-    fabricCanvas.clear();
-    fabricCanvas.backgroundColor = '#050505';
-    fabricCanvas.renderAll();
-  });
-
+  undoBtn.addEventListener('click', ()=> { const objs = fabricCanvas.getObjects(); if(objs.length) { fabricCanvas.remove(objs[objs.length-1]); fabricCanvas.renderAll(); } });
+  clearLocalBtn.addEventListener('click', ()=> { if(!confirm('Clear local canvas? This does not delete server copy.')) return; fabricCanvas.clear(); fabricCanvas.backgroundColor = '#050505'; fabricCanvas.renderAll(); });
   saveBtn.addEventListener('click', saveCanvasToFirebase);
 
-  // ---------- stamps definitions (inline SVG converted to fabric objects) ----------
+  // stamps
   const STAMPS = [
-    { id:'cat1', label:'Cat', svg: `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#0b0b0b'/><g transform='scale(1.5) translate(6,6)'><rect x='2' y='18' width='40' height='16' fill='#fff'/><rect x='8' y='8' width='4' height='6' fill='#fff'/><rect x='30' y='8' width='4' height='6' fill='#fff'/><rect x='8' y='18' width='8' height='8' fill='#ffdede'/><rect x='24' y='18' width='8' height='8' fill='#ffdede'/></g></svg>` },
-    { id:'cat2', label:'Kitty', svg: `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#0a0a0a'/><g transform='scale(1.2) translate(8,6)'><path d='M10 30 q10 -20 30 0 q-5 20 -30 0' fill='#fff'/><circle cx='16' cy='24' r='3' fill='#000'/><circle cx='28' cy='24' r='3' fill='#000'/></g></svg>`},
+    { id:'cat1', label:'Cat', svg:`<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#0b0b0b'/><g transform='scale(1.5) translate(6,6)'><rect x='2' y='18' width='40' height='16' fill='#fff'/><rect x='8' y='8' width='4' height='6' fill='#fff'/><rect x='30' y='8' width='4' height='6' fill='#fff'/><rect x='8' y='18' width='8' height='8' fill='#ffdede'/><rect x='24' y='18' width='8' height='8' fill='#ffdede'/></g></svg>` },
     { id:'star', label:'Star', svg:`<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#050505'/><polygon points='32,6 38,26 60,26 42,38 48,58 32,46 16,58 22,38 4,26 26,26' fill='#ffd36d'/></svg>`},
-    { id:'skull', label:'Skull', svg:`<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#060606'/><g transform='translate(8,8)'><rect x='8' y='8' width='16' height='18' rx='6' fill='#fff'/><rect x='28' y='12' width='8' height='8' fill='#fff'/></g></svg>`},
     { id:'heart', label:'Heart', svg:`<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#040404'/><path d='M32 50 L12 30 A8 8 0 0 1 32 14 A8 8 0 0 1 52 30 Z' fill='#ff7aa2'/></svg>`},
     { id:'floppy', label:'Floppy', svg:`<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#040404'/><rect x='10' y='8' width='36' height='36' fill='#cfeffb' rx='3'/><rect x='16' y='16' width='24' height='16' fill='#0b0b0b'/></svg>`}
   ];
-
   function makeStampButton(s){
-    const btn = document.createElement('button');
-    btn.className='stampBtn';
-    btn.title = s.label;
-    btn.innerHTML = s.svg;
+    const btn = document.createElement('button'); btn.className='stampBtn'; btn.title = s.label; btn.innerHTML = s.svg;
     btn.addEventListener('click', ()=> {
-      // add as fabric.Image from SVG
       fabric.loadSVGFromString(s.svg, (objects, options) => {
         const obj = fabric.util.groupSVGElements(objects, options);
         obj.set({ left: fabricCanvas.getWidth()/2 - 40 + (Math.random()*80-40), top: fabricCanvas.getHeight()/2 - 40 + (Math.random()*80-40), scaleX:1.2, scaleY:1.2, selectable:true });
-        fabricCanvas.add(obj);
-        fabricCanvas.renderAll();
+        fabricCanvas.add(obj); fabricCanvas.renderAll();
+        scheduleSave();
       });
     });
     return btn;
   }
   STAMPS.forEach(s => stampsRow.appendChild(makeStampButton(s)));
 
-  // ---------- save & load canvas ----------
+  // save/load canvas
   function saveCanvasToFirebase(){
     try{
       const json = fabricCanvas.toJSON(['selectable']);
-      db.ref('canvasState').set(json).then(()=> {
-        saveBtn.textContent = 'Saved ✓';
-        setTimeout(()=> saveBtn.textContent = 'Save', 1200);
-      }).catch(err => { console.error('save err',err); alert('Save failed'); });
-    }catch(e){ console.error(e); alert('Save failed'); }
+      db.ref('canvasState').set(json).then(()=> { saveBtn.textContent='Saved ✓'; setTimeout(()=> saveBtn.textContent='Save',1200); }).catch(err=>{console.error(err);alert('Save failed');});
+    }catch(e){console.error(e);alert('Save failed');}
   }
-
   function loadCanvasFromFirebase(){
-    db.ref('canvasState').once('value').then(snap => {
+    db.ref('canvasState').once('value').then(snap=>{
       const data = snap.val();
       if(!data) return;
-      try{
-        fabricCanvas.clear();
-        fabricCanvas.loadFromJSON(data, fabricCanvas.renderAll.bind(fabricCanvas), function(o, object){
-          // optional: post-processing
-        });
-      }catch(e){ console.error('load err', e); }
-    }).catch(err => console.error('load canvas err',err));
+      try{ fabricCanvas.clear(); fabricCanvas.loadFromJSON(data, fabricCanvas.renderAll.bind(fabricCanvas)); }catch(e){console.error('load err',e);}
+    }).catch(err=>console.error('load canvas err',err));
   }
-  // initial load
   loadCanvasFromFirebase();
+  db.ref('canvasState').on('value', snap=>{ const data = snap.val(); if(!data) return; if(fabricCanvas.getObjects().length<1){ fabricCanvas.clear(); fabricCanvas.loadFromJSON(data, fabricCanvas.renderAll.bind(fabricCanvas)); } });
 
-  // listen to server updates (if another session saves later)
-  db.ref('canvasState').on('value', snap=>{
-    const data = snap.val();
-    if(!data) return;
-    try{
-      // only update if the canvas is empty or user asked to load
-      if(fabricCanvas.getObjects().length < 1){
-        fabricCanvas.clear(); fabricCanvas.loadFromJSON(data, fabricCanvas.renderAll.bind(fabricCanvas));
-      }
-    }catch(e){ console.error(e); }
-  });
+  // messages & bubbles
+  const bubbles = {};
+  function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  // ---------- messages (floating bubbles) ----------
-  const bubbles = {}; // id -> state
   function createBubble(id, data){
-    const el = document.createElement('div');
-    el.className = 'bubble';
-    el.innerHTML = `<div class="text">${escapeHtml(data.text)}</div><div class="meta"><div>${escapeHtml(data.name || 'anon')}</div><div class="controls"><button class="tool react">❤</button> <button class="tool adminDelete">Del</button></div></div>`;
+    if(!data) return;
+    const el = document.createElement('div'); el.className='bubble';
+    el.innerHTML = `<div class="text">${escapeHtml(data.text)}</div><div class="meta"><div class="who">${escapeHtml(data.name||'anon')}</div><div class="controls"><button class="tool react">❤ <span class="count">${(data.reactions && data.reactions.heart)||0}</span></button> <button class="tool comment">💬</button> <button class="tool adminDelete">Del</button></div></div>`;
     floating.appendChild(el);
-    // initial position
-    el.style.left = (data.x || (50 + Math.random()*(fabricCanvas.getWidth()-200))) + 'px';
-    el.style.top = (data.y || (50 + Math.random()*(fabricCanvas.getHeight()-200))) + 'px';
+    el.style.left = (data.x|| (50 + Math.random()*(fabricCanvas.getWidth()-200))) + 'px';
+    el.style.top = (data.y|| (50 + Math.random()*(fabricCanvas.getHeight()-200))) + 'px';
     const rect = el.getBoundingClientRect();
-    const state = { id, el, x: parseFloat(el.style.left), y: parseFloat(el.style.top), vx:(Math.random()*2-1)*0.8, vy:(Math.random()*2-1)*0.8, w: rect.width, h:rect.height };
+    const state = { id, el, x: parseFloat(el.style.left), y: parseFloat(el.style.top), vx:(Math.random()*2-1)*0.35, vy:(Math.random()*2-1)*0.35, w: rect.width, h:rect.height, dragging:false };
     bubbles[id] = state;
 
-    // drag to move
-    let drag=false, ox=0, oy=0;
-    el.addEventListener('pointerdown', (ev)=>{
-      drag=true; ox = ev.clientX - state.x; oy = ev.clientY - state.y; el.style.cursor='grabbing';
-      el.setPointerCapture && el.setPointerCapture(ev.pointerId);
-    });
-    window.addEventListener('pointermove',(ev)=>{ if(!drag) return; state.x = ev.clientX - ox; state.y = ev.clientY - oy; el.style.left = state.x+'px'; el.style.top = state.y+'px'; });
-    window.addEventListener('pointerup',()=>{ if(drag){ drag=false; el.style.cursor='grab'; /* persist pos */ db.ref('messages/'+id+'/x').set(state.x); db.ref('messages/'+id+'/y').set(state.y); } });
+    // pointer drag
+    el.addEventListener('pointerdown', (ev)=>{ state.dragging=true; state.ox = ev.clientX - state.x; state.oy = ev.clientY - state.y; el.setPointerCapture && el.setPointerCapture(ev.pointerId); el.style.cursor='grabbing'; });
+    window.addEventListener('pointermove', (ev)=>{ if(!state || !state.dragging) return; state.x = ev.clientX - state.ox; state.y = ev.clientY - state.oy; el.style.left=state.x+'px'; el.style.top=state.y+'px'; });
+    window.addEventListener('pointerup', ()=>{ if(state){ if(state.dragging){ state.dragging=false; el.style.cursor='grab'; db.ref('messages/'+id+'/x').set(state.x); db.ref('messages/'+id+'/y').set(state.y); } } });
+
+    // reaction
+    const reactBtn = el.querySelector('.react');
+    reactBtn.addEventListener('click', ()=>{ db.ref('messages/'+id+'/reactions/heart').transaction(v => (v||0)+1); });
+
+    // comment UI
+    const commentBtn = el.querySelector('.comment');
+    commentBtn.addEventListener('click', (e)=>{ showCommentBoxFor(id, state); });
 
     // admin delete
-    el.querySelector('.adminDelete').addEventListener('click', ()=> {
-      if(!adminMode) return;
-      if(!confirm('Delete message?')) return;
-      db.ref('messages/'+id).remove();
-      // local removal handled in child_removed listener
-    });
+    el.querySelector('.adminDelete').addEventListener('click', ()=>{ if(!adminMode) return; if(!confirm('Delete message?')) return; db.ref('messages/'+id).remove(); });
 
-    // reaction (just increments heart count)
-    el.querySelector('.react').addEventListener('click', ()=> {
-      db.ref('messages/'+id+'/reactions/heart').transaction(v => (v||0)+1);
-    });
+    // update reaction count when changed in DB
+    db.ref('messages/'+id+'/reactions/heart').on('value', snap=>{ const v = snap.val()||0; const elc = el.querySelector('.count'); if(elc) elc.textContent = v; });
   }
 
-  // listen messages realtime
-  db.ref('messages').on('child_added', snap=>{
-    const id = snap.key; const d = snap.val();
-    if(!d) return;
-    // create bubble if not exists
-    if(!bubbles[id]) createBubble(id, d);
-  });
-  db.ref('messages').on('child_changed', snap=>{
-    const id = snap.key; const d = snap.val();
-    const b = bubbles[id];
-    if(!b) return;
-    const textEl = b.el.querySelector('.text');
-    if(textEl) textEl.textContent = d.text || '';
-    const nameElLocal = b.el.querySelector('.meta > div');
-    if(nameElLocal) nameElLocal.textContent = d.name || 'anon';
-    const reactionEl = b.el.querySelector('.react');
-    // optional reaction display logic
-  });
-  db.ref('messages').on('child_removed', snap=>{
-    const id = snap.key;
-    const b = bubbles[id];
-    if(b){ b.el.remove(); delete bubbles[id]; }
-  });
+  // comment UI logic
+  function showCommentBoxFor(id, state){
+    const existing = document.getElementById('commentBox'); if(existing) existing.remove();
+    const box = document.createElement('div'); box.className='commentBox'; box.id='commentBox';
+    box.style.left = Math.min(window.innerWidth-260, Math.max(8, state.x+30))+'px';
+    box.style.top = Math.min(window.innerHeight-220, Math.max(8, state.y+30))+'px';
+    box.innerHTML = `<div style="font-weight:700;margin-bottom:6px">Comments</div><div id="commentList" style="max-height:140px;overflow:auto;margin-bottom:6px"></div><input id="commentInput" placeholder="Add a comment" style="width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:#050505;color:#fff;margin-bottom:6px"><div style="display:flex;justify-content:flex-end;gap:8px"><button id="commentSend" class="btn">Send</button><button id="commentClose" class="tool">Close</button></div>`;
+    document.body.appendChild(box);
+    db.ref('messages/'+id+'/comments').once('value').then(snap=>{ renderComments(snap.val()||[]); });
+    function renderComments(arr){ const list = box.querySelector('#commentList'); list.innerHTML=''; (arr||[]).forEach(c => { const d = document.createElement('div'); d.style.borderBottom='1px solid rgba(255,255,255,0.02)'; d.style.padding='6px 2px'; d.innerHTML = `<div style="font-weight:700">${escapeHtml(c.name||'anon')}</div><div style="font-size:13px">${escapeHtml(c.text)}</div>`; list.appendChild(d); }); }
+    box.querySelector('#commentSend').addEventListener('click', ()=>{
+      const txt = box.querySelector('#commentInput').value.trim(); if(!txt) return; const payload = { name: displayName, text: txt, t: Date.now() };
+      db.ref('messages/'+id+'/comments').transaction(cur => { cur = cur||[]; cur.push(payload); return cur; });
+      box.querySelector('#commentInput').value='';
+      db.ref('messages/'+id+'/comments').once('value').then(snap=>renderComments(snap.val()||[]));
+    });
+    box.querySelector('#commentClose').addEventListener('click', ()=> box.remove());
+  }
+
+  // realtime listeners
+  db.ref('messages').on('child_added', snap=>{ const id=snap.key; const d=snap.val(); if(!bubbles[id]) createBubble(id,d); });
+  db.ref('messages').on('child_changed', snap=>{ const id=snap.key; const d=snap.val(); const b=bubbles[id]; if(b){ b.el.querySelector('.text').textContent = d.text||''; b.el.querySelector('.who').textContent = d.name||'anon'; } });
+  db.ref('messages').on('child_removed', snap=>{ const id=snap.key; const b=bubbles[id]; if(b){ b.el.remove(); delete bubbles[id]; } });
 
   // post message
   postMsgBtn.addEventListener('click', ()=>{
-    const name = (nameEl.value||'').trim() || nameEl.value || 'anon';
-    const text = (messageEl.value||'').trim();
-    if(!text){ alert('Please write something'); return; }
-    const payload = { name, text, t: Date.now(), x: Math.random()*(fabricCanvas.getWidth()-220)+30, y: Math.random()*(fabricCanvas.getHeight()-140)+30, reactions:{heart:0} };
-    db.ref('messages').push(payload).then(()=> {
-      messageEl.value = '';
-    }).catch(err=> console.error(err));
+    const text = (messageEl.value||'').trim(); if(!text){ alert('Write something first'); return; }
+    const payload = { name: nameEl.value || displayName, text, t: Date.now(), x: Math.random()*(fabricCanvas.getWidth()-220)+30, y: Math.random()*(fabricCanvas.getHeight()-140)+30, reactions:{heart:0}, comments:[] };
+    db.ref('messages').push(payload).then(()=>{ messageEl.value=''; });
   });
 
-  // simple bubble physics loop
+  // physics loop with gentle movement and collisions
   function physicsTick(){
     const keys = Object.keys(bubbles);
-    for(const k of keys){
-      const s = bubbles[k];
-      // only update if not being dragged
-      s.x += s.vx; s.y += s.vy;
-      // bounce edges
-      const cw = fabricCanvas.getWidth(), ch=fabricCanvas.getHeight();
-      if(s.x < 6){ s.x = 6; s.vx *= -1; }
-      if(s.y < 6){ s.y = 6; s.vy *= -1; }
-      if(s.x + s.w > cw - 6){ s.x = cw - s.w - 6; s.vx *= -1; }
-      if(s.y + s.h > ch - 6){ s.y = ch - s.h - 6; s.vy *= -1; }
-      s.el.style.left = s.x+'px'; s.el.style.top = s.y+'px';
+    for(let i=0;i<keys.length;i++){
+      const a=bubbles[keys[i]];
+      if(!a) continue;
+      if(!a.dragging){ a.x += a.vx; a.y += a.vy; a.vx *= 0.999; a.vy *= 0.999; } // slight damping
+      const cw=fabricCanvas.getWidth(), ch=fabricCanvas.getHeight();
+      if(a.x < 6){ a.x=6; a.vx = Math.abs(a.vx)*0.6; }
+      if(a.y < 6){ a.y=6; a.vy = Math.abs(a.vy)*0.6; }
+      if(a.x + a.w > cw - 6){ a.x = cw - a.w - 6; a.vx = -Math.abs(a.vx)*0.6; }
+      if(a.y + a.h > ch - 6){ a.y = ch - a.h - 6; a.vy = -Math.abs(a.vy)*0.6; }
+      for(let j=i+1;j<keys.length;j++){
+        const b=bubbles[keys[j]]; if(!b) continue;
+        if(a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y){
+          const overlapX = (Math.min(a.x+a.w, b.x+b.w) - Math.max(a.x,b.x));
+          const overlapY = (Math.min(a.y+a.h, b.y+b.h) - Math.max(a.y,b.y));
+          if(overlapX < overlapY){
+            const shift = overlapX/2 + 0.5;
+            if(a.x < b.x){ a.x -= shift; b.x += shift; } else { a.x += shift; b.x -= shift; }
+            const vxTemp = a.vx; a.vx = b.vx*0.85; b.vx = vxTemp*0.85;
+          } else {
+            const shift = overlapY/2 + 0.5;
+            if(a.y < b.y){ a.y -= shift; b.y += shift; } else { a.y += shift; b.y -= shift; }
+            const vyTemp = a.vy; a.vy = b.vy*0.85; b.vy = vyTemp*0.85;
+          }
+        }
+      }
+      a.el.style.left = a.x + 'px'; a.el.style.top = a.y + 'px';
     }
     requestAnimationFrame(physicsTick);
   }
   physicsTick();
 
-  // ---------- admin ----------
+  // admin gear behavior
   adminGear.addEventListener('click', ()=>{
-    if(adminMode){
-      adminMode = false; document.body.classList.remove('adminMode'); sessionStorage.removeItem('mural_admin');
-      alert('Admin off');
-      return;
-    }
+    if(adminMode){ adminMode=false; document.body.classList.remove('adminMode'); sessionStorage.removeItem('mural_admin'); alert('Admin off'); return; }
     const p = prompt('Enter admin password:');
     if(p === ADMIN_PASSWORD){
-      adminMode = true;
-      document.body.classList.add('adminMode');
-      sessionStorage.setItem('mural_admin','1');
-      alert('Admin enabled. You can now delete messages or clear mural.');
-      // add clear mural control
+      adminMode=true; document.body.classList.add('adminMode'); sessionStorage.setItem('mural_admin','1'); alert('Admin enabled');
       if(!document.getElementById('adminClear')){
         const btn = document.createElement('button'); btn.className='tool'; btn.id='adminClear'; btn.textContent='Clear mural';
-        btn.addEventListener('click', ()=> {
+        btn.addEventListener('click', ()=>{
           if(!confirm('Clear entire mural for everyone? This deletes saved canvas and messages.')) return;
-          db.ref('canvasState').remove();
-          db.ref('messages').remove();
-          fabricCanvas.clear(); fabricCanvas.backgroundColor = '#050505'; fabricCanvas.renderAll();
-          // remove bubbles
-          Object.keys(bubbles).forEach(id => { if(bubbles[id]) bubbles[id].el.remove(); delete bubbles[id]; });
+          db.ref('canvasState').remove(); db.ref('messages').remove();
+          fabricCanvas.clear(); fabricCanvas.backgroundColor='#050505'; fabricCanvas.renderAll();
+          Object.keys(bubbles).forEach(id=>{ if(bubbles[id]) bubbles[id].el.remove(); delete bubbles[id]; });
         });
         document.querySelector('.leftPanel .toolbar').appendChild(btn);
       }
-    } else {
-      alert('Wrong password');
-    }
+    } else { alert('Wrong password'); }
   });
+  if(sessionStorage.getItem('mural_admin') === '1'){ adminMode=true; document.body.classList.add('adminMode'); }
 
-  // rehydrate admin mode if saved
-  if(sessionStorage.getItem('mural_admin') === '1'){
-    adminMode = true; document.body.classList.add('adminMode');
-  }
-
-  // ---------- intro behavior ----------
-  function enterFull(allowDraw){
-    // remove intro, reveal app and enable drawing (and optionally disable drawing if peek)
-    intro.style.display = 'none';
+  // intro -> ask name flow
+  agreeBtn.addEventListener('click', ()=>{
+    intro.style.display='none';
+    nameOverlay.style.display='flex';
+    chooseName.focus();
+  });
+  nameOk.addEventListener('click', ()=>{
+    const v = (chooseName.value||'').trim() || ('anon-'+Math.floor(Math.random()*9000));
+    displayName = v; sessionStorage.setItem('mural_name', displayName);
+    nameEl.value = displayName;
+    nameOverlay.style.display='none';
     app.setAttribute('aria-hidden','false');
-    if(!allowDraw) fabricCanvas.isDrawingMode = false;
-    else fabricCanvas.isDrawingMode = (currentTool !== 'eraser' && currentTool !== 'shape');
     fitCanvas();
-  }
-  agreeBtn.addEventListener('click', ()=> enterFull(true));
-  peekBtn.addEventListener('click', ()=> enterFull(false));
-
-  // small tasteful glitch animation for intro text (characters appear)
-  (function glitchIntro(){
-    const title = document.getElementById('introTitle');
-    const full = title.textContent;
-    title.textContent = '';
-    let i=0;
-    function step(){
-      if(i>full.length) return;
-      title.textContent = full.slice(0,i) + (i%2 ? '▮' : '');
-      i++;
-      setTimeout(step, 30 + Math.random()*80);
-    }
-    step();
-  })();
-
-  // ---------- helpers ----------
-  function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-  // ---------- small autosave to server on idle ----------
-  let saveTimer = null;
-  function scheduleSave(){
-    if(saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveCanvasToFirebase, 2500);
-  }
-  fabricCanvas.on('path:created', scheduleSave);
-  fabricCanvas.on('object:added', scheduleSave);
-  fabricCanvas.on('object:modified', scheduleSave);
-
-  // ---------- helper: load initial demo if empty (so it's not a black screen) ----------
-  db.ref('canvasState').once('value').then(snap=>{
-    if(!snap.exists()){
-      // draw demo strokes locally (not saved unless saved)
-      const p = new fabric.PencilBrush(fabricCanvas);
-      p.width = 6; p.color = '#9fe4ff';
-      // small demo line (drawn programmatically)
-      const points = [{x:80,y:120},{x:120,y:160},{x:200,y:120}];
-      const path = new fabric.Path(`M ${points.map(pt=>pt.x+','+pt.y).join(' L ')}`, { stroke:'#9fe4ff', strokeWidth:6, fill:'' });
-      fabricCanvas.add(path);
-      fabricCanvas.renderAll();
-    }
   });
+  chooseName.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); nameOk.click(); } });
 
-  // ensure name persists
-  nameEl.addEventListener('change', ()=> sessionStorage.setItem('mural_name', nameEl.value||myName));
+  // autosave scheduling
+  let saveTimer = null;
+  function scheduleSave(){ if(saveTimer) clearTimeout(saveTimer); saveTimer = setTimeout(saveCanvasToFirebase, 1600); }
+  fabricCanvas.on('path:created', scheduleSave); fabricCanvas.on('object:added', scheduleSave); fabricCanvas.on('object:modified', scheduleSave);
 
-  // END IIFE
-})();
+  // demo content if empty
+  db.ref('canvasState').once('value').then(snap=>{ if(!snap.exists()){ const p = new fabric.Path('M 60 200 L 120 140 L 200 200', { stroke:'#9fe4ff', strokeWidth:6, fill:'' }); fabricCanvas.add(p); fabricCanvas.renderAll(); } });
+
+}); // end load listener
 </script>
 </body>
 </html>
