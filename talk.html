@@ -4,11 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Talk — Community Mural (Firestore)</title>
-    <!-- Firebase v9 modular (CDN) -->
-    <script type="module">
-        // We will dynamically import firebase modules in the main script below.
-    </script>
+    <title>Talk — Community Mural (Firestore, v8)</title>
     <style>
         :root {
             --bg: #030303;
@@ -481,370 +477,433 @@
     <div id="adminGear" title="Admin">⚙️</div>
     <div id="debug" class="debug" aria-hidden="true"></div>
 
-    <!-- embedded small beep -->
+    <!-- tiny beep placeholder -->
     <audio id="bootSound">
         <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA=" type="audio/wav">
     </audio>
 
-    <!-- Main app script (uses firebase modular SDK via CDN imports) -->
-    <script type="module">
-        import {
-            initializeApp
-        } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-        import {
-            getFirestore,
-            collection,
-            doc,
-            addDoc,
-            setDoc,
-            getDoc,
-            onSnapshot,
-            updateDoc,
-            deleteDoc,
-            serverTimestamp,
-            query,
-            orderBy
-        } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+    <!-- Load Firebase v8 (namespaced) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-        // ---------- FIREBASE CONFIG (from your original index.html) ----------
-        const firebaseConfig = {
-            apiKey: "AIzaSyBeXCRIeRdHr2C3EYnDwC1NoQNQxZygA0U",
-            authDomain: "guestbook-bfbdc.firebaseapp.com",
-            projectId: "guestbook-bfbdc",
-            storageBucket: "guestbook-bfbdc.firebasestorage.app",
-            messagingSenderId: "710789947600",
-            appId: "1:710789947600:web:19014ef99d053f4c5dbed5",
-            measurementId: "G-E9XPN9563X"
-        };
+    <script>
+        // Bind intro button early so it's responsive even if Firebase lags or errors
+        document.addEventListener('DOMContentLoaded', function() {
+            const agreeBtn = document.getElementById('agreeBtn');
+            const intro = document.getElementById('intro');
+            const nameOverlay = document.getElementById('nameOverlay');
+            const chooseName = document.getElementById('chooseName');
+            const nameOk = document.getElementById('nameOk');
+            const appEl = document.getElementById('app');
+            const bootSound = document.getElementById('bootSound');
+            const debug = document.getElementById('debug');
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // ---------- UI refs ----------
-        const intro = document.getElementById('intro');
-        const agreeBtn = document.getElementById('agreeBtn');
-        const nameOverlay = document.getElementById('nameOverlay');
-        const chooseName = document.getElementById('chooseName');
-        const nameOk = document.getElementById('nameOk');
-        const appEl = document.getElementById('app');
-        const muralEl = document.getElementById('mural');
-        const floating = document.getElementById('floating');
-        const toolsRow = document.getElementById('toolsRow');
-        const stampsRow = document.getElementById('stampsRow');
-        const colorEl = document.getElementById('color');
-        const sizeEl = document.getElementById('size');
-        const undoBtn = document.getElementById('undo');
-        const clearLocalBtn = document.getElementById('clearLocal');
-        const saveBtn = document.getElementById('saveBtn');
-        const postMsgBtn = document.getElementById('postMsg');
-        const nameInput = document.getElementById('name');
-        const msgInput = document.getElementById('message');
-        const adminGear = document.getElementById('adminGear');
-        const bootSound = document.getElementById('bootSound');
-        const debug = document.getElementById('debug');
-
-        // ---------- state ----------
-        let displayName = sessionStorage.getItem('mural_name') || ('anon-' + Math.floor(Math.random() * 9000));
-        nameInput.value = displayName;
-        let adminMode = false;
-        const ADMIN_PASSWORD = 'indobingo';
-
-        // ---------- simple canvas drawing (no external libs) ----------
-        const canvas = muralEl;
-        const ctx = canvas.getContext('2d');
-
-        function fitCanvas() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = Math.max(640, Math.floor(rect.width));
-            canvas.height = Math.max(420, Math.floor(rect.height));
-            redrawAll();
-            Object.values(bubbles).forEach(b => {
-                b.w = b.el.offsetWidth;
-                b.h = b.el.offsetHeight;
-                b.x = Math.min(Math.max(6, b.x), canvas.width - b.w - 6);
-                b.y = Math.min(Math.max(6, b.y), canvas.height - b.h - 6);
-                b.el.style.left = b.x + 'px';
-                b.el.style.top = b.y + 'px';
+            agreeBtn.addEventListener('click', function() {
+                try {
+                    bootSound.currentTime = 0;
+                    bootSound.play().catch(() => {});
+                } catch (e) {}
+                intro.style.display = 'none';
+                nameOverlay.style.display = 'flex';
+                chooseName.focus();
             });
-        }
-        window.addEventListener('resize', () => debounce(fitCanvas, 120)());
-        fitCanvas();
 
-        let strokes = [];
-        let currentStroke = null;
-        let imagesOnCanvas = [];
+            nameOk.addEventListener('click', function() {
+                const v = (chooseName.value || '').trim() || ('anon-' + Math.floor(Math.random() * 9000));
+                sessionStorage.setItem('mural_name', v);
+                document.getElementById('name').value = v;
+                nameOverlay.style.display = 'none';
+                appEl.setAttribute('aria-hidden', 'false');
+                // after UI visible, initialize Firebase app & mural
+                initializeFirebaseAndApp();
+            });
+        }); // DOMContentLoaded
 
-        let drawing = false;
-        let currentTool = 'pen';
-
-        function setTool(t) {
-            currentTool = t;
-            Array.from(toolsRow.querySelectorAll('.tool')).forEach(b => b.classList.toggle('active', b.dataset.tool === t));
-        }
-        toolsRow.addEventListener('click', (e) => {
-            const b = e.target.closest('.tool');
-            if (!b) return;
-            setTool(b.dataset.tool);
-        });
-        setTool('pen');
-
-        canvas.addEventListener('pointerdown', (e) => {
-            if (e.button !== 0) return;
-            drawing = true;
-            canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
-            const p = pointerPos(e);
-            currentStroke = {
-                tool: currentTool,
-                color: colorEl.value,
-                size: parseInt(sizeEl.value, 10),
-                points: [p]
-            };
-            strokes.push(currentStroke);
-            drawPoint(p, currentStroke);
-        });
-        canvas.addEventListener('pointermove', (e) => {
-            if (!drawing || !currentStroke) return;
-            const p = pointerPos(e);
-            currentStroke.points.push(p);
-            drawLineSegment(currentStroke);
-        });
-        canvas.addEventListener('pointerup', (e) => {
-            if (!drawing) return;
-            drawing = false;
-            currentStroke = null;
-            canvas.releasePointerCapture && canvas.releasePointerCapture(e.pointerId);
-            scheduleSave();
-        });
-
-        function pointerPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            return {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
-                t: Date.now()
-            };
-        }
-
-        function drawPoint(p, stroke) {
-            ctx.save();
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            if (stroke.tool === 'pixel') {
-                const s = stroke.size;
-                ctx.fillStyle = stroke.color;
-                ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
-            } else if (stroke.tool === 'spray') {
-                for (let i = 0; i < 10; i++) {
-                    const a = Math.random() * Math.PI * 2;
-                    const r = Math.random() * stroke.size * 1.2;
-                    ctx.fillStyle = stroke.color;
-                    ctx.fillRect(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 1.2, 1.2);
+        // Initialize Firebase using v8 API + then app logic
+        function initializeFirebaseAndApp() {
+            // show debug if initialization fails
+            try {
+                // ---------- FIREBASE CONFIG (from user) ----------
+                var firebaseConfig = {
+                    apiKey: "AIzaSyBeXCRIeRdHr2C3EYnDwC1NoQNQxZygA0U",
+                    authDomain: "guestbook-bfbdc.firebaseapp.com",
+                    databaseURL: "https://guestbook-bfbdc-default-rtdb.europe-west1.firebasedatabase.app",
+                    projectId: "guestbook-bfbdc",
+                    storageBucket: "guestbook-bfbdc.firebasestorage.app",
+                    messagingSenderId: "710789947600",
+                    appId: "1:710789947600:web:19014ef99d053f4c5dbed5",
+                    measurementId: "G-E9XPN9563X"
+                };
+                if (!window.firebase || !firebase.initializeApp) {
+                    showDebug('Firebase SDK failed to load. Check network.');
+                    return;
                 }
-            } else if (stroke.tool === 'eraser') {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, stroke.size * 0.7, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalCompositeOperation = 'source-over';
-            } else {
-                ctx.strokeStyle = stroke.color;
-                ctx.lineWidth = stroke.size;
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p.x + 0.1, p.y + 0.1);
-                ctx.stroke();
+                firebase.initializeApp(firebaseConfig);
+                var db = firebase.firestore();
+                // enable timestampsInSnapshots for older SDKs (no-op in newer)
+                try {
+                    db.settings({
+                        timestampsInSnapshots: true
+                    });
+                } catch (e) {}
+
+                // call the app initializer with db
+                startMuralApp(db);
+            } catch (err) {
+                showDebug('Firebase init error: ' + (err && err.message));
+                console.error(err);
             }
-            ctx.restore();
+
+            function showDebug(msg) {
+                var d = document.getElementById('debug');
+                d.style.display = 'block';
+                d.textContent = msg;
+                d.setAttribute('aria-hidden', 'false');
+            }
         }
 
-        function drawLineSegment(stroke) {
-            if (!stroke || stroke.points.length < 2) {
-                drawPoint(stroke.points[stroke.points.length - 1], stroke);
-                return;
+        // Main mural app logic (fires after Firebase initialized)
+        function startMuralApp(db) {
+            // UI refs
+            const canvas = document.getElementById('mural');
+            const ctx = canvas.getContext('2d');
+            const toolsRow = document.getElementById('toolsRow');
+            const stampsRow = document.getElementById('stampsRow');
+            const colorEl = document.getElementById('color');
+            const sizeEl = document.getElementById('size');
+            const undoBtn = document.getElementById('undo');
+            const clearLocalBtn = document.getElementById('clearLocal');
+            const saveBtn = document.getElementById('saveBtn');
+            const postMsgBtn = document.getElementById('postMsg');
+            const nameInput = document.getElementById('name');
+            const msgInput = document.getElementById('message');
+            const floating = document.getElementById('floating');
+            const adminGear = document.getElementById('adminGear');
+            const debug = document.getElementById('debug');
+
+            // state
+            let displayName = sessionStorage.getItem('mural_name') || ('anon-' + Math.floor(Math.random() * 9000));
+            nameInput.value = displayName;
+            let strokes = [];
+            let currentStroke = null;
+            let imagesOnCanvas = [];
+            let drawing = false;
+            let currentTool = 'pen';
+            const bubbles = {};
+            const canvasDocRef = db.collection('mural').doc('canvas');
+            const messagesCol = db.collection('mural_messages');
+            const ADMIN_PASSWORD = 'indobingo';
+            let adminMode = false;
+
+            // fit canvas
+            function fitCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = Math.max(640, Math.floor(rect.width));
+                canvas.height = Math.max(420, Math.floor(rect.height));
+                redrawAll();
+                // adjust bubbles positions within bounds
+                Object.values(bubbles).forEach(b => {
+                    b.w = b.el.offsetWidth;
+                    b.h = b.el.offsetHeight;
+                    b.x = Math.min(Math.max(6, b.x), canvas.width - b.w - 6);
+                    b.y = Math.min(Math.max(6, b.y), canvas.height - b.h - 6);
+                    b.el.style.left = b.x + 'px';
+                    b.el.style.top = b.y + 'px';
+                });
             }
-            const a = stroke.points[stroke.points.length - 2];
-            const b = stroke.points[stroke.points.length - 1];
-            ctx.save();
-            if (stroke.tool === 'pixel') {
-                const s = stroke.size;
-                ctx.fillStyle = stroke.color;
-                ctx.fillRect(b.x - s / 2, b.y - s / 2, s, s);
-            } else if (stroke.tool === 'spray') {
-                for (let i = 0; i < 6; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const r = Math.random() * stroke.size * 1.2;
-                    ctx.fillStyle = stroke.color;
-                    ctx.fillRect(b.x + Math.cos(angle) * r, b.y + Math.sin(angle) * r, 1.2, 1.2);
-                }
-            } else if (stroke.tool === 'eraser') {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.moveTo(a.x, a.y);
-                ctx.lineTo(b.x, b.y);
-                ctx.lineWidth = stroke.size * 2;
-                ctx.lineCap = 'round';
-                ctx.stroke();
-                ctx.globalCompositeOperation = 'source-over';
-            } else {
-                ctx.strokeStyle = stroke.color;
-                ctx.lineWidth = stroke.size;
+            window.addEventListener('resize', debounce(fitCanvas, 120));
+            fitCanvas();
+
+            // tools binding
+            function setTool(t) {
+                currentTool = t;
+                Array.from(toolsRow.querySelectorAll('.tool')).forEach(b => b.classList.toggle('active', b.dataset.tool === t));
+            }
+            toolsRow.addEventListener('click', (e) => {
+                const b = e.target.closest('.tool');
+                if (!b) return;
+                setTool(b.dataset.tool);
+            });
+            setTool('pen');
+
+            // drawing low-level
+            canvas.addEventListener('pointerdown', (e) => {
+                if (e.button !== 0) return;
+                drawing = true;
+                canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+                const p = pointerPos(e);
+                currentStroke = {
+                    tool: currentTool,
+                    color: colorEl.value,
+                    size: parseInt(sizeEl.value, 10),
+                    points: [p]
+                };
+                strokes.push(currentStroke);
+                drawPoint(p, currentStroke);
+            });
+            canvas.addEventListener('pointermove', (e) => {
+                if (!drawing || !currentStroke) return;
+                const p = pointerPos(e);
+                currentStroke.points.push(p);
+                drawSegment(currentStroke);
+            });
+            canvas.addEventListener('pointerup', (e) => {
+                if (!drawing) return;
+                drawing = false;
+                currentStroke = null;
+                canvas.releasePointerCapture && canvas.releasePointerCapture(e.pointerId);
+                scheduleSave();
+            });
+
+            function pointerPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            }
+
+            function drawPoint(p, stroke) {
+                ctx.save();
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.beginPath();
-                ctx.moveTo(a.x, a.y);
-                ctx.quadraticCurveTo(a.x, a.y, b.x, b.y);
-                ctx.stroke();
-            }
-            ctx.restore();
-        }
-
-        function redrawAll() {
-            ctx.fillStyle = '#050505';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            for (const s of strokes) {
-                if (s.points.length === 1) drawPoint(s.points[0], s);
-                else
-                    for (let i = 1; i < s.points.length; i++) {
-                        drawLineSegment({
-                            tool: s.tool,
-                            color: s.color,
-                            size: s.size,
-                            points: [s.points[i - 1], s.points[i]]
-                        });
+                if (stroke.tool === 'pixel') {
+                    const s = stroke.size;
+                    ctx.fillStyle = stroke.color;
+                    ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+                } else if (stroke.tool === 'spray') {
+                    for (let i = 0; i < 10; i++) {
+                        const a = Math.random() * Math.PI * 2;
+                        const r = Math.random() * stroke.size * 1.2;
+                        ctx.fillStyle = stroke.color;
+                        ctx.fillRect(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, 1.2, 1.2);
                     }
-            }
-            for (const im of imagesOnCanvas) {
-                ctx.save();
-                ctx.translate(im.x, im.y);
-                ctx.rotate(im.rot || 0);
-                ctx.drawImage(im.img, -im.w / 2, -im.h / 2, im.w, im.h);
+                } else if (stroke.tool === 'eraser') {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, stroke.size * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                } else {
+                    ctx.strokeStyle = stroke.color;
+                    ctx.lineWidth = stroke.size;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x + 0.1, p.y + 0.1);
+                    ctx.stroke();
+                }
                 ctx.restore();
             }
-        }
 
-        undoBtn.addEventListener('click', () => {
-            if (strokes.length) {
-                strokes.pop();
-                redrawAll();
-                scheduleSave();
+            function drawSegment(stroke) {
+                if (!stroke || stroke.points.length < 2) {
+                    drawPoint(stroke.points[stroke.points.length - 1], stroke);
+                    return;
+                }
+                const a = stroke.points[stroke.points.length - 2];
+                const b = stroke.points[stroke.points.length - 1];
+                ctx.save();
+                if (stroke.tool === 'pixel') {
+                    const s = stroke.size;
+                    ctx.fillStyle = stroke.color;
+                    ctx.fillRect(b.x - s / 2, b.y - s / 2, s, s);
+                } else if (stroke.tool === 'spray') {
+                    for (let i = 0; i < 6; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const r = Math.random() * stroke.size * 1.2;
+                        ctx.fillStyle = stroke.color;
+                        ctx.fillRect(b.x + Math.cos(angle) * r, b.y + Math.sin(angle) * r, 1.2, 1.2);
+                    }
+                } else if (stroke.tool === 'eraser') {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.lineTo(b.x, b.y);
+                    ctx.lineWidth = stroke.size * 2;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+                    ctx.globalCompositeOperation = 'source-over';
+                } else {
+                    ctx.strokeStyle = stroke.color;
+                    ctx.lineWidth = stroke.size;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(a.x, a.y);
+                    ctx.quadraticCurveTo(a.x, a.y, b.x, b.y);
+                    ctx.stroke();
+                }
+                ctx.restore();
             }
-        });
-        clearLocalBtn.addEventListener('click', () => {
-            if (!confirm('Clear the local drawing layer? This will remove the current canvas for everyone on Save.')) return;
-            strokes = [];
-            imagesOnCanvas = [];
-            redrawAll();
-            scheduleSave();
-        });
-        saveBtn.addEventListener('click', () => {
-            saveCanvasToFirestore();
-        });
 
-        // stamps (simple SVGs)
-        const STAMPS = [{
-                id: 'cat',
-                label: 'Cat',
-                svg: `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#0b0b0b'/><g transform='scale(1.3) translate(6,6)'><rect x='2' y='18' width='40' height='16' fill='#fff'/></g></svg>`
-            },
-            {
-                id: 'star',
-                label: 'Star',
-                svg: `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#050505'/><polygon points='32,6 38,26 60,26 42,38 48,58 32,46 16,58 22,38 4,26 26,26' fill='#ffd36d'/></svg>`
-            },
-            {
-                id: 'heart',
-                label: 'Heart',
-                svg: `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#040404'/><path d='M32 50 L12 30 A8 8 0 0 1 32 14 A8 8 0 0 1 52 30 Z' fill='#ff7aa2'/></svg>`
+            function redrawAll() {
+                ctx.fillStyle = '#050505';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                for (const s of strokes) {
+                    if (!s || !s.points) continue;
+                    if (s.points.length === 1) drawPoint(s.points[0], s);
+                    else
+                        for (let i = 1; i < s.points.length; i++) {
+                            drawSegment({
+                                tool: s.tool,
+                                color: s.color,
+                                size: s.size,
+                                points: [s.points[i - 1], s.points[i]]
+                            });
+                        }
+                }
+                for (const im of imagesOnCanvas) {
+                    ctx.save();
+                    ctx.translate(im.x, im.y);
+                    ctx.rotate(im.rot || 0);
+                    ctx.drawImage(im.img, -im.w / 2, -im.h / 2, im.w, im.h);
+                    ctx.restore();
+                }
             }
-        ];
 
-        function svgToImg(svg) {
-            return new Promise(res => {
-                const b = new Blob([svg], {
-                    type: 'image/svg+xml'
-                });
-                const url = URL.createObjectURL(b);
-                const i = new Image();
-                i.onload = () => {
-                    URL.revokeObjectURL(url);
-                    res(i);
-                };
-                i.onerror = () => res(null);
-                i.src = url;
-            });
-        }
-        (async () => {
-            for (const s of STAMPS) {
-                const btn = document.createElement('button');
-                btn.className = 'stampBtn';
-                btn.title = s.label;
-                btn.innerHTML = s.svg;
-                btn.addEventListener('click', async () => {
-                    const img = await svgToImg(s.svg);
-                    if (!img) return;
-                    const w = 120,
-                        h = 120;
-                    imagesOnCanvas.push({
-                        img,
-                        x: canvas.width / 2,
-                        y: canvas.height / 2,
-                        w,
-                        h,
-                        rot: (Math.random() - 0.5) * 0.4
-                    });
+            // undo/clear/save
+            undoBtn.addEventListener('click', () => {
+                if (strokes.length) {
+                    strokes.pop();
                     redrawAll();
                     scheduleSave();
-                });
-                stampsRow.appendChild(btn);
-            }
-        })();
+                }
+            });
+            clearLocalBtn.addEventListener('click', () => {
+                if (!confirm('Clear the local drawing layer? This will remove the current canvas for everyone on Save.')) return;
+                strokes = [];
+                imagesOnCanvas = [];
+                redrawAll();
+                scheduleSave();
+            });
+            saveBtn.addEventListener('click', () => saveCanvasToFirestore());
 
-        // ---------- Firestore persistence ----------
-        const canvasDocRef = doc(collection(db, 'mural'), 'canvas'); // single canvas doc
-        async function saveCanvasToFirestore() {
-            try {
-                // serialize strokes and images (images as dataURL)
-                const imagesData = await Promise.all(imagesOnCanvas.map(async im => {
-                    const tmp = document.createElement('canvas');
-                    tmp.width = im.w;
-                    tmp.height = im.h;
-                    const tctx = tmp.getContext('2d');
-                    tctx.drawImage(im.img, 0, 0, im.w, im.h);
-                    return {
-                        data: tmp.toDataURL('image/png', 0.9),
-                        x: im.x,
-                        y: im.y,
-                        w: im.w,
-                        h: im.h,
-                        rot: im.rot
+            // stamps
+            const STAMPS = [{
+                    id: 'cat',
+                    label: 'Cat',
+                    svg: `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#0b0b0b'/><g transform='scale(1.3) translate(6,6)'><rect x='2' y='18' width='40' height='16' fill='#fff'/></g></svg>`
+                },
+                {
+                    id: 'star',
+                    label: 'Star',
+                    svg: `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#050505'/><polygon points='32,6 38,26 60,26 42,38 48,58 32,46 16,58 22,38 4,26 26,26' fill='#ffd36d'/></svg>`
+                },
+                {
+                    id: 'heart',
+                    label: 'Heart',
+                    svg: `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#040404'/><path d='M32 50 L12 30 A8 8 0 0 1 32 14 A8 8 0 0 1 52 30 Z' fill='#ff7aa2'/></svg>`
+                }
+            ];
+
+            function svgToImg(svg) {
+                return new Promise(res => {
+                    const b = new Blob([svg], {
+                        type: 'image/svg+xml'
+                    });
+                    const url = URL.createObjectURL(b);
+                    const i = new Image();
+                    i.onload = () => {
+                        URL.revokeObjectURL(url);
+                        res(i);
                     };
-                }));
-                const payload = {
-                    strokes,
-                    images: imagesData,
-                    updatedAt: serverTimestamp()
-                };
-                await setDoc(canvasDocRef, payload);
-                saveBtn.textContent = 'Saved ✓';
-                setTimeout(() => saveBtn.textContent = 'Save', 1200);
-            } catch (e) {
-                console.error('save canvas', e);
-                alert('Save failed: ' + (e && e.message));
+                    i.onerror = () => res(null);
+                    i.src = url;
+                });
             }
-        }
+            (async () => {
+                for (const s of STAMPS) {
+                    const btn = document.createElement('button');
+                    btn.className = 'stampBtn';
+                    btn.title = s.label;
+                    btn.innerHTML = s.svg;
+                    btn.addEventListener('click', async () => {
+                        const img = await svgToImg(s.svg);
+                        if (!img) return;
+                        const w = 120,
+                            h = 120;
+                        imagesOnCanvas.push({
+                            img,
+                            x: canvas.width / 2,
+                            y: canvas.height / 2,
+                            w,
+                            h,
+                            rot: (Math.random() - 0.5) * 0.4
+                        });
+                        redrawAll();
+                        scheduleSave();
+                    });
+                    stampsRow.appendChild(btn);
+                }
+            })();
 
-        async function loadCanvasFromFirestoreOnce() {
-            try {
-                const snap = await getDoc(canvasDocRef);
-                if (!snap.exists()) return;
+            // Firestore canvas persistence
+            async function saveCanvasToFirestore() {
+                try {
+                    const imagesData = await Promise.all(imagesOnCanvas.map(async im => {
+                        const tmp = document.createElement('canvas');
+                        tmp.width = Math.max(64, Math.floor(im.w));
+                        tmp.height = Math.max(64, Math.floor(im.h));
+                        const tctx = tmp.getContext('2d');
+                        tctx.drawImage(im.img, 0, 0, im.w, im.h);
+                        return {
+                            data: tmp.toDataURL('image/png', 0.9),
+                            x: im.x,
+                            y: im.y,
+                            w: im.w,
+                            h: im.h,
+                            rot: im.rot
+                        };
+                    }));
+                    const payload = {
+                        strokes: strokes,
+                        images: imagesData,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    await canvasDocRef.set(payload);
+                    saveBtn.textContent = 'Saved ✓';
+                    setTimeout(() => saveBtn.textContent = 'Save', 1200);
+                } catch (e) {
+                    alert('Save failed: ' + (e && e.message));
+                    console.error(e);
+                }
+            }
+            async function loadCanvasFromFirestoreOnce() {
+                try {
+                    const snap = await canvasDocRef.get();
+                    if (!snap.exists) return;
+                    const d = snap.data();
+                    strokes = d.strokes || [];
+                    imagesOnCanvas.length = 0;
+                    if (d.images)
+                        for (const im of d.images) {
+                            const img = new Image();
+                            img.src = im.data;
+                            await new Promise(r => img.onload = r);
+                            imagesOnCanvas.push({
+                                img,
+                                x: im.x,
+                                y: im.y,
+                                w: im.w,
+                                h: im.h,
+                                rot: im.rot
+                            });
+                        }
+                    redrawAll();
+                } catch (e) {
+                    console.error('load canvas', e);
+                }
+            }
+            // realtime listener
+            canvasDocRef.onSnapshot(function(snap) {
+                if (!snap.exists) return;
                 const d = snap.data();
                 strokes = d.strokes || [];
                 imagesOnCanvas.length = 0;
-                if (d.images)
-                    for (const im of d.images) {
-                        const img = new Image();
-                        img.src = im.data;
-                        await new Promise(r => img.onload = r);
+                if (d.images) d.images.forEach(im => {
+                    const img = new Image();
+                    img.src = im.data;
+                    img.onload = () => {
                         imagesOnCanvas.push({
                             img,
                             x: im.x,
@@ -853,169 +912,136 @@
                             h: im.h,
                             rot: im.rot
                         });
-                    }
+                        redrawAll();
+                    };
+                });
                 redrawAll();
-            } catch (e) {
-                console.error('load canvas', e);
+            });
+
+            // schedule save
+            let saveTimer = null;
+
+            function scheduleSave() {
+                if (saveTimer) clearTimeout(saveTimer);
+                saveTimer = setTimeout(() => saveCanvasToFirestore(), 1200);
             }
-        }
-        // realtime listen
-        onSnapshot(canvasDocRef, snap => {
-            if (!snap.exists()) return;
-            const d = snap.data();
-            strokes = d.strokes || [];
-            imagesOnCanvas.length = 0;
-            if (d.images) d.images.forEach(im => {
-                const img = new Image();
-                img.src = im.data;
-                img.onload = () => {
-                    imagesOnCanvas.push({
-                        img,
-                        x: im.x,
-                        y: im.y,
-                        w: im.w,
-                        h: im.h,
-                        rot: im.rot
-                    });
-                    redrawAll();
+
+            // Messages (bubbles)
+            function createBubble(id, data) {
+                if (bubbles[id]) return;
+                const el = document.createElement('div');
+                el.className = 'bubble';
+                el.innerHTML = `<div class="text">${escapeHtml(data.text)}</div><div class="meta"><div class="who">${escapeHtml(data.name||'anon')}</div><div class="controls"><button class="tool react">❤ <span class="count">${(data.reactions&&data.reactions.heart)||0}</span></button> <button class="tool comment">💬</button> <button class="tool adminDelete">Del</button></div></div>`;
+                floating.appendChild(el);
+                const startX = (data.x !== undefined) ? data.x : 50 + Math.random() * (canvas.width - 200);
+                const startY = (data.y !== undefined) ? data.y : 50 + Math.random() * (canvas.height - 200);
+                el.style.left = startX + 'px';
+                el.style.top = startY + 'px';
+                const rect = el.getBoundingClientRect();
+                const state = {
+                    id,
+                    el,
+                    x: startX,
+                    y: startY,
+                    vx: (Math.random() * 2 - 1) * 0.35,
+                    vy: (Math.random() * 2 - 1) * 0.35,
+                    w: rect.width,
+                    h: rect.height,
+                    dragging: false
                 };
+                bubbles[id] = state;
+
+                el.addEventListener('pointerdown', ev => {
+                    state.dragging = true;
+                    state.ox = ev.clientX - state.x;
+                    state.oy = ev.clientY - state.y;
+                    el.setPointerCapture && el.setPointerCapture(ev.pointerId);
+                    el.style.cursor = 'grabbing';
+                });
+                window.addEventListener('pointermove', ev => {
+                    if (!state || !state.dragging) return;
+                    state.x = ev.clientX - state.ox;
+                    state.y = ev.clientY - state.oy;
+                    el.style.left = state.x + 'px';
+                    el.style.top = state.y + 'px';
+                });
+                window.addEventListener('pointerup', () => {
+                    if (state && state.dragging) {
+                        state.dragging = false;
+                        el.style.cursor = 'grab';
+                        db.collection('mural_messages').doc(id).update({
+                            x: state.x,
+                            y: state.y
+                        }).catch(() => {});
+                    }
+                });
+
+                const reactBtn = el.querySelector('.react');
+                reactBtn.addEventListener('click', () => {
+                    const ref = db.collection('mural_messages').doc(id);
+                    // simple update increment
+                    ref.get().then(snap => {
+                        const cur = (snap.exists && snap.data().reactions && snap.data().reactions.heart) || 0;
+                        ref.update({
+                            'reactions.heart': cur + 1
+                        }).catch(() => {});
+                    });
+                });
+
+                el.querySelector('.comment').addEventListener('click', () => showCommentBoxFor(id, state));
+
+                el.querySelector('.adminDelete').addEventListener('click', () => {
+                    if (!adminMode) {
+                        alert('Admin only');
+                        return;
+                    }
+                    if (!confirm('Delete message?')) return;
+                    db.collection('mural_messages').doc(id).delete().catch(e => alert('Delete failed: ' + e.message));
+                });
+
+                // listen for changes to update count
+                db.collection('mural_messages').doc(id).onSnapshot(snap => {
+                    if (!snap.exists) return;
+                    const d = snap.data();
+                    const elc = el.querySelector('.count');
+                    if (elc) elc.textContent = (d.reactions && d.reactions.heart) || 0;
+                });
+            }
+
+            // realtime messages listener
+            messagesCol.orderBy('createdAt').onSnapshot(function(snap) {
+                snap.docChanges().forEach(function(ch) {
+                    const id = ch.doc.id;
+                    const d = ch.doc.data();
+                    if (ch.type === 'added') {
+                        createBubble(id, d);
+                    } else if (ch.type === 'modified') {
+                        const b = bubbles[id];
+                        if (b) {
+                            b.el.querySelector('.text').textContent = d.text || '';
+                            b.el.querySelector('.who').textContent = d.name || 'anon';
+                        }
+                    } else if (ch.type === 'removed') {
+                        const b = bubbles[id];
+                        if (b) {
+                            b.el.remove();
+                            delete bubbles[id];
+                        }
+                    }
+                });
             });
-            redrawAll();
-        });
 
-        // schedule save
-        let saveTimer = null;
-
-        function scheduleSave() {
-            if (saveTimer) clearTimeout(saveTimer);
-            saveTimer = setTimeout(() => saveCanvasToFirestore(), 1200);
-        }
-
-        // ---------- Messages (Firestore collection) ----------
-        const messagesCol = collection(db, 'mural_messages');
-        const messagesQuery = query(messagesCol, orderBy('createdAt'));
-        const bubbles = {};
-
-        function createBubble(id, data) {
-            if (bubbles[id]) return;
-            const el = document.createElement('div');
-            el.className = 'bubble';
-            el.innerHTML = `<div class="text">${escapeHtml(data.text)}</div><div class="meta"><div class="who">${escapeHtml(data.name||'anon')}</div><div class="controls"><button class="tool react">❤ <span class="count">${(data.reactions&&data.reactions.heart)||0}</span></button> <button class="tool comment">💬</button> <button class="tool adminDelete">Del</button></div></div>`;
-            floating.appendChild(el);
-            const startX = (data.x !== undefined) ? data.x : 50 + Math.random() * (canvas.width - 200);
-            const startY = (data.y !== undefined) ? data.y : 50 + Math.random() * (canvas.height - 200);
-            el.style.left = startX + 'px';
-            el.style.top = startY + 'px';
-            const rect = el.getBoundingClientRect();
-            const state = {
-                id,
-                el,
-                x: startX,
-                y: startY,
-                vx: (Math.random() * 2 - 1) * 0.35,
-                vy: (Math.random() * 2 - 1) * 0.35,
-                w: rect.width,
-                h: rect.height,
-                dragging: false
-            };
-            bubbles[id] = state;
-
-            // drag -> update Firestore pos on drop
-            el.addEventListener('pointerdown', ev => {
-                state.dragging = true;
-                state.ox = ev.clientX - state.x;
-                state.oy = ev.clientY - state.y;
-                el.setPointerCapture && el.setPointerCapture(ev.pointerId);
-                el.style.cursor = 'grabbing';
-            });
-            window.addEventListener('pointermove', ev => {
-                if (!state || !state.dragging) return;
-                state.x = ev.clientX - state.ox;
-                state.y = ev.clientY - state.oy;
-                el.style.left = state.x + 'px';
-                el.style.top = state.y + 'px';
-            });
-            window.addEventListener('pointerup', () => {
-                if (state && state.dragging) {
-                    state.dragging = false;
-                    el.style.cursor = 'grab'; // persist pos to Firestore
-                    updateDoc(doc(db, 'mural_messages', id), {
-                        x: state.x,
-                        y: state.y
-                    }).catch(() => {});
-                }
-            });
-
-            // reaction
-            const reactBtn = el.querySelector('.react');
-            reactBtn.addEventListener('click', () => {
-                // increment reaction heart atomically via transaction-like update (Firestore doesn't have simple transaction here, use update with increment serverValue? we'll use get+update)
-                const ref = doc(db, 'mural_messages', id);
-                // simple optimistic update (client-side) then server update
-                const cur = (data.reactions && data.reactions.heart) || 0;
-                el.querySelector('.count').textContent = cur + 1;
-                updateDoc(ref, {
-                    'reactions.heart': (cur + 1)
-                }).catch(() => {});
-            });
-
-            // comment
-            el.querySelector('.comment').addEventListener('click', () => showCommentBoxFor(id, state));
-
-            // admin delete
-            el.querySelector('.adminDelete').addEventListener('click', () => {
-                if (!adminMode) {
-                    alert('Admin only');
+            // post message
+            postMsgBtn.addEventListener('click', function() {
+                const txt = (msgInput.value || '').trim();
+                if (!txt) {
+                    alert('Write something first');
                     return;
                 }
-                if (!confirm('Delete message?')) return;
-                deleteDoc(doc(db, 'mural_messages', id)).catch(e => alert('Delete failed: ' + e.message));
-            });
-
-            // listen for reaction updates on this doc
-            onSnapshot(doc(db, 'mural_messages', id), snap => {
-                if (!snap.exists()) return;
-                const d = snap.data();
-                const elc = el.querySelector('.count');
-                if (elc) elc.textContent = (d.reactions && d.reactions.heart) || 0;
-            });
-        }
-
-        // realtime message listeners
-        onSnapshot(messagesCol, snap => {
-            snap.docChanges().forEach(ch => {
-                const id = ch.doc.id;
-                const d = ch.doc.data();
-                if (ch.type === 'added') {
-                    createBubble(id, d);
-                } else if (ch.type === 'modified') {
-                    const b = bubbles[id];
-                    if (b) {
-                        b.el.querySelector('.text').textContent = d.text || '';
-                        b.el.querySelector('.who').textContent = d.name || 'anon';
-                    }
-                } else if (ch.type === 'removed') {
-                    const b = bubbles[id];
-                    if (b) {
-                        b.el.remove();
-                        delete bubbles[id];
-                    }
-                }
-            });
-        });
-
-        // post message
-        postMsgBtn.addEventListener('click', async () => {
-            const txt = (msgInput.value || '').trim();
-            if (!txt) {
-                alert('Write something first');
-                return;
-            }
-            try {
                 const payload = {
                     name: nameInput.value || displayName,
                     text: txt,
-                    createdAt: serverTimestamp(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     x: Math.random() * (canvas.width - 220) + 30,
                     y: Math.random() * (canvas.height - 140) + 30,
                     reactions: {
@@ -1023,222 +1049,208 @@
                     },
                     comments: []
                 };
-                await addDoc(messagesCol, payload);
-                msgInput.value = '';
-            } catch (e) {
-                alert('Post failed: ' + (e && e.message));
-            }
-        });
-
-        // comments UI
-        function showCommentBoxFor(id, state) {
-            const existing = document.getElementById('commentBox');
-            if (existing) existing.remove();
-            const box = document.createElement('div');
-            box.className = 'commentBox';
-            box.id = 'commentBox';
-            box.style.left = Math.min(window.innerWidth - 260, Math.max(8, state.x + 30)) + 'px';
-            box.style.top = Math.min(window.innerHeight - 220, Math.max(8, state.y + 30)) + 'px';
-            box.innerHTML = `<div style="font-weight:700;margin-bottom:6px">Comments</div><div id="commentList" style="max-height:140px;overflow:auto;margin-bottom:6px"></div><input id="commentInput" placeholder="Add a comment" style="width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:#050505;color:#fff;margin-bottom:6px"><div style="display:flex;justify-content:flex-end;gap:8px"><button id="commentSend" class="btn">Send</button><button id="commentClose" class="tool">Close</button></div>`;
-            document.body.appendChild(box);
-            const list = box.querySelector('#commentList');
-            // load comments
-            getDoc(doc(db, 'mural_messages', id)).then(snap => {
-                const d = snap.data();
-                renderComments(d.comments || []);
+                messagesCol.add(payload).then(() => {
+                    msgInput.value = '';
+                }).catch(e => alert('Post failed: ' + (e && e.message)));
             });
 
-            function renderComments(arr) {
-                list.innerHTML = '';
-                (arr || []).forEach(c => {
-                    const d = document.createElement('div');
-                    d.style.borderBottom = '1px solid rgba(255,255,255,0.02)';
-                    d.style.padding = '6px 2px';
-                    d.innerHTML = `<div style="font-weight:700">${escapeHtml(c.name||'anon')}</div><div style="font-size:13px">${escapeHtml(c.text)}</div>`;
-                    list.appendChild(d);
+            // comments UI
+            function showCommentBoxFor(id, state) {
+                const existing = document.getElementById('commentBox');
+                if (existing) existing.remove();
+                const box = document.createElement('div');
+                box.className = 'commentBox';
+                box.id = 'commentBox';
+                box.style.left = Math.min(window.innerWidth - 260, Math.max(8, state.x + 30)) + 'px';
+                box.style.top = Math.min(window.innerHeight - 220, Math.max(8, state.y + 30)) + 'px';
+                box.innerHTML = `<div style="font-weight:700;margin-bottom:6px">Comments</div><div id="commentList" style="max-height:140px;overflow:auto;margin-bottom:6px"></div><input id="commentInput" placeholder="Add a comment" style="width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:#050505;color:#fff;margin-bottom:6px"><div style="display:flex;justify-content:flex-end;gap:8px"><button id="commentSend" class="btn">Send</button><button id="commentClose" class="tool">Close</button></div>`;
+                document.body.appendChild(box);
+                const list = box.querySelector('#commentList');
+                // load comments
+                db.collection('mural_messages').doc(id).get().then(snap => {
+                    renderComments((snap.data() && snap.data().comments) || []);
                 });
-            }
-            box.querySelector('#commentSend').addEventListener('click', () => {
-                const txt = box.querySelector('#commentInput').value.trim();
-                if (!txt) return;
-                const payload = {
-                    name: displayName,
-                    text: txt,
-                    t: Date.now()
-                };
-                const ref = doc(db, 'mural_messages', id);
-                // push comment by reading current and updating (simple approach)
-                getDoc(ref).then(snap => {
-                    const cur = snap.data().comments || [];
-                    cur.push(payload);
-                    updateDoc(ref, {
-                        comments: cur
-                    });
-                    renderComments(cur);
-                }).catch(e => console.error(e));
-                box.querySelector('#commentInput').value = '';
-            });
-            box.querySelector('#commentClose').addEventListener('click', () => box.remove());
-        }
 
-        // physics for bubbles
-        function physicsTick() {
-            const keys = Object.keys(bubbles);
-            for (let i = 0; i < keys.length; i++) {
-                const a = bubbles[keys[i]];
-                if (!a) continue;
-                if (!a.dragging) {
-                    a.x += a.vx;
-                    a.y += a.vy;
-                    a.vx *= 0.999;
-                    a.vy *= 0.999;
+                function renderComments(arr) {
+                    list.innerHTML = '';
+                    (arr || []).forEach(c => {
+                        const d = document.createElement('div');
+                        d.style.borderBottom = '1px solid rgba(255,255,255,0.02)';
+                        d.style.padding = '6px 2px';
+                        d.innerHTML = `<div style="font-weight:700">${escapeHtml(c.name||'anon')}</div><div style="font-size:13px">${escapeHtml(c.text)}</div>`;
+                        list.appendChild(d);
+                    });
                 }
-                const cw = canvas.width,
-                    ch = canvas.height;
-                if (a.x < 6) {
-                    a.x = 6;
-                    a.vx = Math.abs(a.vx) * 0.6;
-                }
-                if (a.y < 6) {
-                    a.y = 6;
-                    a.vy = Math.abs(a.vy) * 0.6;
-                }
-                if (a.x + a.w > cw - 6) {
-                    a.x = cw - a.w - 6;
-                    a.vx = -Math.abs(a.vx) * 0.6;
-                }
-                if (a.y + a.h > ch - 6) {
-                    a.y = ch - a.h - 6;
-                    a.vy = -Math.abs(a.vy) * 0.6;
-                }
-                for (let j = i + 1; j < keys.length; j++) {
-                    const b = bubbles[keys[j]];
-                    if (!b) continue;
-                    if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) {
-                        const overlapX = (Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
-                        const overlapY = (Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
-                        if (overlapX < overlapY) {
-                            const shift = overlapX / 2 + 0.5;
-                            if (a.x < b.x) {
-                                a.x -= shift;
-                                b.x += shift;
+                box.querySelector('#commentSend').addEventListener('click', () => {
+                    const txt = box.querySelector('#commentInput').value.trim();
+                    if (!txt) return;
+                    const payload = {
+                        name: displayName,
+                        text: txt,
+                        t: Date.now()
+                    };
+                    const ref = db.collection('mural_messages').doc(id);
+                    ref.get().then(snap => {
+                        const cur = (snap.exists && snap.data().comments) || [];
+                        cur.push(payload);
+                        ref.update({
+                            comments: cur
+                        });
+                        renderComments(cur);
+                    }).catch(e => console.error(e));
+                    box.querySelector('#commentInput').value = '';
+                });
+                box.querySelector('#commentClose').addEventListener('click', () => box.remove());
+            }
+
+            // simple physics for bubbles
+            function physicsTick() {
+                const keys = Object.keys(bubbles);
+                for (let i = 0; i < keys.length; i++) {
+                    const a = bubbles[keys[i]];
+                    if (!a) continue;
+                    if (!a.dragging) {
+                        a.x += a.vx;
+                        a.y += a.vy;
+                        a.vx *= 0.999;
+                        a.vy *= 0.999;
+                    }
+                    const cw = canvas.width,
+                        ch = canvas.height;
+                    if (a.x < 6) {
+                        a.x = 6;
+                        a.vx = Math.abs(a.vx) * 0.6;
+                    }
+                    if (a.y < 6) {
+                        a.y = 6;
+                        a.vy = Math.abs(a.vy) * 0.6;
+                    }
+                    if (a.x + a.w > cw - 6) {
+                        a.x = cw - a.w - 6;
+                        a.vx = -Math.abs(a.vx) * 0.6;
+                    }
+                    if (a.y + a.h > ch - 6) {
+                        a.y = ch - a.h - 6;
+                        a.vy = -Math.abs(a.vy) * 0.6;
+                    }
+                    for (let j = i + 1; j < keys.length; j++) {
+                        const b = bubbles[keys[j]];
+                        if (!b) continue;
+                        if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) {
+                            const overlapX = (Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+                            const overlapY = (Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+                            if (overlapX < overlapY) {
+                                const shift = overlapX / 2 + 0.5;
+                                if (a.x < b.x) {
+                                    a.x -= shift;
+                                    b.x += shift;
+                                } else {
+                                    a.x += shift;
+                                    b.x -= shift;
+                                }
+                                const vxTemp = a.vx;
+                                a.vx = b.vx * 0.85;
+                                b.vx = vxTemp * 0.85;
                             } else {
-                                a.x += shift;
-                                b.x -= shift;
+                                const shift = overlapY / 2 + 0.5;
+                                if (a.y < b.y) {
+                                    a.y -= shift;
+                                    b.y += shift;
+                                } else {
+                                    a.y += shift;
+                                    b.y -= shift;
+                                }
+                                const vyTemp = a.vy;
+                                a.vy = b.vy * 0.85;
+                                b.vy = vyTemp * 0.85;
                             }
-                            const vxTemp = a.vx;
-                            a.vx = b.vx * 0.85;
-                            b.vx = vxTemp * 0.85;
-                        } else {
-                            const shift = overlapY / 2 + 0.5;
-                            if (a.y < b.y) {
-                                a.y -= shift;
-                                b.y += shift;
-                            } else {
-                                a.y += shift;
-                                b.y -= shift;
-                            }
-                            const vyTemp = a.vy;
-                            a.vy = b.vy * 0.85;
-                            b.vy = vyTemp * 0.85;
                         }
                     }
+                    a.el.style.left = a.x + 'px';
+                    a.el.style.top = a.y + 'px';
                 }
-                a.el.style.left = a.x + 'px';
-                a.el.style.top = a.y + 'px';
+                requestAnimationFrame(physicsTick);
             }
-            requestAnimationFrame(physicsTick);
-        }
-        physicsTick();
+            physicsTick();
 
-        // admin gear
-        adminGear.addEventListener('click', () => {
-            if (adminMode) {
-                adminMode = false;
-                document.body.classList.remove('adminMode');
-                alert('Admin off');
-                return;
-            }
-            const p = prompt('Enter admin password:');
-            if (p === ADMIN_PASSWORD) {
-                adminMode = true;
-                document.body.classList.add('adminMode');
-                alert('Admin enabled');
-                if (!document.getElementById('adminClear')) {
-                    const btn = document.createElement('button');
-                    btn.className = 'tool';
-                    btn.id = 'adminClear';
-                    btn.textContent = 'Clear mural';
-                    btn.addEventListener('click', async () => {
-                        if (!confirm('Clear entire mural for everyone? This deletes saved canvas and messages.')) return;
-                        // delete canvas doc and all message docs
-                        try {
-                            await deleteDoc(doc(db, 'mural', 'canvas'));
-                            // delete messages collection docs - Firestore doesn't have delete collection; delete individually via get
-                            const snaps = await (await import('https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js')).getDocs(messagesCol);
-                            snaps.forEach(async d => await deleteDoc(doc(db, 'mural_messages', d.id)));
-                            // cleanup UI
-                            strokes = [];
-                            imagesOnCanvas.length = 0;
-                            redrawAll();
-                            Object.keys(bubbles).forEach(id => {
-                                if (bubbles[id]) bubbles[id].el.remove();
-                                delete bubbles[id];
-                            });
-                            alert('Cleared');
-                        } catch (e) {
-                            alert('Clear failed: ' + e.message);
-                        }
-                    });
-                    document.querySelector('.leftPanel .toolbar').appendChild(btn);
+            // admin gear
+            adminGear.addEventListener('click', () => {
+                if (adminMode) {
+                    adminMode = false;
+                    document.body.classList.remove('adminMode');
+                    alert('Admin off');
+                    return;
                 }
-            } else {
-                alert('Wrong password');
-            }
-        });
+                const p = prompt('Enter admin password:');
+                if (p === ADMIN_PASSWORD) {
+                    adminMode = true;
+                    document.body.classList.add('adminMode');
+                    alert('Admin enabled');
+                    // add clear button if not present
+                    if (!document.getElementById('adminClear')) {
+                        const btn = document.createElement('button');
+                        btn.className = 'tool';
+                        btn.id = 'adminClear';
+                        btn.textContent = 'Clear mural';
+                        btn.addEventListener('click', async () => {
+                            if (!confirm('⚠️ Are you sure you want to CLEAR THE ENTIRE WALL? This cannot be undone.')) return;
+                            try {
+                                // delete canvas doc
+                                await canvasDocRef.delete();
+                                // delete messages collection (iterate)
+                                const snaps = await messagesCol.get();
+                                const batch = db.batch();
+                                snaps.forEach(d => batch.delete(messagesCol.doc(d.id)));
+                                await batch.commit();
+                                // cleanup UI
+                                strokes = [];
+                                imagesOnCanvas = [];
+                                redrawAll();
+                                Object.keys(bubbles).forEach(id => {
+                                    if (bubbles[id]) bubbles[id].el.remove();
+                                    delete bubbles[id];
+                                });
+                                alert('Cleared');
+                            } catch (e) {
+                                alert('Clear failed: ' + (e && e.message));
+                            }
+                        });
+                        document.querySelector('.leftPanel .toolbar').appendChild(btn);
+                    }
+                } else {
+                    alert('Wrong password');
+                }
+            });
 
-        // intro flow
-        agreeBtn.addEventListener('click', () => {
-            try {
-                bootSound.currentTime = 0;
-                bootSound.play().catch(() => {});
-            } catch (e) {}
-            intro.style.display = 'none';
-            nameOverlay.style.display = 'flex';
-            chooseName.focus();
-        });
-        nameOk.addEventListener('click', () => {
-            const v = (chooseName.value || '').trim() || ('anon-' + Math.floor(Math.random() * 9000));
-            displayName = v;
-            sessionStorage.setItem('mural_name', displayName);
-            nameInput.value = displayName;
-            nameOverlay.style.display = 'none';
-            appEl.setAttribute('aria-hidden', 'false');
-            fitCanvas();
+            // helpers
+            function escapeHtml(s) {
+                return (s || '').toString().replace(/[&<>"']/g, c => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                } [c]));
+            }
+
+            function debounce(fn, t) {
+                let id;
+                return (...a) => {
+                    clearTimeout(id);
+                    id = setTimeout(() => fn(...a), t);
+                };
+            }
+
+            // basic load once to populate canvas and messages
             loadCanvasFromFirestoreOnce();
-        });
+            // messages listener already set above via messagesCol.orderBy... onSnapshot
+            // but we need to set messagesCol variable to Firestore v8 style
+            window.messagesCol = messagesCol; // not used further
 
-        // helpers
-        function escapeHtml(s) {
-            return (s || '').toString().replace(/[&<>"']/g, c => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
-            } [c]));
-        }
-
-        function debounce(fn, t) {
-            let id;
-            return (...a) => {
-                clearTimeout(id);
-                id = setTimeout(() => fn(...a), t);
-            };
-        }
-
-        // load initial messages snapshot (handled by onSnapshot earlier) - nothing else
-        console.log('Firestore mural initialized');
+            // expose a tiny console if needed
+            debug.style.display = 'none';
+            console.log('Mural app started');
+        } // end startMuralApp
     </script>
 </body>
 
