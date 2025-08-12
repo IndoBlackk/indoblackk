@@ -1404,6 +1404,143 @@
         }
     </style>
 
+
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --panel: #141414;
+            --fg: #efefef;
+            --border: #2b2b2b;
+            --radius: 6px;
+            --shadow: 0 8px 18px rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+            background: var(--bg) !important;
+            color: var(--fg) !important;
+            font-family: "IBM Plex Mono", monospace;
+        }
+
+        .new-frame {
+            position: absolute;
+            background: rgba(20, 20, 20, 0.98);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: visible;
+            display: inline-flex;
+            flex-direction: column;
+        }
+
+        .new-frame.active {
+            border-color: #efefef;
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.7);
+        }
+
+        .new-frame .topbar {
+            position: relative;
+            height: 36px;
+            background: rgba(14, 14, 14, 0.92);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 12px;
+            box-sizing: border-box;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .new-frame .handle {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% + 20px);
+            height: 18px;
+            background: linear-gradient(180deg, #e9e9e9 0%, #dcdcdc 100%);
+            border-radius: 4px;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            cursor: grab;
+            z-index: 6;
+        }
+
+        .new-frame .handle::before {
+            content: "";
+            width: 56px;
+            height: 8px;
+            background: repeating-linear-gradient(to right,
+                    rgba(0, 0, 0, 0.06) 0 4px,
+                    rgba(255, 255, 255, 0.06) 4px 8px);
+            border-radius: 2px;
+        }
+
+        .new-frame .title {
+            color: var(--fg);
+            font-family: "Press Start 2P", monospace;
+            font-size: 11px;
+            letter-spacing: 0.03em;
+            pointer-events: none;
+            text-align: center;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .new-frame .content {
+            padding: 6px;
+            background: rgba(10, 10, 10, 0.6);
+            border-radius: 0 0 var(--radius) var(--radius);
+            box-sizing: border-box;
+        }
+
+        .new-frame .content img,
+        .new-frame .content canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+            object-fit: contain;
+            background: transparent;
+        }
+
+        .new-frame .mural-icons {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 140ms ease, background 140ms ease;
+            color: var(--fg);
+            font-size: 12px;
+        }
+
+        .icon-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .icon-heart.liked {
+            background: rgba(255, 255, 255, 0.14);
+        }
+    </style>
+
 </head>
 
 <body>
@@ -2707,6 +2844,95 @@
         }
     </script>
     <div id="brushPreview" aria-hidden="true"></div>
+
+    <script>
+        (function() {
+            function createModernFrame(titleText, contentEl) {
+                const frame = document.createElement('div');
+                frame.className = 'new-frame';
+                const handle = document.createElement('div');
+                handle.className = 'handle drag-handle';
+                const topbar = document.createElement('div');
+                topbar.className = 'topbar';
+                const title = document.createElement('div');
+                title.className = 'title';
+                title.textContent = titleText || 'Mural Item';
+                topbar.appendChild(title);
+                const content = document.createElement('div');
+                content.className = 'content';
+                if (contentEl) content.appendChild(contentEl);
+                const icons = document.createElement('div');
+                icons.className = 'mural-icons';
+                const chat = document.createElement('div');
+                chat.className = 'icon-btn icon-chat';
+                chat.innerHTML = '💬';
+                const heart = document.createElement('div');
+                heart.className = 'icon-btn icon-heart';
+                heart.innerHTML = '♡';
+                chat.onclick = () => {
+                    if (window.showCommentTooltip) window.showCommentTooltip(frame);
+                };
+                heart.onclick = () => {
+                    heart.classList.toggle('liked');
+                    if (window.likeMuralItem) window.likeMuralItem(frame);
+                };
+                icons.appendChild(chat);
+                icons.appendChild(heart);
+                frame.appendChild(handle);
+                frame.appendChild(topbar);
+                frame.appendChild(content);
+                frame.appendChild(icons);
+                if (window.dragWindow) {
+                    handle.addEventListener('mousedown', e => {
+                        e.stopPropagation();
+                        window.dragWindow(e, frame);
+                    });
+                    handle.addEventListener('touchstart', e => {
+                        e.stopPropagation();
+                        window.dragWindow(e, frame);
+                    }, {
+                        passive: true
+                    });
+                }
+                return frame;
+            }
+            // Replace original frame creation logic if exists
+            if (window.addMuralItem) {
+                const oldAdd = window.addMuralItem;
+                window.addMuralItem = function(data) {
+                    const el = oldAdd.call(this, data);
+                    const titleText = data.title || 'Mural Item';
+                    const contentEl = el.querySelector('canvas, img');
+                    const newFrame = createModernFrame(titleText, contentEl);
+                    el.innerHTML = '';
+                    el.appendChild(newFrame);
+                    return el;
+                };
+            }
+            // Ensure fabric canvas transparent background
+            if (window.fabric && window.fabric.Canvas) {
+                const oldInit = window.fabric.Canvas;
+                window.fabric.Canvas = function(el, opts) {
+                    opts = opts || {};
+                    opts.backgroundColor = 'rgba(0,0,0,0)';
+                    return new oldInit(el, opts);
+                };
+            }
+            // Force PNG export
+            if (window.saveMuralItemImage) {
+                const oldSave = window.saveMuralItemImage;
+                window.saveMuralItemImage = function(canvas, ...args) {
+                    try {
+                        const data = canvas.toDataURL('image/png');
+                        return oldSave.call(this, data, ...args);
+                    } catch (e) {
+                        return oldSave.apply(this, [canvas, ...args]);
+                    }
+                };
+            }
+        })();
+    </script>
+
 </body>
 
 </html>
