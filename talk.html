@@ -2,197 +2,28 @@
 <html lang="en">
 
 <head>
-    <!-- NOTE: Place fabric.min.js (Fabric.js 4.6.0) in the same folder as this HTML file -->
-
-    <meta charset="utf-8" />
-    <!-- Pixel font for retro look -->
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #000;
-            --fg: #fff;
-            --accent: #fff;
-            --toolbar-w: 96px;
-            --pixel-font: "Press Start 2P", "Lucida Console", Monaco, monospace;
-            --radius: 6px;
-            --transition: 160ms ease;
-        }
-
-        /* polish: smoother transitions and consistent radii */
-        .tool-btn,
-        .tool-small,
-        .title-close,
-        .stamp-tile,
-        .loading-box,
-        .canvas-wrap,
-        .window {
-            transition: transform var(--transition), background var(--transition), color var(--transition), border-color var(--transition);
-            border-radius: var(--radius);
-        }
-
-        .tool-btn.active {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.04) inset;
-            outline: 3px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .tool-btn:focus {
-            outline: 3px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .stamp-grid {
-            grid-auto-rows: 72px;
-            justify-items: center;
-            align-items: center;
-        }
-
-        .stamp-tile img {
-            image-rendering: pixelated;
-        }
-
-        /* modal backdrop darker */
-        .modal-backdrop {
-            background: rgba(0, 0, 0, 0.55);
-        }
-
-        /* make badges and controls touch-friendly */
-        .tool-small,
-        .tool-btn {
-            min-height: 44px;
-            min-width: 44px;
-            padding: 8px;
-        }
-
-        /* smoother drag for mural items */
-        .mural-item {
-            transition: transform 160ms cubic-bezier(.2, .8, .2, 1), left 120ms, top 120ms;
-            touch-action: none;
-        }
-
-        /* heart animation */
-        @keyframes popheart {
-            0% {
-                transform: translateY(0) scale(1);
-                opacity: 1
-            }
-
-            100% {
-                transform: translateY(-18px) scale(1.6);
-                opacity: 0
-            }
-        }
-
-        .floating-heart {
-            position: absolute;
-            pointer-events: none;
-            font-size: 14px;
-            animation: popheart 700ms forwards;
-            color: #ff3860;
-        }
-
-        /* brush preview circle */
-        #brushPreview {
-            position: fixed;
-            pointer-events: none;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            border: 2px dashed rgba(0, 0, 0, 0.2);
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-            mix-blend-mode: normal;
-            display: none;
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        /* responsive toolbar collapse */
-        @media (max-width:720px) {
-            .toolbar {
-                left: 8px;
-                top: auto;
-                bottom: auto;
-                right: auto;
-                width: calc(100% - 16px);
-                height: 64px;
-                display: flex;
-                flex-direction: row;
-                gap: 6px;
-                align-items: center;
-                padding: 6px;
-            }
-
-            .mural-canvas {
-                left: 12px;
-                right: 12px;
-                top: 92px;
-                bottom: 12px;
-            }
-        }
-
-        /* iPhone Safari optimizations */
-        html,
-        body {
-            min-height: 100dvh;
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        @media (max-width: 720px) {
-            .toolbar {
-                position: fixed;
-                left: 0;
-                bottom: 0;
-                top: auto;
-                width: 100%;
-                height: 64px;
-                flex-direction: row;
-                justify-content: space-around;
-                padding: 8px env(safe-area-inset-right) 8px env(safe-area-inset-left);
-                border-radius: 0;
-            }
-
-            #mural {
-                left: 8px;
-                right: 8px;
-                top: 8px;
-                bottom: 72px;
-            }
-
-            .window,
-            .canvas-wrap,
-            .note-body {
-                max-height: calc(100dvh - 40px);
-                overflow-y: auto;
-            }
-
-            #sidePanel {
-                width: 100%;
-                left: 0;
-                right: 0;
-                height: 100%;
-                bottom: 0;
-                top: 0;
-                border-radius: 0;
-            }
-
-            #doodleCanvas {
-                width: 100% !important;
-                height: auto !important;
-            }
-        }
-    </style>
-
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>synt — Mural (Rebuild: Brush, Color, Stamps)</title>
+    <title>Talk 2.0 — Friends Wall (Upgraded)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #000;
             --fg: #fff;
-            --accent: #fff;
-            --toolbar-w: 96px;
-            --pixel-font: "Lucida Console", Monaco, monospace
+            --panel: #0b0b0b;
+            --ink: #000;
+            --paper: #fff;
+            --edge: #000;
+            --edge2: #1a1a1a;
+            --z-boot: 120;
+            --z-modal: 110;
+            --z-pop: 105;
+            --z-ui: 100;
+            --accent: #57f;
+        }
+
+        * {
+            box-sizing: border-box
         }
 
         html,
@@ -201,1617 +32,482 @@
             margin: 0;
             background: var(--bg);
             color: var(--fg);
-            font-family: var(--pixel-font);
-            -webkit-font-smoothing: antialiased;
-            overflow: hidden
+            font-family: "JetBrains Mono", ui-monospace, monospace
         }
 
-        .scanline {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 3px);
-            opacity: 0.06;
-            mix-blend-mode: overlay;
-            z-index: 5
+        button,
+        input,
+        textarea,
+        select {
+            font-family: inherit
         }
 
-        /* Intro */
-        #intro {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            z-index: 200
-        }
-
-        .boot-text {
-            font-size: 20px;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            margin-bottom: 12px
-        }
-
-        .loading-box {
-            width: 360px;
-            height: 44px;
-            border: 4px solid #fff;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative
-        }
-
-        .loading-steps {
-            position: absolute;
-            left: 6px;
-            right: 6px;
-            top: 6px;
-            bottom: 6px;
-            display: flex;
-            gap: 6px
-        }
-
-        .loading-step {
-            flex: 1;
-            background: #000;
-            border: 2px solid #fff;
-            min-width: 8px
-        }
-
-        /* sure button and blinker */
-        #sureBtn {
-            display: none;
-            margin-top: 12px;
-            padding: 8px 14px;
-            border: 3px solid #fff;
-            background: #fff;
-            color: #000;
-            cursor: pointer;
-            font-weight: 700
-        }
-
-        #blinker {
-            font-size: 12px;
-            margin-top: 8px;
-            opacity: 0.9
-        }
-
-        /* Left toolbar */
-        .toolbar {
-            position: fixed;
-            left: 12px;
-            top: 12px;
-            width: var(--toolbar-w);
-            bottom: 12px;
-            background: #000;
-            border: 4px solid #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px;
-            gap: 8px;
-            z-index: 60
-        }
-
-        .logo-small {
-            font-size: 12px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 6px
-        }
-
-        .tool-btn {
-            width: 76px;
-            height: 42px;
-            background: #fff;
-            color: #000;
-            border: 3px solid #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: 700;
-            user-select: none
-        }
-
-        .tool-btn:hover {
-            background: #000;
-            color: #fff
-        }
-
-        .icon {
-            font-size: 18px;
-            line-height: 1
-        }
-
-        /* Mural area */
-        #mural {
-            position: fixed;
-            left: calc(var(--toolbar-w) + 36px);
-            right: 12px;
-            top: 12px;
-            bottom: 12px;
-            background: #000;
-            border: 4px solid #fff;
-            overflow: hidden;
-            border-radius: 2px;
-            display: flex;
-            align-items: center;
-            justify-content: center
-        }
-
-        .mural-canvas {
-            position: relative;
-            width: 100%;
-            height: 100%
-        }
-
-        /* popup windows */
-        .modal-backdrop {
-            position: fixed;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 210
-        }
-
-        .window {
-            background: #f8f8f8;
-            color: #000;
-            border: 4px solid #000;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-            width: min(920px, 94%);
-            max-width: 920px;
-            border-radius: 2px
-        }
-
-        .titlebar {
-            background: #000;
-            color: #fff;
-            padding: 6px 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-weight: 700
-        }
-
-        .title-left {
-            display: flex;
-            align-items: center;
-            gap: 8px
-        }
-
-        .drag-handle {
-            width: 44px;
-            height: 8px;
-            background: repeating-linear-gradient(90deg, #fff 0 2px, #000 2px 4px);
-            border: 2px solid #000
-        }
-
-        .title-close {
-            background: #fff;
-            color: #000;
-            padding: 2px 6px;
-            border: 2px solid #000;
-            cursor: pointer
-        }
-
-        /* doodle content */
-        .doodle-body {
-            display: flex;
-            gap: 12px;
-            padding: 12px
-        }
-
-        .canvas-wrap {
-            background: #fff;
-            padding: 6px;
-            border: 4px solid #000
-        }
-
-        #doodleCanvas {
-            background: #fff;
-            display: block;
-            width: 820px;
-            height: 520px
-        }
-
-        .tools-col {
-            min-width: 160px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px
-        }
-
-        .tool-small {
-            height: 36px;
-            background: #fff;
-            border: 3px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: 700
-        }
-
-        .tool-small:hover {
-            background: #000;
-            color: #fff
-        }
-
-        .swatches {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-top: 6px
-        }
-
-        .swatch {
-            width: 28px;
-            height: 20px;
-            border: 2px solid #000;
-            cursor: pointer
-        }
-
-        /* stamp picker window */
-        .stamp-window {
-            width: 360px;
-            max-width: 92%;
-            background: #f8f8f8;
-            border: 4px solid #000
-        }
-
-        .stamp-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 64px);
-            gap: 8px;
-            padding: 8px
-        }
-
-        .stamp-tile {
-            width: 64px;
-            height: 64px;
-            border: 3px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #fff;
-            cursor: pointer
-        }
-
-        /* note modal */
-        .note-body {
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px
-        }
-
-        .input,
-        textarea {
-            background: #000;
-            color: #fff;
-            border: 3px solid #fff;
-            padding: 8px
-        }
-
-        /* side panel */
-        #sidePanel {
-            position: fixed;
-            right: 12px;
-            top: 12px;
-            width: 320px;
-            bottom: 12px;
-            background: #000;
-            border: 4px solid #fff;
-            padding: 12px;
-            z-index: 70;
-            overflow: auto;
-            display: none
-        }
-
-        .side-close {
-            float: right;
-            cursor: pointer;
-            border: 2px solid #fff;
-            padding: 2px 6px;
-            background: #fff;
-            color: #000;
-            font-weight: 700
-        }
-
-        /* mural item */
-        .mural-item {
-            position: absolute;
-            cursor: grab;
-            border: 2px solid #fff;
-            background: #fff;
-            padding: 4px
-        }
-
-        .mural-item img {
-            display: block;
-            max-width: 320px;
-            max-height: 240px
-        }
-
-        .note-box {
-            background: #fff;
-            color: #000;
-            padding: 8px;
-            border: 2px solid #000;
-            max-width: 280px;
-            white-space: pre-wrap
-        }
-
-        /* responsive */
-        @media (max-width:920px) {
-            #doodleCanvas {
-                width: 600px;
-                height: 380px
-            }
-
-            .canvas-wrap {
-                padding: 4px
-            }
-        }
-    </style>
-
-    <style>
-        .titlebar-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 0 6px;
-            height: 20px;
-            font-size: 12px;
-            font-weight: normal;
-            background: #C0C0C0;
-            border-top: 2px solid #FFFFFF;
-            border-left: 2px solid #FFFFFF;
-            border-right: 2px solid #808080;
-            border-bottom: 2px solid #808080;
-            cursor: pointer;
-            user-select: none;
-            margin-left: 6px;
-        }
-
-        .titlebar-btn:hover {
-            background: #d0d0d0;
-        }
-
-        .titlebar-btn:active {
-            border-top: 2px solid #808080;
-            border-left: 2px solid #808080;
-            border-right: 2px solid #FFFFFF;
-            border-bottom: 2px solid #FFFFFF;
-        }
-
-        .titlebar-btn.delete {
-            width: 20px;
-            justify-content: center;
-            color: #fff;
-            background: #c33;
-            font-weight: bold;
-        }
-
-        .titlebar-btn.delete:hover {
-            background: #e33;
-        }
-
-        .win-title {
-            height: 28px !important;
-            display: flex;
-            align-items: center;
-        }
-    </style>
-
-    <style>
-        :root {
-            --bg: #000;
-            --fg: #fff;
-            --accent: #fff;
-            --toolbar-w: 96px;
-            --pixel-font: "Press Start 2P", "Lucida Console", Monaco, monospace;
-            --radius: 6px;
-            --transition: 160ms ease;
-        }
-
-        /* polish: smoother transitions and consistent radii */
-        .tool-btn,
-        .tool-small,
-        .title-close,
-        .stamp-tile,
-        .loading-box,
-        .canvas-wrap,
-        .window {
-            transition: transform var(--transition), background var(--transition), color var(--transition), border-color var(--transition);
-            border-radius: var(--radius);
-        }
-
-        .tool-btn.active {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.04) inset;
-            outline: 3px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .tool-btn:focus {
-            outline: 3px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .stamp-grid {
-            grid-auto-rows: 72px;
-            justify-items: center;
-            align-items: center;
-        }
-
-        .stamp-tile img {
-            image-rendering: pixelated;
-        }
-
-        /* modal backdrop darker */
-        .modal-backdrop {
-            background: rgba(0, 0, 0, 0.55);
-        }
-
-        /* make badges and controls touch-friendly */
-        .tool-small,
-        .tool-btn {
-            min-height: 44px;
-            min-width: 44px;
-            padding: 8px;
-        }
-
-        /* smoother drag for mural items */
-        .mural-item {
-            transition: transform 160ms cubic-bezier(.2, .8, .2, 1), left 120ms, top 120ms;
-            touch-action: none;
-        }
-
-        /* heart animation */
-        @keyframes popheart {
-            0% {
-                transform: translateY(0) scale(1);
-                opacity: 1
-            }
-
-            100% {
-                transform: translateY(-18px) scale(1.6);
-                opacity: 0
-            }
-        }
-
-        .floating-heart {
-            position: absolute;
-            pointer-events: none;
-            font-size: 14px;
-            animation: popheart 700ms forwards;
-            color: #ff3860;
-        }
-
-        /* brush preview circle */
-        #brushPreview {
-            position: fixed;
-            pointer-events: none;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            border: 2px dashed rgba(0, 0, 0, 0.2);
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-            mix-blend-mode: normal;
-            display: none;
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        /* responsive toolbar collapse */
-        @media (max-width:720px) {
-            .toolbar {
-                left: 8px;
-                top: auto;
-                bottom: auto;
-                right: auto;
-                width: calc(100% - 16px);
-                height: 64px;
-                display: flex;
-                flex-direction: row;
-                gap: 6px;
-                align-items: center;
-                padding: 6px;
-            }
-
-            .mural-canvas {
-                left: 12px;
-                right: 12px;
-                top: 92px;
-                bottom: 12px;
-            }
-        }
-    </style>
-
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>synt — Mural 0.9 (Rebuild: Brush, Color, Stamps)</title>
-    <style>
-        :root {
-            --bg: #000;
-            --fg: #fff;
-            --accent: #fff;
-            --toolbar-w: 96px;
-            --pixel-font: "Lucida Console", Monaco, monospace
-        }
-
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            background: var(--bg);
-            color: var(--fg);
-            font-family: var(--pixel-font);
-            -webkit-font-smoothing: antialiased;
-            overflow: hidden
-        }
-
-        .scanline {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 3px);
-            opacity: 0.06;
-            mix-blend-mode: overlay;
-            z-index: 5
-        }
-
-        /* Intro */
-        #intro {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            z-index: 200
-        }
-
-        .boot-text {
-            font-size: 20px;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            margin-bottom: 12px
-        }
-
-        .loading-box {
-            width: 360px;
-            height: 44px;
-            border: 4px solid #fff;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative
-        }
-
-        .loading-steps {
-            position: absolute;
-            left: 6px;
-            right: 6px;
-            top: 6px;
-            bottom: 6px;
-            display: flex;
-            gap: 6px
-        }
-
-        .loading-step {
-            flex: 1;
-            background: #000;
-            border: 2px solid #fff;
-            min-width: 8px
-        }
-
-        /* sure button and blinker */
-        #sureBtn {
-            display: none;
-            margin-top: 12px;
-            padding: 8px 14px;
-            border: 3px solid #fff;
-            background: #fff;
-            color: #000;
-            cursor: pointer;
-            font-weight: 700
-        }
-
-        #blinker {
-            font-size: 12px;
-            margin-top: 8px;
-            opacity: 0.9
-        }
-
-        /* Left toolbar */
-        .toolbar {
-            position: fixed;
-            left: 12px;
-            top: 12px;
-            width: var(--toolbar-w);
-            bottom: 12px;
-            background: #000;
-            border: 4px solid #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px;
-            gap: 8px;
-            z-index: 60
-        }
-
-        .logo-small {
-            font-size: 12px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 6px
-        }
-
-        .tool-btn {
-            width: 76px;
-            height: 42px;
-            background: #fff;
-            color: #000;
-            border: 3px solid #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: 700;
-            user-select: none
-        }
-
-        .tool-btn:hover {
-            background: #000;
-            color: #fff
-        }
-
-        .icon {
-            font-size: 18px;
-            line-height: 1
-        }
-
-        /* Mural area */
-        #mural {
-            position: fixed;
-            left: calc(var(--toolbar-w) + 36px);
-            right: 12px;
-            top: 12px;
-            bottom: 12px;
-            background: #000;
-            border: 4px solid #fff;
-            overflow: hidden;
-            border-radius: 2px;
-            display: flex;
-            align-items: center;
-            justify-content: center
-        }
-
-        .mural-canvas {
-            position: relative;
-            width: 100%;
-            height: 100%
-        }
-
-        /* popup windows */
-        .modal-backdrop {
-            position: fixed;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 210
-        }
-
-        .window {
-            background: #f8f8f8;
-            color: #000;
-            border: 4px solid #000;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-            width: min(920px, 94%);
-            max-width: 920px;
-            border-radius: 2px
-        }
-
-        .titlebar {
-            background: #000;
-            color: #fff;
-            padding: 6px 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-weight: 700
-        }
-
-        .title-left {
-            display: flex;
-            align-items: center;
-            gap: 8px
-        }
-
-        .drag-handle {
-            width: 44px;
-            height: 8px;
-            background: repeating-linear-gradient(90deg, #fff 0 2px, #000 2px 4px);
-            border: 2px solid #000
-        }
-
-        .title-close {
-            background: #fff;
-            color: #000;
-            padding: 2px 6px;
-            border: 2px solid #000;
-            cursor: pointer
-        }
-
-        /* doodle content */
-        .doodle-body {
-            display: flex;
-            gap: 12px;
-            padding: 12px
-        }
-
-        .canvas-wrap {
-            background: #fff;
-            padding: 6px;
-            border: 4px solid #000
-        }
-
-        #doodleCanvas {
-            background: #fff;
-            display: block;
-            width: 820px;
-            height: 520px
-        }
-
-        .tools-col {
-            min-width: 160px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px
-        }
-
-        .tool-small {
-            height: 36px;
-            background: #fff;
-            border: 3px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: 700
-        }
-
-        .tool-small:hover {
-            background: #000;
-            color: #fff
-        }
-
-        .swatches {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-top: 6px
-        }
-
-        .swatch {
-            width: 28px;
-            height: 20px;
-            border: 2px solid #000;
-            cursor: pointer
-        }
-
-        /* stamp picker window */
-        .stamp-window {
-            width: 360px;
-            max-width: 92%;
-            background: #f8f8f8;
-            border: 4px solid #000
-        }
-
-        .stamp-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 64px);
-            gap: 8px;
-            padding: 8px
-        }
-
-        .stamp-tile {
-            width: 64px;
-            height: 64px;
-            border: 3px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #fff;
-            cursor: pointer
-        }
-
-        /* note modal */
-        .note-body {
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px
-        }
-
-        .input,
-        textarea {
-            background: #000;
-            color: #fff;
-            border: 3px solid #fff;
-            padding: 8px
-        }
-
-        /* side panel */
-        #sidePanel {
-            position: fixed;
-            right: 12px;
-            top: 12px;
-            width: 320px;
-            bottom: 12px;
-            background: #000;
-            border: 4px solid #fff;
-            padding: 12px;
-            z-index: 70;
-            overflow: auto;
-            display: none
-        }
-
-        .side-close {
-            float: right;
-            cursor: pointer;
-            border: 2px solid #fff;
-            padding: 2px 6px;
-            background: #fff;
-            color: #000;
-            font-weight: 700
-        }
-
-        /* mural item */
-        .mural-item {
-            position: absolute;
-            cursor: grab;
-            border: 2px solid #fff;
-            background: #fff;
-            padding: 4px
-        }
-
-        .mural-item img {
-            display: block;
-            max-width: 320px;
-            max-height: 240px
-        }
-
-        .note-box {
-            background: #fff;
-            color: #000;
-            padding: 8px;
-            border: 2px solid #000;
-            max-width: 280px;
-            white-space: pre-wrap
-        }
-
-        /* responsive */
-        @media (max-width:920px) {
-            #doodleCanvas {
-                width: 600px;
-                height: 380px
-            }
-
-            .canvas-wrap {
-                padding: 4px
-            }
-        }
-    </style>
-
-    <style>
-        /* CRT grain inside content pane */
-        .win-content {
-            position: relative;
-            background: #fff;
-        }
-
-        .win-content::after {
-            content: "";
-            pointer-events: none;
-            position: absolute;
-            inset: 0;
-            background-image: radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px);
-            background-size: 3px 3px;
-            opacity: 0.08;
-            mix-blend-mode: multiply;
-        }
-
-        /* matte frame for doodles */
-        .matte {
-            display: block;
-            padding: 6px;
-            background: #f6f6f6;
-            border: 4px solid #000;
-            box-sizing: border-box;
-        }
-
-        .matte img {
-            display: block;
+        img {
             max-width: 100%;
-            height: auto;
-            background: transparent;
+            display: block
         }
 
-        /* impact shimmer */
-        @keyframes impactShine {
-            0% {
-                box-shadow: 0 0 0 rgba(255, 255, 255, 0);
-            }
-
-            50% {
-                box-shadow: 0 0 18px rgba(255, 255, 255, 0.45);
-            }
-
-            100% {
-                box-shadow: 0 0 0 rgba(255, 255, 255, 0);
-            }
+        /* Layout */
+        .app {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            grid-template-rows: auto 1fr;
+            grid-template-areas:
+                "top top" "board chat";
+            height: 100%
         }
 
-        .impact {
-            animation: impactShine 260ms ease;
-        }
-
-        /* subtle drop shadow base - will be adjusted via inline style per velocity */
-        .win-frame {
-            transition: box-shadow 120ms linear, transform 120ms linear;
-        }
-    </style>
-
-
-    <style>
-        /* Win98 style frame with classic grey borders */
-        .win-frame {
-            background: #E0E0E0;
-            border-top: 2px solid #FFFFFF;
-            border-left: 2px solid #FFFFFF;
-            border-right: 2px solid #808080;
-            border-bottom: 2px solid #808080;
-            box-sizing: border-box;
-        }
-
-        /* Titlebar styling */
-        .win-title {
+        .top {
+            grid-area: top;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            background: #404040;
-            color: #FFFFFF;
-            font-weight: bold;
-            font-family: 'MS Sans Serif', Arial, sans-serif;
-            padding: 4px 6px;
-            border-bottom: 1px solid #000000;
-            height: 24px;
-            /* slightly thicker than before */
-            box-sizing: border-box;
-        }
-
-        /* Title text inside titlebar */
-        .win-title .title-text {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 13px;
-        }
-
-        /* Win98 style buttons */
-        .win-buttons {
-            display: flex;
-            gap: 2px;
-        }
-
-        .win-buttons .btn {
-            width: 16px;
-            height: 14px;
-            background: #C0C0C0;
-            border-top: 2px solid #FFFFFF;
-            border-left: 2px solid #FFFFFF;
-            border-right: 2px solid #808080;
-            border-bottom: 2px solid #808080;
-            box-sizing: border-box;
-            cursor: pointer;
-        }
-
-        .win-buttons .btn:active {
-            border-top: 2px solid #808080;
-            border-left: 2px solid #808080;
-            border-right: 2px solid #FFFFFF;
-            border-bottom: 2px solid #FFFFFF;
-        }
-
-        /* Content pane off-white with inset border */
-        .win-content {
-            background: #E0E0E0;
-            border-top: 2px solid #808080;
-            border-left: 2px solid #808080;
-            border-right: 2px solid #FFFFFF;
-            border-bottom: 2px solid #FFFFFF;
-            padding: 6px;
-            position: relative;
-            box-sizing: border-box;
-        }
-    </style>
-
-
-    <style>
-        /* Tooltip comment window (Win98 miniature) */
-        .comment-tooltip {
-            position: absolute;
-            width: 320px;
-            max-width: 90vw;
-            background: #E0E0E0;
-            border-top: 2px solid #FFFFFF;
-            border-left: 2px solid #FFFFFF;
-            border-right: 2px solid #808080;
-            border-bottom: 2px solid #808080;
-            box-sizing: border-box;
-            z-index: 1000;
-            transform-origin: top left;
-            box-shadow: 4px 6px 18px rgba(0, 0, 0, 0.2);
-            opacity: 0;
-            transform: scale(0.96);
-            transition: opacity 180ms ease, transform 180ms cubic-bezier(.2, .8, .2, 1);
-        }
-
-        .comment-tooltip.show {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        .comment-tooltip .ct-title {
-            background: #404040;
-            color: #fff;
-            padding: 6px 8px;
-            font-weight: 700;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 28px;
-            box-sizing: border-box;
-        }
-
-        .comment-tooltip .ct-body {
+            gap: 10px;
             padding: 8px;
-            background: #F5F5F5;
-            max-height: 240px;
-            overflow: hidden;
-            box-sizing: border-box;
-            border-top: 2px solid #808080;
-            border-left: 2px solid #808080;
-            border-right: 2px solid #FFFFFF;
-            border-bottom: 2px solid #FFFFFF;
-        }
-
-        .comment-tooltip .ct-comments {
-            max-height: 160px;
-            overflow: auto;
-            margin-bottom: 8px;
-            padding-right: 6px;
-        }
-
-        .comment-tooltip .ct-comment {
-            padding: 6px;
-            background: #fff;
-            border: 1px solid #ddd;
-            margin-bottom: 6px;
-            font-size: 13px;
-        }
-
-        .comment-tooltip .ct-comment.alt {
-            background: #f6f6f6;
-        }
-
-        .comment-tooltip .ct-form {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
-
-        .comment-tooltip .ct-form input[type="text"] {
-            flex: 0 0 100px;
-            padding: 6px;
-            border: 2px solid #999;
-            background: #fff;
-        }
-
-        .comment-tooltip .ct-form input[type="text"].name {
-            width: 30%;
-            min-width: 80px;
-        }
-
-        .comment-tooltip .ct-form input[type="text"].comment {
-            flex: 1;
-        }
-
-        .comment-tooltip .ct-actions {
-            margin-top: 8px;
-            display: flex;
-            gap: 8px;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .comment-tooltip .ct-post {
-            padding: 6px 10px;
-            border: 2px solid #000;
-            background: #c0c0c0;
-            cursor: pointer;
-        }
-
-        .comment-tooltip .ct-delete {
-            padding: 6px 8px;
-            border: 2px solid #600;
-            background: #f33;
-            color: #fff;
-            cursor: pointer;
-            font-weight: 700;
-        }
-
-        .comment-tooltip .arrow {
-            width: 12px;
-            height: 8px;
-            position: absolute;
-            background: transparent;
-            left: 16px;
-            top: -8px;
-        }
-
-        .comment-tooltip .arrow:before {
-            content: "";
-            position: absolute;
-            left: 0;
+            border-bottom: 2px solid var(--edge);
+            background: #0d0d0d;
+            position: sticky;
             top: 0;
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 8px solid #E0E0E0;
+            z-index: var(--z-ui)
         }
 
-        .comment-tooltip .arrow:after {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 1px;
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 8px solid rgba(0, 0, 0, 0.06);
-            transform: translateY(-1px);
-        }
-
-        @keyframes arrowBob {
-            0% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(1px);
-            }
-
-            100% {
-                transform: translateY(0);
-            }
-        }
-
-        .comment-tooltip .arrow {
-            animation: arrowBob 1200ms ease-in-out infinite;
-        }
-    </style>
-
-    <style>
-        /* Win98 style menu shared for dropdown + context */
-        .win98-menu {
-            position: absolute;
-            background: #E0E0E0;
-            border-top: 2px solid #FFFFFF;
-            border-left: 2px solid #FFFFFF;
-            border-right: 2px solid #808080;
-            border-bottom: 2px solid #808080;
-            box-shadow: 2px 2px 0 #808080;
-            font-size: 12px;
-            min-width: 140px;
-            z-index: 2000;
-        }
-
-        .win98-menu-item {
-            padding: 4px 8px;
-            cursor: default;
-            color: #000;
-        }
-
-        .win98-menu-item:hover {
-            background: #000080;
-            color: #fff;
-        }
-
-        .titlebar-btn.dropdown {
-            position: relative;
-            width: 20px;
-            justify-content: center;
-        }
-
-        .titlebar-btn.dropdown:hover .win98-menu {
-            display: block;
-        }
-
-        .win98-menu.hidden {
-            display: none;
-        }
-    </style>
-
-
-    <style>
-        :root {
-            --bg: #0a0a0a;
-            --panel: #141414;
-            --fg: #efefef;
-            --border: #2b2b2b;
-            --radius: 6px;
-            --shadow: 0 8px 18px rgba(0, 0, 0, 0.6);
-        }
-
-        body {
-            background: var(--bg) !important;
-            color: var(--fg) !important;
-            font-family: "IBM Plex Mono", monospace;
-        }
-
-        .new-frame {
-            position: absolute;
-            background: rgba(20, 20, 20, 0.98);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: visible;
-            display: inline-flex;
-            flex-direction: column;
-        }
-
-        .new-frame.active {
-            border-color: #efefef;
-            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.7);
-        }
-
-        .new-frame .topbar {
-            position: relative;
-            height: 36px;
-            background: rgba(14, 14, 14, 0.92);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 12px;
-            box-sizing: border-box;
-            user-select: none;
-            pointer-events: none;
-        }
-
-        .new-frame .handle {
-            position: absolute;
-            top: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% + 20px);
-            height: 18px;
-            background: linear-gradient(180deg, #e9e9e9 0%, #dcdcdc 100%);
-            border-radius: 4px;
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto;
-            cursor: grab;
-            z-index: 6;
-        }
-
-        .new-frame .handle::before {
-            content: "";
-            width: 56px;
-            height: 8px;
-            background: repeating-linear-gradient(to right,
-                    rgba(0, 0, 0, 0.06) 0 4px,
-                    rgba(255, 255, 255, 0.06) 4px 8px);
-            border-radius: 2px;
-        }
-
-        .new-frame .title {
-            color: var(--fg);
+        .brand {
             font-family: "Press Start 2P", monospace;
-            font-size: 11px;
-            letter-spacing: 0.03em;
-            pointer-events: none;
-            text-align: center;
-            width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 14px
         }
 
-        .new-frame .content {
-            padding: 6px;
-            background: rgba(10, 10, 10, 0.6);
-            border-radius: 0 0 var(--radius) var(--radius);
-            box-sizing: border-box;
+        .spacer {
+            flex: 1
         }
 
-        .new-frame .content img,
-        .new-frame .content canvas {
-            display: block;
-            width: 100%;
-            height: auto;
-            max-width: 100%;
-            object-fit: contain;
-            background: transparent;
-        }
-
-        .new-frame .mural-icons {
-            position: absolute;
-            right: 8px;
-            bottom: 8px;
+        .pills {
             display: flex;
             gap: 8px;
+            align-items: center
         }
 
-        .icon-btn {
-            width: 20px;
-            height: 20px;
-            display: inline-flex;
+        .pill {
+            display: grid;
+            place-items: center;
+            height: 30px;
+            padding: 0 10px;
+            border: 2px solid var(--edge);
+            background: var(--panel);
+            cursor: pointer
+        }
+
+        .pill.on {
+            outline: 2px solid var(--accent)
+        }
+
+        .board-wrap {
+            grid-area: board;
+            position: relative;
+            overflow: hidden
+        }
+
+        #boardCanvas {
+            width: 100%;
+            height: 100%
+        }
+
+        .chat {
+            grid-area: chat;
+            border-left: 2px solid var(--edge);
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background: #0d0d0d
+        }
+
+        .chat-head {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: transform 140ms ease, background 140ms ease;
-            color: var(--fg);
-            font-size: 12px;
+            gap: 8px;
+            padding: 8px;
+            border-bottom: 2px solid var(--edge)
         }
 
-        .icon-btn:hover {
-            transform: translateY(-2px);
-            background: rgba(255, 255, 255, 0.07);
+        #friendHeader {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap
         }
 
-        .icon-heart.liked {
-            background: rgba(255, 255, 255, 0.14);
+        .friend {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 6px;
+            border: 2px solid var(--edge);
+            background: #111
+        }
+
+        .friend .dot {
+            width: 8px;
+            height: 8px;
+            border: 2px solid var(--edge);
+            background: #333
+        }
+
+        .friend.online .dot {
+            background: #3c5
+        }
+
+        .chat-log {
+            flex: 1;
+            overflow: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .msg {
+            border: 2px solid var(--edge);
+            background: #111;
+            padding: 6px
+        }
+
+        .msg .meta {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .msg .avatar {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--edge);
+            background: #fff
+        }
+
+        .msg .who {
+            font-weight: 600
+        }
+
+        .msg .text {
+            margin-top: 4px;
+            white-space: pre-wrap
+        }
+
+        .date-sep {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: .7
+        }
+
+        .date-sep:before,
+        .date-sep:after {
+            content: "";
+            height: 2px;
+            background: var(--edge);
+            flex: 1
+        }
+
+        .chat-compose {
+            border-top: 2px solid var(--edge);
+            padding: 8px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px
+        }
+
+        #chatMsg {
+            min-height: 36px;
+            max-height: 120px
+        }
+
+        /* Floating chat button (mobile) */
+        .chat-fab {
+            position: fixed;
+            right: 12px;
+            bottom: 12px;
+            width: 46px;
+            height: 46px;
+            border: 2px solid var(--edge);
+            background: #0d0d0d;
+            display: none;
+            place-items: center;
+            z-index: var(--z-ui);
+            box-shadow: 0 0 0 2px var(--edge2)
+        }
+
+        .chat-fab.badge:after {
+            content: attr(data-count);
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            border: 2px solid var(--edge);
+            background: #c33;
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 11px;
+            padding: 0 4px
+        }
+
+        /* Modal basics */
+        .pop {
+            position: fixed;
+            inset: 0;
+            display: none;
+            place-items: center;
+            background: rgba(0, 0, 0, .6);
+            z-index: var(--z-modal)
+        }
+
+        .pop.show {
+            display: grid
+        }
+
+        .modal {
+            width: min(720px, 92vw);
+            background: #0b0b0b;
+            border: 2px solid var(--edge);
+            box-shadow: 0 0 0 2px var(--edge2)
+        }
+
+        .modal .title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--edge);
+            background: #0d0d0d;
+            font-family: "Press Start 2P", monospace;
+            font-size: 14px
+        }
+
+        .modal .body {
+            padding: 12px
+        }
+
+        /* Studio */
+        #drawCanvas {
+            width: 420px;
+            height: 300px;
+            border: 2px solid var(--edge);
+            background: #fff;
+            image-rendering: pixelated
+        }
+
+        .controls {
+            margin-top: 8px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #111;
+            border: 2px solid var(--edge);
+            padding: 8px
+        }
+
+        .controls label {
+            font-size: 11px
+        }
+
+        .range {
+            width: 170px
+        }
+
+        .brush-preview {
+            position: absolute;
+            pointer-events: none;
+            border: 2px dashed #777;
+            border-radius: 999px;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference
+        }
+
+        /* Stamp chooser */
+        .grid-stamps {
+            display: grid;
+            grid-template-columns: repeat(8, 40px);
+            gap: 4px;
+            padding: 6px
+        }
+
+        .stcell {
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border: 2px solid var(--edge);
+            display: grid;
+            place-items: center
+        }
+
+        .stcell img {
+            width: 28px;
+            height: 28px;
+            image-rendering: pixelated
+        }
+
+        .stcell:hover {
+            background: #000
+        }
+
+        .stcell:hover img {
+            filter: invert(1)
+        }
+
+        /* Footer toolbar under each card */
+        .react-bar {
+            font-size: 12px
+        }
+
+        /* Tiny helpers */
+        .hide {
+            display: none !important
+        }
+
+        /* Responsive */
+        @media (max-width: 920px) {
+            .app {
+                grid-template-columns: 1fr;
+                grid-template-areas: "top" "board"
+            }
+
+            .chat {
+                position: fixed;
+                inset: auto 0 0;
+                height: 55vh;
+                transform: translateY(110%);
+                transition: transform .2s ease
+            }
+
+            .chat.show {
+                transform: translateY(0)
+            }
+
+            .chat-fab {
+                display: grid
+            }
         }
     </style>
-
 </head>
 
 <body>
-    <div class="scanline"></div>
-
-    <!-- Intro -->
-    <div id="intro" aria-hidden="false">
-        <div style="text-align:center">
-            <div class="boot-text">LOADING MURAL OS...</div>
-            <div class="loading-box">
-                <div class="loading-steps" id="loadingSteps"></div>
-            </div>
-            <button id="sureBtn">SURE THING</button>
-            <div id="blinker" style="display:none">PRESS ANY KEY TO CONTINUE</div>
+    <div class="app">
+        <div class="top">
+            <div class="brand">TALK 2.0</div>
+            <div id="friendHeader" class="pills" title="Who's here"></div>
+            <div class="spacer"></div>
+            <button id="btnNew" class="pill"><img alt="" src="" data-icon="add">&nbsp;New Doodle</button>
+            <button id="btnPrefs" class="pill"><img alt="" src="" data-icon="gear">&nbsp;Prefs</button>
+            <button id="btnHelp" class="pill"><img alt="" src="" data-icon="help">&nbsp;Help</button>
         </div>
-    </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar" id="toolbar" aria-hidden="false">
-        <div class="logo-small">MURAL OS</div>
-        <div class="tool-btn" id="btnDoodle" title="Make a doodle">
-            <div class="icon">✎</div>
-            <div style="font-size:11px">DOODLE</div>
+        <div class="board-wrap">
+            <canvas id="boardCanvas"></canvas>
         </div>
-        <div class="tool-btn" id="btnNote" title="Leave a note">
-            <div class="icon">✉</div>
-            <div style="font-size:11px">NOTE</div>
-        </div>
-        <div style="flex:1"></div>
-        <div class="tool-btn" id="btnAdmin">
-            <div class="icon">⚙</div>
-            <div style="font-size:11px">ADMIN</div>
-        </div>
-    </div>
 
-    <!-- Mural -->
-    <div id="mural">
-        <div class="mural-canvas" id="muralCanvas"></div>
-    </div>
-
-    <!-- Side panel -->
-    <div id="sidePanel" aria-hidden="true">
-        <div><strong id="sideTitle">Item</strong> <button class="side-close" id="sideClose">CLOSE</button></div>
-        <div id="sideContent"></div>
-        <div style="margin-top:8px">
-            <div id="adminControls" style="display:none">
-                <button id="deleteItem">Delete</button>
-                <button id="clearMural">Clear</button>
+        <aside id="chat" class="chat">
+            <div class="chat-head">
+                <div style="font-family:'Press Start 2P',monospace;font-size:12px">Chat</div>
+                <div class="spacer"></div>
+                <button id="chatClose" class="pill">Close</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Doodle modal -->
-    <div class="modal-backdrop" id="doodleModal">
-        <div class="window" role="dialog" aria-modal="true" aria-label="Doodle">
-            <div class="titlebar">
-                <div class="title-left">
-                    <div class="drag-handle" aria-hidden="true"></div>
-                    <div style="margin-left:8px">CREATE A DOODLE</div>
-                </div>
-                <div class="title-close" id="doodleClose">X</div>
-            </div>
-            <div class="doodle-body">
-                <div class="canvas-wrap">
-                    <canvas id="doodleCanvas" width="820" height="520"></canvas>
-                    <div style="display:flex;gap:8px;margin-top:8px">
-                        <button class="tool-small" id="submitDoodle" type="button">SUBMIT</button>
-                        <button class="tool-small" id="cancelDoodle" type="button">CANCEL</button>
-                    </div>
-                </div>
-                <div class="tools-col">
-                    <div style="font-weight:700">TOOLS</div>
-                    <button class="tool-small" id="toolBrush" type="button">Brush</button>
-                    <button class="tool-small" id="toolEraser" type="button">Eraser</button>
-                    <button class="tool-small" id="toolStampWindow" type="button">Stamps</button>
-                    <button class="tool-small" id="toolUndo" type="button">Undo</button>
-                    <button class="tool-small" id="toolClear" type="button">Clear</button>
-                    <div style="font-weight:700">Brush size</div>
-                    <input type="range" id="brushSize" min="1" max="48" value="4" />
-                    <div style="font-weight:700">Color</div>
-                    <input type="color" id="colorPicker" value="#000000" style="width:100%;height:36px;border:3px solid #000;background:#fff" />
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stamp picker window (separate retro window centered) -->
-    <div class="modal-backdrop" id="stampModal">
-        <div class="stamp-window window" role="dialog" aria-modal="true" aria-label="Stamp picker">
-            <div class="titlebar">
-                <div class="title-left">
-                    <div class="drag-handle"></div>
-                    <div style="margin-left:8px">CHOOSE A STAMP</div>
-                </div>
-                <div class="title-close" id="stampClose">X</div>
-            </div>
-            <div style="padding:8px">
-                <div class="stamp-grid" id="stampGrid"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Note modal -->
-    <div class="modal-backdrop" id="noteModal">
-        <div class="window" role="dialog" aria-modal="true" aria-label="Leave a note">
-            <div class="titlebar">
-                <div class="title-left">
-                    <div class="drag-handle"></div>
-                    <div style="margin-left:8px">LEAVE A NOTE</div>
-                </div>
-                <div class="title-close" id="noteClose">X</div>
-            </div>
-            <div class="note-body">
-                <input id="noteName" class="input" placeholder="Your name (optional)" />
-                <textarea id="noteText" class="input" rows="4" placeholder="Write a note..."></textarea>
+            <div id="chatLog" class="chat-log"></div>
+            <div class="chat-compose">
+                <textarea id="chatMsg" placeholder="Say something… (Enter to send, Shift+Enter = newline)"></textarea>
                 <div style="display:flex;gap:8px">
-                    <button class="tool-small" id="submitNote" type="button">SUBMIT</button>
-                    <button class="tool-small" id="cancelNote" type="button">CANCEL</button>
+                    <input id="chatName" placeholder="Name" style="width:120px" maxlength="24" />
+                    <button id="chatSend" class="pill">Send</button>
                 </div>
+            </div>
+        </aside>
+    </div>
+    <button id="chatFab" class="chat-fab"><img alt="" data-icon="chat"></button>
+
+    <!-- Studio (draw) -->
+    <div id="studioPop" class="pop">
+        <div class="modal">
+            <div class="title">
+                <div>Studio</div><button id="studioClose" class="pill">Close</button>
+            </div>
+            <div class="body">
+                <div style="position:relative;display:inline-block">
+                    <canvas id="drawCanvas" width="420" height="300"></canvas>
+                    <div id="brushPreview" class="brush-preview hide"></div>
+                </div>
+                <div class="controls">
+                    <button id="tBrush" class="pill on"><img alt="" data-icon="brush"></button>
+                    <button id="tEraser" class="pill"><img alt="" data-icon="eraser"></button>
+                    <button id="tStamp" class="pill"><img alt="" data-icon="stamp"></button>
+                    <label>Size <input id="brushSize" class="range" type="range" min="1" max="24" value="3"></label>
+                    <label>Color <input id="brushColor" type="color" value="#000000"></label>
+                    <button id="chooseStamp" class="pill">Choose Stamps</button>
+                    <div class="spacer"></div>
+                    <button id="undo" class="pill">Undo</button>
+                    <button id="redo" class="pill">Redo</button>
+                    <button id="clear" class="pill">Clear</button>
+                    <button id="post" class="pill" style="background:#113">Post</button>
+                </div>
+                <div style="font-size:12px;opacity:.75;margin-top:6px">Shortcuts: +/- size · I eyedropper · Shift = straight line</div>
             </div>
         </div>
     </div>
 
-    <!-- Audio placeholders (tiny base64) -->
-    <audio id="sndClick">
-        <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=">
-    </audio>
-    <audio id="sndPlace">
-        <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=">
-    </audio>
-    <audio id="sndBleep">
-        <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=">
-    </audio>
+    <!-- Stamp chooser -->
+    <div id="stampPop" class="pop">
+        <div class="modal" style="max-width:600px">
+            <div class="title" id="stampDrag">
+                <div>Stamps</div><button id="stampClose" class="pill">Close</button>
+            </div>
+            <div class="body">
+                <div id="stampGrid" class="grid-stamps"></div>
+            </div>
+        </div>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/fabric@4.6.0/dist/fabric.min.js"></script>
+    <!-- Help / Prefs (lightweight) -->
+    <div id="helpPop" class="pop">
+        <div class="modal">
+            <div class="title">
+                <div>Help</div><button id="helpClose" class="pill">Close</button>
+            </div>
+            <div class="body">
+                <p>Welcome! Draw something, post it, react with ❤ 👍 😂, and chat. Drag to move your own cards. On mobile, tap the chat bubble.</p>
+            </div>
+        </div>
+    </div>
+    <div id="prefsPop" class="pop">
+        <div class="modal">
+            <div class="title">
+                <div>Preferences</div><button id="prefsClose" class="pill">Close</button>
+            </div>
+            <div class="body"><label><input id="prefSounds" type="checkbox"> Retro sounds</label> · <label><input id="prefReduceMotion" type="checkbox"> Reduce motion</label></div>
+        </div>
+    </div>
 
     <script type="module">
-        /* Polished mural app — visual & interaction upgrades applied
-           - active tool UI
-           - undo/redo for drawing
-           - brush size preview
-           - stamp colorization and upload
-           - inline note editing (double-click)
-           - focus trap for modals (basic)
-           - lazy loading for mural images
-           - reaction animation
-           - minor accessibility improvements
-        */
-
+        /* === External libs (CDN) === */
         import {
             initializeApp
-        } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
         import {
-            getFirestore,
-            collection,
-            addDoc,
-            onSnapshot,
-            query,
-            orderBy,
-            serverTimestamp,
-            doc,
-            updateDoc,
-            deleteDoc,
-            getDocs
-        } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+            getDatabase,
+            ref,
+            child,
+            push,
+            set,
+            onChildAdded,
+            onChildRemoved,
+            onChildChanged,
+            update
+        } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-database.js";
+        import {
+            fabric
+        } from "https://cdn.jsdelivr.net/npm/fabric@5.2.4/dist/fabric.min.js";
 
-        function log(...args) {
-            if (window.console) console.log('[mural-polish]', ...args);
-        }
-
-        function ready(fn) {
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', fn, {
-                    once: true
-                });
-            } else setTimeout(fn, 0);
-        }
-
-        function normalizeButtonTypes() {
-            document.querySelectorAll('button').forEach(b => {
-                if (!b.hasAttribute('type')) b.setAttribute('type', 'button');
-            });
-        }
-
-        function makeToolDivsAccessible() {
-            document.querySelectorAll('.tool-btn').forEach(el => {
-                if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
-                if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
-                el.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        el.click();
-                    }
-                });
-            });
-        }
-
-        function rebindInlineOnclicks() {
-            document.querySelectorAll('[onclick]').forEach(el => {
-                try {
-                    const code = el.getAttribute('onclick');
-                    if (!code) return;
-                    el.removeAttribute('onclick');
-                    const fn = new Function('event', code);
-                    el.addEventListener('click', function(evt) {
-                        try {
-                            fn.call(this, evt);
-                        } catch (err) {
-                            console.error(err);
-                        }
-                    });
-                } catch (e) {
-                    console.error('rebind fail', e);
-                }
-            });
-        }
-
+        /* === Firebase config — PASTE YOUR EXISTING CONFIG BELOW ===
+           Replace the placeholder values with your actual firebaseConfig from your current page.
+           Keep the same property names. Example shape shown. */
         const firebaseConfig = {
             apiKey: "AIzaSyBeXCRIeRdHr2C3EYnDwC1NoQNQxZygA0U",
             authDomain: "guestbook-bfbdc.firebaseapp.com",
@@ -1822,1171 +518,698 @@
             appId: "1:710789947600:web:19014ef99d053f4c5dbed5",
             measurementId: "G-E9XPN9563X"
         };
+
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const ITEMS = collection(db, 'mural_items');
-        const UID = localStorage.getItem('mural_uid') || ('u_' + Math.random().toString(36).slice(2, 9));
-        localStorage.setItem('mural_uid', UID);
+        const db = getDatabase(app);
+        /* Use the SAME paths as your existing app */
+        const ITEMS = ref(db, "mural_items");
+        const CHAT = ref(db, "mini_chat");
+        const PROFILES = ref(db, "profiles");
 
-        // UI refs
-        const intro = document.getElementById('intro');
-        const loadingSteps = document.getElementById('loadingSteps');
-        const sureBtn = document.getElementById('sureBtn');
-        const blinker = document.getElementById('blinker');
+        /* === Local identity (no auth; just local UID) === */
+        const UID = (localStorage.getItem("uid") || (() => {
+            const u = Math.random().toString(36).slice(2);
+            localStorage.setItem("uid", u);
+            return u;
+        })());
+        let profile = JSON.parse(localStorage.getItem("profile") || "{}");
+        profile.name = profile.name || ("anon-" + UID.slice(0, 4));
 
-        const btnDoodle = document.getElementById('btnDoodle');
-        const btnNote = document.getElementById('btnNote');
-        const btnAdmin = document.getElementById('btnAdmin');
-
-        const doodleModal = document.getElementById('doodleModal');
-        const doodleClose = document.getElementById('doodleClose');
-        const submitDoodle = document.getElementById('submitDoodle');
-        const cancelDoodle = document.getElementById('cancelDoodle');
-        const toolBrush = document.getElementById('toolBrush');
-        const toolEraser = document.getElementById('toolEraser');
-        const toolStampWindow = document.getElementById('toolStampWindow');
-        const toolUndo = document.getElementById('toolUndo');
-        const toolClear = document.getElementById('toolClear');
-        const brushSize = document.getElementById('brushSize');
-        const colorPicker = document.getElementById('colorPicker');
-
-        const stampModal = document.getElementById('stampModal');
-        const stampGrid = document.getElementById('stampGrid');
-        const stampClose = document.getElementById('stampClose');
-
-        const noteModal = document.getElementById('noteModal');
-        const submitNote = document.getElementById('submitNote');
-        const cancelNote = document.getElementById('cancelNote');
-        const noteName = document.getElementById('noteName');
-        const noteText = document.getElementById('noteText');
-
-        const muralCanvas = document.getElementById('muralCanvas');
-        const sidePanel = document.getElementById('sidePanel');
-        const sideClose = document.getElementById('sideClose');
-        const sideContent = document.getElementById('sideContent');
-        const sideTitle = document.getElementById('sideTitle');
-        const adminControls = document.getElementById('adminControls');
-        const deleteItem = document.getElementById('deleteItem');
-        const clearMural = document.getElementById('clearMural');
-
-        let currentSelectedId = null;
-        let fabricCanvas = null;
-
-        // store stamp data URLs & allow colorization
-        let STAMPS = [
-            // same data URIs as before (shortened for brevity — we'll populate dynamically below)
-        ];
-
-        // We'll re-create stamp list (copied from original file content)
-        const STAMP_SOURCES = [
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><g fill="#000"><rect x="12" y="28" width="40" height="24"/><rect x="8" y="20" width="12" height="12"/><rect x="44" y="20" width="12" height="12"/><rect x="20" y="34" width="6" height="6"/><rect x="38" y="34" width="6" height="6"/></g></svg>',
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><path d="M32 54s-18-12-18-24c0-6 4-10 10-10 4 0 8 3 8 3s4-3 8-3c6 0 10 4 10 10 0 12-18 24-18 24z" fill="#000"/></svg>',
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><circle cx="32" cy="28" r="8" fill="#000"/><rect x="22" y="36" width="20" height="6" fill="#000"/></svg>',
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><polygon points="32,12 36,28 52,28 38,36 42,52 32,42 22,52 26,36 12,28 28,28" fill="#000"/></svg>',
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><rect x="12" y="12" width="40" height="40" fill="#000"/><rect x="18" y="18" width="28" height="18" fill="#fff"/></svg>',
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><polygon points="28,14 40,14 26,34 38,34 20,54 28,34 18,34" fill="#000"/></svg>',
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><circle cx="32" cy="24" r="6" fill="#000"/><rect x="30" y="30" width="4" height="18" fill="#000"/><circle cx="18" cy="24" r="6" fill="#000"/><circle cx="46" cy="24" r="6" fill="#000"/></svg>',
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><rect x="18" y="18" width="28" height="26" fill="#000"/><rect x="24" y="28" width="6" height="6" fill="#fff"/><rect x="36" y="28" width="6" height="6" fill="#fff"/></svg>',
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><rect x="10" y="12" width="44" height="30" rx="4" fill="#000"/><polygon points="20,42 28,36 22,34" fill="#000"/></svg>',
-            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="100%" height="100%" fill="#fff"/><polygon points="10,32 42,10 42,24 54,24 54,40 42,40 42,54" fill="#000"/></svg>'
-        ];
-        STAMP_SOURCES.forEach(svg => STAMPS.push('data:image/svg+xml;utf8,' + encodeURIComponent(svg)));
-
-        let placingStamp = null;
-        let placingStampColor = '#000000';
-        let draftStampUpload = null;
-
-        // populate stamp grid UI with extra controls for color + upload
-        function populateStampGrid() {
-            stampGrid.innerHTML = '';
-            const controlRow = document.createElement('div');
-            controlRow.style.display = 'flex';
-            controlRow.style.gap = '8px';
-            controlRow.style.alignItems = 'center';
-            controlRow.style.marginBottom = '8px';
-            const colorLabel = document.createElement('div');
-            colorLabel.textContent = 'Color:';
-            const colorInput = document.createElement('input');
-            colorInput.type = 'color';
-            colorInput.value = placingStampColor;
-            colorInput.addEventListener('input', (e) => placingStampColor = e.target.value);
-            const upload = document.createElement('input');
-            upload.type = 'file';
-            upload.accept = 'image/svg+xml,image/png';
-            upload.title = 'Upload stamp';
-            upload.addEventListener('change', (e) => {
-                const f = e.target.files && e.target.files[0];
-                if (!f) return;
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    draftStampUpload = ev.target.result;
-                };
-                reader.readAsDataURL(f);
-            });
-            controlRow.appendChild(colorLabel);
-            controlRow.appendChild(colorInput);
-            controlRow.appendChild(upload);
-            const container = document.createElement('div');
-            container.style.gridColumn = '1 / -1';
-            container.appendChild(controlRow);
-            stampGrid.appendChild(container);
-
-            STAMPS.forEach((s, idx) => {
-                const tile = document.createElement('div');
-                tile.className = 'stamp-tile';
-                const img = new Image();
-                img.src = s;
-                img.width = 48;
-                img.height = 48;
-                img.alt = 'stamp ' + (idx + 1);
-                tile.appendChild(img);
-                stampGrid.appendChild(tile);
-                tile.addEventListener('click', () => {
-                    // colorize if svg and color chosen
-                    let src = s;
-                    if (draftStampUpload) {
-                        src = draftStampUpload;
-                        draftStampUpload = null;
-                    } else if (src.startsWith('data:image/svg+xml')) {
-                        // decode, replace fill="#000" with chosen color (approx)
-                        const decoded = decodeURIComponent(src.split(',')[1]);
-                        const replaced = decoded.replace(/fill="#000"/g, 'fill="' + placingStampColor + '"');
-                        src = 'data:image/svg+xml;utf8,' + encodeURIComponent(replaced);
-                    }
-                    placingStamp = src;
-                    stampModal.style.display = 'none';
-                    try {
-                        document.getElementById('sndClick').play().catch(() => {});
-                    } catch (e) {}
-                });
-            });
-        }
-        populateStampGrid();
-
-        // loading intro (unchanged)
-        for (let i = 0; i < 12; i++) {
-            const d = document.createElement('div');
-            d.className = 'loading-step';
-            loadingSteps.appendChild(d);
-        }
-
-        function runIntro() {
-            let idx = 0;
-            const step = () => {
-                if (idx < loadingSteps.children.length) {
-                    loadingSteps.children[idx].style.background = '#fff';
-                    idx++;
-                    setTimeout(step, 80 + Math.random() * 60);
-                } else {
-                    sureBtn.style.display = 'inline-block';
-                    blinker.style.display = 'block';
-                    let on = true;
-                    const bInt = setInterval(() => {
-                        blinker.style.opacity = on ? '1' : '0.1';
-                        on = !on;
-                    }, 800);
-                    const finish = () => {
-                        intro.style.display = 'none';
-                        clearInterval(bInt);
-                    };
-                    sureBtn.addEventListener('click', finish, {
-                        once: true
-                    });
-                    document.addEventListener('keydown', finish, {
-                        once: true
-                    });
-                    document.addEventListener('pointerdown', finish, {
-                        once: true
-                    });
-                }
-            };
-            setTimeout(step, 220);
-        }
-        runIntro();
-
-        // Fabric init with history stacks and brush preview
-        let history = {
-            undo: [],
-            redo: []
+        /* === Icons (expects /ui-icons/*) — fallback emojis if missing === */
+        const ICONS = {
+            brush: "brush.png",
+            eraser: "eraser.png",
+            stamp: "stamp.png",
+            add: "plus.png",
+            chat: "chat.png",
+            gear: "gear.png",
+            help: "help.png",
+            trash: "bin.png"
         };
-        let isDirty = false;
+        document.querySelectorAll("img[data-icon]").forEach(img => {
+            const f = ICONS[img.dataset.icon];
+            if (f) img.src = "ui-icons/" + f
+        });
 
-        async function ensureFabricInitialized() {
-            if (window.fabric && fabricCanvas) return;
-            if (!window.fabric) {
-                console.warn('Fabric not found on window — ensure CDN script loaded');
+        /* === Top buttons === */
+        document.getElementById("btnNew").onclick = () => show("studioPop");
+        document.getElementById("btnHelp").onclick = () => show("helpPop");
+        document.getElementById("helpClose").onclick = () => hide("helpPop");
+        document.getElementById("btnPrefs").onclick = () => show("prefsPop");
+        document.getElementById("prefsClose").onclick = () => hide("prefsPop");
+
+        /* === Board === */
+        const boardCanvasEl = document.getElementById("boardCanvas");
+        const board = new fabric.Canvas("boardCanvas", {
+            selection: false,
+            backgroundColor: "#111"
+        });
+        board.lowerCanvasEl.getContext('2d').imageSmoothingEnabled = false;
+        board.upperCanvasEl.getContext('2d').imageSmoothingEnabled = false;
+
+        function resizeBoard() {
+            const r = boardCanvasEl.getBoundingClientRect();
+            board.setWidth(r.width);
+            board.setHeight(r.height);
+            board.requestRenderAll();
+        }
+        window.addEventListener("resize", resizeBoard);
+        resizeBoard();
+
+        const itemsMap = new Map();
+
+        function applySavedTransform(group, it) {
+            const s = Math.max(.5, Math.min(2, Number(it.scale || 1)));
+            group.scaleX = s;
+            group.scaleY = s;
+            group.left = (it.x ?? 40);
+            group.top = (it.y ?? 40);
+        }
+
+        function reactionCounts(it) {
+            const counts = {
+                heart: 0,
+                up: 0,
+                lol: 0
+            };
+            if (it.reactions) {
+                counts.heart = Object.keys(it.reactions.heart || {}).length;
+                counts.up = Object.keys(it.reactions.up || {}).length;
+                counts.lol = Object.keys(it.reactions.lol || {}).length;
             }
-            if (!fabricCanvas) {
-                fabricCanvas = new fabric.Canvas('doodleCanvas', {
-                    isDrawingMode: true,
-                    backgroundColor: '#fff',
-                    preserveObjectStacking: true
-                });
-                fabricCanvas.freeDrawingBrush.width = parseInt(brushSize.value, 10) || 4;
-                fabricCanvas.freeDrawingBrush.color = colorPicker.value || '#000';
+            return counts;
+        }
 
-                function pushHistory() {
-                    try {
-                        const state = JSON.stringify(fabricCanvas.toDatalessJSON());
-                        history.undo.push(state);
-                        if (history.undo.length > 50) history.undo.shift();
-                        history.redo = []; // clear redo on new action
-                    } catch (e) {
-                        console.warn('history push failed', e);
+        function buildCard(it, key, onReady) {
+            const CARD_W = Math.min(300, Math.max(160, it.w || 220));
+            const HEADER_H = 28,
+                FOOTER_H = 24,
+                PADDING = 6;
+
+            const border = new fabric.Rect({
+                left: 0,
+                top: 0,
+                width: CARD_W,
+                height: HEADER_H + FOOTER_H + Math.min(260, it.h || 220) + PADDING * 2,
+                rx: 0,
+                ry: 0,
+                stroke: "#000",
+                strokeWidth: 2,
+                fill: "#0b0b0b"
+            });
+            const header = new fabric.Rect({
+                left: 0,
+                top: 0,
+                width: CARD_W,
+                height: HEADER_H,
+                fill: "#0d0d0d",
+                stroke: "#000",
+                strokeWidth: 2
+            });
+            const footer = new fabric.Rect({
+                left: 0,
+                top: HEADER_H + Math.min(260, it.h || 220) + PADDING * 2,
+                width: CARD_W,
+                height: FOOTER_H,
+                fill: "#0d0d0d",
+                stroke: "#000",
+                strokeWidth: 2
+            });
+
+            const avatar = new fabric.Rect({
+                left: PADDING,
+                top: PADDING,
+                width: 18,
+                height: 18,
+                fill: "#fff",
+                stroke: "#000",
+                strokeWidth: 2,
+                selectable: false,
+                evented: false
+            });
+            const nameText = new fabric.Text((it.name || "anon").slice(0, 24), {
+                left: PADDING + 26,
+                top: PADDING + 3,
+                fontFamily: "JetBrains Mono",
+                fontSize: 12,
+                fill: "#fff",
+                selectable: false,
+                evented: false
+            });
+            const reacts = new fabric.Text("❤ 0  👍 0  😂 0", {
+                left: PADDING,
+                top: footer.top + 4,
+                fontFamily: "JetBrains Mono",
+                fontSize: 12,
+                fill: "#fff",
+                selectable: false,
+                evented: false,
+                class: "react-bar"
+            });
+
+            fabric.Image.fromURL(it.src, (img) => {
+                img.set({
+                    left: PADDING,
+                    top: HEADER_H + PADDING,
+                    selectable: false,
+                    evented: false,
+                    objectCaching: false
+                });
+                const maxW = CARD_W - PADDING * 2;
+                const scale = Math.min(1, maxW / img.width);
+                img.scale(scale);
+                const contentH = (img.height * scale);
+                border.set("height", HEADER_H + PADDING + contentH + PADDING + FOOTER_H);
+                footer.set({
+                    top: border.height - FOOTER_H
+                });
+                reacts.set({
+                    top: border.height - FOOTER_H + 4
+                });
+
+                const group = new fabric.Group([border, header, footer, img, nameText, avatar, reacts], {
+                    left: it.x ?? 40,
+                    top: it.y ?? 40,
+                    hasControls: false,
+                    subTargetCheck: true
+                });
+                group.set({
+                    dbKey: key,
+                    owner: it.uid,
+                    dtype: "card",
+                    lockScalingFlip: true
+                });
+
+                // Ownership & interaction rules
+                const isOwner = (it.uid === UID);
+                group.hasBorders = false;
+                group.hoverCursor = (isOwner ? "move" : "pointer");
+                group.hasControls = isOwner;
+                group.lockMovementX = !isOwner;
+                group.lockMovementY = !isOwner;
+                group.lockScalingX = !isOwner;
+                group.lockScalingY = !isOwner;
+
+                // Apply saved transform
+                applySavedTransform(group, it);
+
+                // Drag scale clamp (owner only)
+                group.on("scaling", () => {
+                    if (!isOwner) {
+                        group.scaleX = group.scaleY = it.scale || 1;
+                        return;
                     }
-                }
-                // push initial state
-                pushHistory();
-
-                fabricCanvas.on('path:created', function() {
-                    pushHistory();
-                    isDirty = true;
-                });
-                fabricCanvas.on('object:added', function() {
-                    pushHistory();
-                    isDirty = true;
-                });
-                fabricCanvas.on('object:modified', function() {
-                    pushHistory();
-                    isDirty = true;
-                });
-                fabricCanvas.on('object:removed', function() {
-                    pushHistory();
-                    isDirty = true;
+                    const s = Math.max(.5, Math.min(2, group.scaleX));
+                    group.scaleX = s;
+                    group.scaleY = s;
                 });
 
-                // undo/redo functions
-                function restoreFromState(state) {
-                    try {
-                        fabricCanvas.loadFromJSON(state, fabricCanvas.renderAll.bind(fabricCanvas));
-                    } catch (e) {
-                        console.warn('restore failed', e);
-                    }
-                }
-                toolUndo.addEventListener('click', () => {
-                    if (!history.undo.length) return;
-                    const last = history.undo.pop();
-                    history.redo.push(JSON.stringify(fabricCanvas.toDatalessJSON()));
-                    restoreFromState(last);
-                });
-                // add redo control (reuse toolClear as long-press? but create keyboard binding Ctrl+Y)
-                document.addEventListener('keydown', (e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-                        if (!history.redo.length) return;
-                        const next = history.redo.pop();
-                        history.undo.push(JSON.stringify(fabricCanvas.toDatalessJSON()));
-                        restoreFromState(next);
-                    }
+                // Double click remove (owner only)
+                group.on("mousedblclick", () => {
+                    if (isOwner) update(child(ITEMS, key), {
+                        deleted: true
+                    });
                 });
 
-                brushSize.addEventListener('input', () => {
-                    fabricCanvas.freeDrawingBrush.width = parseInt(brushSize.value, 10);
-                    updateBrushPreview();
-                });
-                colorPicker.addEventListener('input', () => {
-                    fabricCanvas.freeDrawingBrush.color = colorPicker.value;
-                    updateBrushPreview();
-                });
+                // Reaction hit areas (three transparent rects)
+                const segW = (CARD_W - PADDING * 2) / 3;
+                const y = footer.top;
+                const makeHit = (i, kind) => {
+                    const r = new fabric.Rect({
+                        left: PADDING + i * segW,
+                        top: y,
+                        width: segW,
+                        height: FOOTER_H,
+                        fill: "rgba(0,0,0,0)",
+                        strokeWidth: 0,
+                        selectable: false,
+                        hasBorders: false,
+                        hasControls: false
+                    });
+                    r.on("mousedown", () => toggleReaction(key, kind));
+                    return r;
+                };
+                const hitH = [makeHit(0, "heart"), makeHit(1, "up"), makeHit(2, "lol")];
+                hitH.forEach(h => group.addWithUpdate(h));
 
-                toolBrush.addEventListener('click', () => {
-                    setActiveTool('brush');
-                    fabricCanvas.isDrawingMode = true;
-                    fabricCanvas.freeDrawingBrush.width = parseInt(brushSize.value, 10);
-                    fabricCanvas.freeDrawingBrush.color = colorPicker.value;
-                });
-                toolEraser.addEventListener('click', () => {
-                    setActiveTool('eraser');
-                    fabricCanvas.isDrawingMode = true;
-                    fabricCanvas.freeDrawingBrush.width = Math.max(12, parseInt(brushSize.value, 10));
-                    fabricCanvas.freeDrawingBrush.color = '#ffffff';
-                });
-                toolClear.addEventListener('click', () => {
-                    if (confirm('Clear drawing?')) {
-                        fabricCanvas.clear();
-                        fabricCanvas.backgroundColor = '#fff';
-                        pushHistory();
-                    }
-                });
+                onReady(group);
 
-                // stamp placement
-                fabricCanvas.on('mouse:down', function(opt) {
-                    if (placingStamp) {
-                        const pointer = fabricCanvas.getPointer(opt.e);
-                        // if SVG data URL, it will render with its colors already set
-                        fabric.Image.fromURL(placingStamp, function(img) {
-                            img.set({
-                                left: pointer.x,
-                                top: pointer.y,
-                                originX: 'center',
-                                originY: 'center',
-                                selectable: true,
-                                hasControls: true
-                            });
-                            img.scaleToWidth(96);
-                            fabricCanvas.add(img).setActiveObject(img);
-                            pushHistory();
-                        }, {
-                            crossOrigin: 'anonymous'
-                        });
-                        placingStamp = null;
-                        try {
-                            document.getElementById('sndPlace').play().catch(() => {});
-                        } catch (e) {}
-                    }
-                });
+                // Initial counts
+                updateReactionText(key, it);
+            });
+        }
 
-                // brush preview element
-                const brushPreview = document.getElementById('brushPreview');
-
-                function updateBrushPreview() {
-                    const w = fabricCanvas.freeDrawingBrush.width * (fabricCanvas.getZoom ? fabricCanvas.getZoom() : 1);
-                    brushPreview.style.width = (w) + 'px';
-                    brushPreview.style.height = (w) + 'px';
-                    brushPreview.style.borderColor = colorPicker.value || '#000';
-                    brushPreview.style.display = 'none';
-                }
-                updateBrushPreview();
-                // show preview on mousemove over canvas area
-                document.getElementById('doodleCanvas').addEventListener('mousemove', (e) => {
-                    brushPreview.style.left = e.clientX + 'px';
-                    brushPreview.style.top = e.clientY + 'px';
-                    brushPreview.style.display = 'block';
-                });
-                document.getElementById('doodleCanvas').addEventListener('mouseleave', () => {
-                    document.getElementById('brushPreview').style.display = 'none';
-                });
-
+        function updateReactionText(key, it) {
+            const rec = itemsMap.get(key);
+            if (!rec) return;
+            const counts = reactionCounts(it);
+            const t = rec.group._objects.find(o => o.type === "text" && o.text && o.text.includes("❤"));
+            if (t) {
+                t.text = `❤ ${counts.heart}  👍 ${counts.up}  😂 ${counts.lol}`;
+                board.requestRenderAll();
             }
         }
 
-        // UI bindings
-        ready(() => {
-            normalizeButtonTypes();
-            makeToolDivsAccessible();
-            rebindInlineOnclicks();
+        function addBoardItem(key, it) {
+            if (it.deleted) {
+                removeBoardItem(key);
+                return;
+            }
+            if (itemsMap.has(key)) return;
+            buildCard(it, key, (group) => {
+                board.add(group);
+                board.bringToFront(group);
+                itemsMap.set(key, {
+                    group,
+                    data: it
+                });
+                board.requestRenderAll();
+            });
+        }
 
-            btnDoodle.addEventListener('click', openDoodle);
-            btnNote.addEventListener('click', openNote);
-            btnAdmin.addEventListener('click', adminToggle);
+        function updateBoardItem(key, it) {
+            const rec = itemsMap.get(key);
+            if (!rec) {
+                addBoardItem(key, it);
+                return;
+            }
+            rec.data = it;
+            if (it.deleted) {
+                removeBoardItem(key);
+                return;
+            }
+            applySavedTransform(rec.group, it);
+            updateReactionText(key, it);
+            board.requestRenderAll();
+        }
 
-            cancelNote.addEventListener('click', () => noteModal.style.display = 'none');
-            submitNote.addEventListener('click', async () => {
-                const name = (noteName.value || 'anon');
-                const text = (noteText.value || '').trim();
-                if (!text) return alert('Write a note');
-                try {
-                    await addDoc(ITEMS, {
-                        type: 'note',
-                        text,
-                        creator: name,
-                        timestamp: serverTimestamp(),
-                        x: 50,
-                        y: 50,
-                        reactionCount: 0,
-                        comments: []
-                    });
-                    noteModal.style.display = 'none';
-                    noteText.value = '';
-                    noteName.value = '';
-                } catch (e) {
-                    alert('Save failed: ' + (e.message || e));
-                }
-            });
+        function removeBoardItem(key) {
+            const rec = itemsMap.get(key);
+            if (!rec) return;
+            board.remove(rec.group);
+            itemsMap.delete(key);
+            board.requestRenderAll();
+        }
 
-            doodleClose.addEventListener('click', () => {
-                if (isDirty && !confirm('Discard drawing?')) return;
-                doodleModal.style.display = 'none';
-            });
-            cancelDoodle.addEventListener('click', () => {
-                if (isDirty && !confirm('Discard drawing?')) return;
-                doodleModal.style.display = 'none';
-            });
-            toolStampWindow.addEventListener('click', () => {
-                populateStampGrid();
-                stampModal.style.display = 'flex';
-            });
-            stampClose.addEventListener('click', () => stampModal.style.display = 'none');
-
-            stampModal.addEventListener('click', (e) => {
-                if (e.target === stampModal) stampModal.style.display = 'none';
-            });
-            doodleModal.addEventListener('click', (e) => {
-                if (e.target === doodleModal) {
-                    if (isDirty && !confirm('Discard drawing?')) return;
-                    doodleModal.style.display = 'none';
-                }
-            });
-
-            sideClose.addEventListener('click', () => {
-                sidePanel.style.display = 'none';
-                currentSelectedId = null;
-            });
-
-            deleteItem.addEventListener('click', async () => {
-                if (!currentSelectedId) return alert('No item selected');
-                if (!confirm('Delete item?')) return;
-                try {
-                    await deleteDoc(doc(db, 'mural_items', currentSelectedId));
-                    sidePanel.style.display = 'none';
-                } catch (e) {
-                    alert('Delete failed');
-                }
-            });
-            clearMural.addEventListener('click', async () => {
-                if (!confirm('Clear mural?')) return;
-                try {
-                    const snap = await getDocs(query(ITEMS, orderBy('timestamp', 'desc')));
-                    for (const d of snap.docs) await deleteDoc(doc(db, 'mural_items', d.id));
-                    alert('Cleared');
-                } catch (e) {
-                    alert('Clear failed');
-                }
+        // Persist position + scale after drag/resize (owner only)
+        board.on("object:modified", (e) => {
+            const g = e.target;
+            if (!g || !g.dbKey) return;
+            const key = g.dbKey;
+            const rec = itemsMap.get(key);
+            if (!rec) return;
+            const it = rec.data || {};
+            const isOwner = (it.uid === UID);
+            if (!isOwner) return;
+            const s = g.scaleX || 1;
+            it.x = Math.round(g.left || 0);
+            it.y = Math.round(g.top || 0);
+            it.scale = Math.max(.5, Math.min(2, s));
+            update(child(ITEMS, key), {
+                x: it.x,
+                y: it.y,
+                scale: it.scale
             });
         });
 
-        // active tool UI
-        function setActiveTool(name) {
-            document.querySelectorAll('.tool-btn, .tool-small').forEach(el => el.classList.remove('active'));
-            if (name === 'brush') toolBrush.classList.add('active');
-            if (name === 'eraser') toolEraser.classList.add('active');
-        }
+        /* === Data listeners === */
+        onChildAdded(ITEMS, (snap) => addBoardItem(snap.key, snap.val()));
+        onChildChanged(ITEMS, (snap) => updateBoardItem(snap.key, snap.val()));
+        onChildRemoved(ITEMS, (snap) => removeBoardItem(snap.key));
 
-        // submit doodle handler created on openDoodle
-        async function openDoodle() {
-            await ensureFabricInitialized();
-            doodleModal.style.display = 'flex';
-            document.querySelector('.scanline').style.opacity = '0.12';
-            if (fabricCanvas) {
-                fabricCanvas.calcOffset();
-                fabricCanvas.renderAll();
-            }
-            // bind submit
-            submitDoodle.removeEventListener('click', submitDoodle._handler || (() => {}));
-            const handler = async () => {
-                fabricCanvas.discardActiveObject();
-                fabricCanvas.renderAll();
-                const dataUrl = fabricCanvas.toDataURL({
-                    format: 'png',
-                    multiplier: 1
-                });
-                const name = prompt('Your name (optional)') || 'anon';
-                try {
-                    await addDoc(ITEMS, {
-                        type: 'doodle',
-                        image: dataUrl,
-                        creator: name,
-                        timestamp: serverTimestamp(),
-                        x: 50,
-                        y: 50,
-                        reactionCount: 0,
-                        comments: []
-                    });
-                    doodleModal.style.display = 'none';
-                    fabricCanvas.clear();
-                    fabricCanvas.backgroundColor = '#fff';
-                    history.undo = [];
-                    history.redo = [];
-                    isDirty = false;
-                    alert('Saved to mural.');
-                } catch (e) {
-                    alert('Save failed: ' + (e.message || e));
-                }
-            };
-            submitDoodle._handler = handler;
-            submitDoodle.addEventListener('click', handler);
-        }
-
-        function openNote() {
-            noteModal.style.display = 'flex';
-            document.querySelector('.scanline').style.opacity = '0.12';
-        }
-
-        function adminToggle() {
-            const p = prompt('Admin password:');
-            if (p === 'indobingo') {
-                localStorage.setItem('mural_admin', '1');
-                adminControls.style.display = 'block';
-                alert('Admin enabled');
-            } else alert('Wrong');
-        }
-
-        // render items (with lazy loading, alt text, dblclick edit for notes)
-
-        function renderItem(id, data) {
-            // create Win98-style framed floating element with physics; clickable to open side panel; draggable titlebar
-            const rectParent = muralCanvas.getBoundingClientRect();
-
-            // create frame
-            const frame = document.createElement('div');
-            frame.className = 'win-frame mural-item';
-            frame.dataset.id = id;
-
-            // titlebar
-            const title = document.createElement('div');
-            title.className = 'win-title';
-            const titleText = document.createElement('div');
-            titleText.className = 'title-text';
-            titleText.textContent = (data.type === 'doodle' ? ('Doodle by ' + (data.creator || 'anon')) : ('Note by ' + (data.creator || 'anon')));
-            const btns = document.createElement('div');
-            btns.className = 'win-buttons';
-            const b1 = document.createElement('div');
-            b1.className = 'btn';
-            const b2 = document.createElement('div');
-            b2.className = 'btn';
-            btns.appendChild(b1);
-            btns.appendChild(b2);
-            title.appendChild(titleText);
-            title.appendChild(btns);
-            // add comment label button and admin delete to titlebar (aligned right)
-            (function() {
-                try {
-                    const btnContainer = document.createElement('div');
-                    btnContainer.style.display = 'flex';
-                    btnContainer.style.marginLeft = 'auto';
-                    btnContainer.style.gap = '6px';
-                    const commentBtn = document.createElement('div');
-                    commentBtn.className = 'titlebar-btn';
-                    const iconSpan = document.createElement('span');
-                    iconSpan.textContent = '🗨';
-                    const textSpan = document.createElement('span');
-                    textSpan.textContent = 'Add a comment...';
-                    commentBtn.appendChild(iconSpan);
-                    commentBtn.appendChild(textSpan);
-                    commentBtn.title = 'Add a comment';
-                    commentBtn.addEventListener('click', ev => {
-                        ev.stopPropagation();
-                        showCommentTooltip(id, data, frame, ev);
-                    });
-                    btnContainer.appendChild(commentBtn);
-
-                    if (localStorage.getItem('mural_admin') === '1') {
-                        const dropBtn = document.createElement('div');
-                        dropBtn.className = 'titlebar-btn dropdown';
-                        dropBtn.textContent = '▼';
-                        const menu = document.createElement('div');
-                        menu.className = 'win98-menu hidden';
-                        const delItem = document.createElement('div');
-                        delItem.className = 'win98-menu-item';
-                        delItem.textContent = 'Delete this item';
-                        delItem.addEventListener('click', async ev => {
-                            ev.stopPropagation();
-                            menu.classList.add('hidden');
-                            if (!confirm('Delete this object?')) return;
-                            try {
-                                await deleteDoc(doc(db, 'mural_items', id));
-                            } catch (e) {
-                                alert('Delete failed');
-                            }
-                        });
-                        menu.appendChild(delItem);
-                        dropBtn.appendChild(menu);
-                        dropBtn.addEventListener('mouseenter', () => menu.classList.remove('hidden'));
-                        dropBtn.addEventListener('mouseleave', () => menu.classList.add('hidden'));
-                        btnContainer.appendChild(dropBtn);
-                        // Right-click context menu for frame
-                        frame.addEventListener('contextmenu', ev => {
-                            if (localStorage.getItem('mural_admin') !== '1') return;
-                            ev.preventDefault();
-                            let ctx = document.querySelector('.admin-context-menu');
-                            if (!ctx) {
-                                ctx = document.createElement('div');
-                                ctx.className = 'win98-menu admin-context-menu';
-                                const ctxDel = document.createElement('div');
-                                ctxDel.className = 'win98-menu-item';
-                                ctxDel.textContent = 'Delete this item';
-                                ctxDel.addEventListener('click', async e2 => {
-                                    e2.stopPropagation();
-                                    ctx.style.display = 'none';
-                                    if (!confirm('Delete this object?')) return;
-                                    try {
-                                        await deleteDoc(doc(db, 'mural_items', id));
-                                    } catch (e) {
-                                        alert('Delete failed');
-                                    }
-                                });
-                                ctx.appendChild(ctxDel);
-                                document.body.appendChild(ctx);
-                                document.addEventListener('click', () => ctx.style.display = 'none');
-                            }
-                            ctx.style.left = ev.pageX + 'px';
-                            ctx.style.top = ev.pageY + 'px';
-                            ctx.style.display = 'block';
-                        });
-                    }
-                    if (localStorage.getItem('mural_admin') === '1') {}
-                    title.appendChild(btnContainer);
-                } catch (e) {
-                    console.error('inject button error', e);
-                }
-            })();
-
-
-            const content = document.createElement('div');
-            content.className = 'win-content';
-
-            if (data.type === 'doodle') {
-                const img = document.createElement('img');
-                img.src = data.image;
-                img.loading = 'lazy';
-                img.alt = 'Doodle by ' + (data.creator || 'anon');
-                content.appendChild(img);
+        /* === Reactions === */
+        function toggleReaction(key, kind) {
+            const rec = itemsMap.get(key);
+            if (!rec) return;
+            const it = rec.data || {};
+            it.reactions = it.reactions || {};
+            it.reactions[kind] = it.reactions[kind] || {};
+            const mine = !!it.reactions[kind][UID];
+            if (mine) {
+                delete it.reactions[kind][UID];
             } else {
-                const nb = document.createElement('div');
-                nb.className = 'note-box';
-                nb.textContent = data.text;
-                content.appendChild(nb);
-                // inline edit on double click preserved by original code - handled in side panel now
+                it.reactions[kind][UID] = true;
             }
-
-            frame.appendChild(title);
-            frame.appendChild(content);
-
-            // initial placement
-            const parentRect = muralCanvas.getBoundingClientRect();
-            const initX = ((data.x || 50) / 100) * Math.max(0, parentRect.width - 200);
-            const initY = ((data.y || 50) / 100) * Math.max(0, parentRect.height - 140);
-            frame.style.left = initX + 'px';
-            frame.style.top = initY + 'px';
-
-            // measurement
-            document.body.appendChild(frame);
-            const m = frame.getBoundingClientRect();
-            const w = Math.min(320, m.width || 160),
-                h = Math.min(260, m.height || 140);
-            frame.style.width = w + 'px';
-            frame.style.height = h + 'px';
-
-            // remove potential old duplicates
-            const old = document.querySelector('[data-id=\"' + id + '\"]');
-            if (old && old !== frame) try {
-                old.remove();
-            } catch (e) {}
-
-            // click to open side panel (avoid when dragging)
-            frame.addEventListener('click', (ev) => {
-                if (frame._dragging) return;
-                ev.stopPropagation();
-                openSideForItem(id, data);
+            update(child(ITEMS, key), {
+                reactions: it.reactions
             });
+        }
 
-            // physics item
-            const item = {
-                id: id,
-                el: frame,
-                x: initX,
-                y: initY,
-                w: w,
-                h: h,
-                vx: (Math.random() * 0.4 - 0.2),
-                vy: (Math.random() * 0.4 - 0.2),
-                dragging: false,
-                _lastMoves: []
+        /* === Chat === */
+        const chatLog = document.getElementById("chatLog");
+
+        function fmtDate(ts) {
+            const d = new Date(ts);
+            return d.toLocaleDateString([], {
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        let lastDateLabel = "";
+
+        function addMsg(key, m) {
+            const day = fmtDate(m.ts || Date.now());
+            if (day !== lastDateLabel) {
+                const sep = document.createElement("div");
+                sep.className = "date-sep";
+                sep.textContent = day;
+                chatLog.appendChild(sep);
+                lastDateLabel = day;
+            }
+            const el = document.createElement("div");
+            el.className = "msg";
+            el.dataset.key = key;
+            el.innerHTML = `<div class="meta"><div class="avatar" style="background:${m.avatar||'#fff'}"></div><div class="who">${(m.name||'anon').slice(0,24)}</div><div class="spacer"></div><button class="del pill hide"><img alt="" data-icon="trash"></button></div><div class="text"></div>`;
+            el.querySelector(".text").textContent = m.text || "";
+            el.querySelectorAll("img[data-icon]").forEach(img => {
+                const f = ICONS[img.dataset.icon];
+                if (f) img.src = "ui-icons/" + f
+            });
+            chatLog.appendChild(el);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+        onChildAdded(CHAT, (snap) => addMsg(snap.key, snap.val()));
+        onChildRemoved(CHAT, (snap) => {
+            const el = chatLog.querySelector(`[data-key="${snap.key}"]`);
+            if (el) el.remove();
+        });
+
+        function sendMsg() {
+            const name = (document.getElementById("chatName").value || profile.name || "anon").slice(0, 24);
+            const text = (document.getElementById("chatMsg").value || "").slice(0, 240).trim();
+            if (!text) return;
+            const m = {
+                name,
+                text,
+                uid: UID,
+                avatar: profile.avatar || "",
+                ts: Date.now()
             };
-            // title drag to reposition and throw
-            let dragging = false,
-                lastPos = null,
-                lastTime = null;
-            title.addEventListener('pointerdown', (e) => {
+            const r = push(CHAT);
+            set(r, m);
+            document.getElementById("chatMsg").value = "";
+        }
+        document.getElementById("chatSend").onclick = sendMsg;
+        const chatMsgEl = document.getElementById("chatMsg");
+        chatMsgEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                dragging = true;
-                item.dragging = true;
-                frame._dragging = true;
-                title.classList.add('dragging');
-                frame.classList.add('moving');
-                try {
-                    title.setPointerCapture(e.pointerId);
-                } catch (e) {}
-                lastPos = {
-                    x: e.clientX,
-                    y: e.clientY
-                };
-                lastTime = performance.now();
-                item._lastMoves = [];
-            });
-            window.addEventListener('pointermove', (e) => {
-                if (!dragging) return;
-                const now = performance.now();
-                const dx = e.clientX - lastPos.x,
-                    dy = e.clientY - lastPos.y;
-                item.x += dx;
-                item.y += dy;
-                frame.style.left = item.x + 'px';
-                frame.style.top = item.y + 'px';
-                item._lastMoves.push({
-                    dx,
-                    dy,
-                    dt: now - lastTime
-                });
-                if (item._lastMoves.length > 8) item._lastMoves.shift();
-                lastPos = {
-                    x: e.clientX,
-                    y: e.clientY
-                };
-                lastTime = now;
-            });
-            window.addEventListener('pointerup', (e) => {
-                if (!dragging) return;
-                dragging = false;
-                item.dragging = false;
-                frame._dragging = false;
-                title.classList.remove('dragging');
-                frame.classList.remove('moving');
-                try {
-                    title.releasePointerCapture(e.pointerId);
-                } catch (e) {}
-                // compute throw velocity
-                let sumDx = 0,
-                    sumDy = 0,
-                    sumDt = 0;
-                item._lastMoves.forEach(m => {
-                    sumDx += m.dx;
-                    sumDy += m.dy;
-                    sumDt += m.dt;
-                });
-                if (sumDt > 0) {
-                    item.vx = (sumDx / sumDt) * 16;
-                    item.vy = (sumDy / sumDt) * 16;
-                    const maxV = 2.0;
-                    item.vx = Math.max(-maxV, Math.min(maxV, item.vx));
-                    item.vy = Math.max(-maxV, Math.min(maxV, item.vy));
-                }
-            });
-
-            // badge (reaction)
-            const badge = document.createElement('div');
-            badge.style.position = 'absolute';
-            badge.style.right = '6px';
-            badge.style.top = '6px';
-            badge.style.background = '#000';
-            badge.style.color = '#fff';
-            badge.style.padding = '2px 6px';
-            badge.style.border = '2px solid #fff';
-            badge.textContent = '❤ ' + (data.reactionCount || 0);
-            badge.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                const reacted = 'r_' + id;
-                if (localStorage.getItem(reacted)) return alert('Already reacted');
-                localStorage.setItem(reacted, '1');
-                try {
-                    await updateDoc(doc(db, 'mural_items', id), {
-                        reactionCount: (data.reactionCount || 0) + 1
-                    });
-                } catch (e) {
-                    console.warn(e);
-                }
-                const fh = document.createElement('div');
-                fh.className = 'floating-heart';
-                fh.textContent = '❤';
-                frame.appendChild(fh);
-                setTimeout(() => fh.remove(), 900);
-            });
-            frame.appendChild(badge);
-
-            // register
-            PHYSICS.items[id] = item;
-            muralCanvas.appendChild(frame);
-        }
-        const q = query(ITEMS, orderBy('timestamp', 'desc'));
-
-        // PHYSICS runtime for floating Win98 frames (slow/gentle motion)
-        window.PHYSICS = window.PHYSICS || {
-            items: {}
-        };
-        (function() {
-            const items = window.PHYSICS.items;
-            const mural = document.getElementById('muralCanvas');
-            const pad = 8;
-
-            function step() {
-                const rect = mural.getBoundingClientRect();
-                const ids = Object.keys(items);
-                // integrate motion
-                for (let i = 0; i < ids.length; i++) {
-                    const a = items[ids[i]];
-                    if (!a || a.dragging) continue;
-                    // gentle damping
-                    a.vx *= 0.996;
-                    a.vy *= 0.996;
-                    a.x += a.vx;
-                    a.y += a.vy;
-                    // wall bounce
-                    if (a.x < pad) {
-                        a.x = pad;
-                        a.vx = Math.abs(a.vx) * 0.6;
-                    }
-                    if (a.y < pad) {
-                        a.y = pad;
-                        a.vy = Math.abs(a.vy) * 0.6;
-                    }
-                    if (a.x + a.w > rect.width - pad) {
-                        a.x = rect.width - pad - a.w;
-                        a.vx = -Math.abs(a.vx) * 0.6;
-                    }
-                    if (a.y + a.h > rect.height - pad) {
-                        a.y = rect.height - pad - a.h;
-                        a.vy = -Math.abs(a.vy) * 0.6;
-                    }
-                    if (a.el) {
-                        a.el.style.left = a.x + 'px';
-                        a.el.style.top = a.y + 'px';
-                    }
-                }
-                // pairwise collision simple resolution
-                for (let i = 0; i < ids.length; i++)
-                    for (let j = i + 1; j < ids.length; j++) {
-                        const A = items[ids[i]];
-                        const B = items[ids[j]];
-                        if (!A || !B || A.dragging || B.dragging) continue;
-                        if (A.x < B.x + B.w && A.x + A.w > B.x && A.y < B.y + B.h && A.y + A.h > B.y) {
-                            const overlapX = Math.min(A.x + A.w - B.x, B.x + B.w - A.x);
-                            const overlapY = Math.min(A.y + A.h - B.y, B.y + B.h - A.y);
-                            if (overlapX < overlapY) {
-                                const push = (overlapX / 2) + 0.5;
-                                if (A.x < B.x) {
-                                    A.x -= push;
-                                    B.x += push;
-                                } else {
-                                    A.x += push;
-                                    B.x -= push;
-                                }
-                                const tmp = A.vx;
-                                A.vx = B.vx * 0.6;
-                                B.vx = tmp * 0.6;
-                            } else {
-                                const push = (overlapY / 2) + 0.5;
-                                if (A.y < B.y) {
-                                    A.y -= push;
-                                    B.y += push;
-                                } else {
-                                    A.y += push;
-                                    B.y -= push;
-                                }
-                                const tmp = A.vy;
-                                A.vy = B.vy * 0.6;
-                                B.vy = tmp * 0.6;
-                            }
-                        }
-                    }
-                requestAnimationFrame(step);
+                sendMsg();
             }
-            requestAnimationFrame(step);
-        })();
+        });
 
-        // injected comment tooltip helpers
-        let CURRENT_TOOLTIP = null;
+        /* Chat show/hide (mobile) */
+        const chatPanel = document.getElementById("chat");
+        const chatFab = document.getElementById("chatFab");
+        chatFab.onclick = () => chatPanel.classList.toggle("show");
+        document.getElementById("chatClose").onclick = () => chatPanel.classList.remove("show");
 
-        function closeCurrentTooltip() {
-            if (!CURRENT_TOOLTIP) return;
+        /* === Studio (fabric) === */
+        const studio = document.getElementById("studioPop");
+        const fc = new fabric.Canvas("drawCanvas", {
+            isDrawingMode: true,
+            selection: true,
+            enableRetinaScaling: true
+        });
+        fc.lowerCanvasEl.getContext('2d').imageSmoothingEnabled = false;
+        fc.upperCanvasEl.getContext('2d').imageSmoothingEnabled = false;
+        fc.setBackgroundColor("#fff", fc.renderAll.bind(fc));
+        fc.freeDrawingBrush.color = "#000";
+        fc.freeDrawingBrush.width = 3;
+
+        const brushSize = document.getElementById("brushSize");
+        const brushColor = document.getElementById("brushColor");
+        const brushPreview = document.getElementById("brushPreview");
+
+        function updateBrush() {
+            fc.freeDrawingBrush.color = brushColor.value;
+            fc.freeDrawingBrush.width = Number(brushSize.value);
+            showBrushPreview();
+        }
+        brushSize.oninput = updateBrush;
+        brushColor.oninput = updateBrush;
+        updateBrush();
+
+        /* Brush preview near cursor */
+        function showBrushPreview() {
+            brushPreview.classList.remove("hide");
+            brushPreview.style.width = fc.freeDrawingBrush.width + "px";
+            brushPreview.style.height = fc.freeDrawingBrush.width + "px";
+        }
+        fc.on("mouse:move", (e) => {
+            const p = e.pointer;
+            const r = fc.upperCanvasEl.getBoundingClientRect();
+            brushPreview.style.left = (p.x + r.left) + "px";
+            brushPreview.style.top = (p.y + r.top) + "px";
+        });
+        fc.on("mouse:out", () => brushPreview.classList.add("hide"));
+
+        /* Shortcuts: +/- size, I eyedropper, Shift straight line */
+        document.addEventListener("keydown", (e) => {
+            if (!studio.classList.contains("show")) return;
+            if (e.key === "+" || e.key === "=") {
+                brushSize.value = Math.min(24, Number(brushSize.value) + 1);
+                updateBrush();
+            }
+            if (e.key === "-" || e.key === "_") {
+                brushSize.value = Math.max(1, Number(brushSize.value) - 1);
+                updateBrush();
+            }
+            if (e.key.toLowerCase() === 'i') { // eyedropper
+                const p = fc.getPointer(e);
+                const px = fc.contextContainer.getImageData(p.x, p.y, 1, 1).data;
+                const hex = `#${[px[0],px[1],px[2]].map(v=>v.toString(16).padStart(2,'0')).join('')}`;
+                brushColor.value = hex;
+                updateBrush();
+            }
+        });
+
+        let lineStart = null;
+        let drawingLine = null;
+        fc.on("mouse:down", (e) => {
+            if (e.e.shiftKey) {
+                lineStart = e.pointer;
+                drawingLine = new fabric.Line([lineStart.x, lineStart.y, lineStart.x, lineStart.y], {
+                    stroke: fc.freeDrawingBrush.color,
+                    strokeWidth: fc.freeDrawingBrush.width,
+                    selectable: false
+                });
+                fc.add(drawingLine);
+                fc.requestRenderAll();
+            }
+        });
+        fc.on("mouse:move", (e) => {
+            if (drawingLine) {
+                drawingLine.set({
+                    x2: e.pointer.x,
+                    y2: e.pointer.y
+                });
+                fc.requestRenderAll();
+            }
+        });
+        fc.on("mouse:up", () => {
+            lineStart = null;
+            drawingLine = null;
+        });
+
+        /* History */
+        let history = {
+                u: [],
+                r: []
+            },
+            loadingState = false;
+
+        function pushState() {
+            if (loadingState) return;
             try {
-                CURRENT_TOOLTIP.remove();
+                history.u.push(JSON.stringify(fc.toJSON()));
+                if (history.u.length > 150) history.u.shift();
+                history.r = [];
             } catch (e) {}
-            CURRENT_TOOLTIP = null;
-            document.removeEventListener('keydown', tooltipEscHandler);
         }
 
-        function tooltipEscHandler(e) {
-            if (e.key === 'Escape') closeCurrentTooltip();
+        function undo() {
+            if (history.u.length < 2) return;
+            history.r.push(history.u.pop());
+            const prev = history.u[history.u.length - 1];
+            loadingState = true;
+            fc.loadFromJSON(prev, () => {
+                fc.renderAll();
+                loadingState = false;
+            })
         }
 
-        function showCommentTooltip(id, data, frame, ev) {
-            // close any existing tooltip
-            closeCurrentTooltip();
-            // create DOM
-            const tt = document.createElement('div');
-            tt.className = 'comment-tooltip';
-            tt.setAttribute('role', 'dialog');
-            // title
-            const title = document.createElement('div');
-            title.className = 'ct-title';
-            title.innerHTML = '<div style=\"font-weight:700;font-size:13px\">Comments for ' + (data.type === 'doodle' ? 'Doodle by ' : 'Note by ') + (data.creator || 'anon') + '</div><div style=\"font-size:12px;color:#ddd\">✎</div>';
-            tt.appendChild(title);
-            // arrow
-            const arrow = document.createElement('div');
-            arrow.className = 'arrow';
-            tt.appendChild(arrow);
-            // body
-            const body = document.createElement('div');
-            body.className = 'ct-body';
-            const list = document.createElement('div');
-            list.className = 'ct-comments';
-            body.appendChild(list);
-            // form
-            const form = document.createElement('div');
-            form.className = 'ct-form';
-            const nameIn = document.createElement('input');
-            nameIn.type = 'text';
-            nameIn.placeholder = 'Name';
-            nameIn.className = 'name';
-            const comIn = document.createElement('input');
-            comIn.type = 'text';
-            comIn.placeholder = 'Comment';
-            comIn.className = 'comment';
-            form.appendChild(nameIn);
-            form.appendChild(comIn);
-            body.appendChild(form);
-            const actions = document.createElement('div');
-            actions.className = 'ct-actions';
-            const post = document.createElement('button');
-            post.className = 'ct-post';
-            post.textContent = 'Post';
-            actions.appendChild(post);
-            // admin delete if enabled
-            const isAdmin = localStorage.getItem('mural_admin') === '1';
-            if (isAdmin) {
-                const del = document.createElement('button');
-                del.className = 'ct-delete';
-                del.textContent = 'Delete';
-                actions.appendChild(del);
-                del.addEventListener('click', async () => {
-                    if (!confirm('Delete this object?')) return;
-                    try {
-                        await deleteDoc(doc(db, 'mural_items', id));
-                        closeCurrentTooltip();
-                    } catch (e) {
-                        alert('Delete failed');
-                    }
+        function redo() {
+            if (!history.r.length) return;
+            const nxt = history.r.pop();
+            history.u.push(nxt);
+            loadingState = true;
+            fc.loadFromJSON(nxt, () => {
+                fc.renderAll();
+                loadingState = false;
+            })
+        }
+        fc.on("path:created", pushState);
+        fc.on("object:added", pushState);
+        fc.on("object:modified", pushState);
+        fc.on("object:removed", pushState);
+        pushState();
+
+        /* Tools */
+        function setTool(t) {
+            document.querySelectorAll("#studioPop .controls .pill").forEach(b => b.classList.remove("on"));
+            if (t === "brush") {
+                fc.isDrawingMode = true;
+                document.getElementById("tBrush").classList.add("on");
+            }
+            if (t === "eraser") {
+                fc.isDrawingMode = true;
+                fc.freeDrawingBrush.color = "#fff";
+                document.getElementById("tEraser").classList.add("on");
+            }
+            if (t === "stamp") {
+                fc.isDrawingMode = false;
+                document.getElementById("tStamp").classList.add("on");
+            }
+        }
+
+        document.getElementById("tBrush").onclick = () => {
+            fc.freeDrawingBrush.color = brushColor.value;
+            setTool("brush");
+        };
+        document.getElementById("tEraser").onclick = () => setTool("eraser");
+
+        /* Stamps */
+        const STAMP_LIST = [
+            // a few built-in SVG data URIs so the grid isn't empty
+            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><rect width='28' height='28' fill='%23ffd54a'/><circle cx='9' cy='10' r='3' fill='%23000'/><circle cx='19' cy='10' r='3' fill='%23000'/><path d='M7 19 q7 6 14 0' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'/></svg>",
+            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><rect width='28' height='28' fill='%2300d4ff'/><path d='M4 18 l6-8 4 5 4-6 6 9' stroke='%23000' stroke-width='3' fill='none'/></svg>",
+            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><rect width='28' height='28' fill='%23fff'/><rect x='4' y='4' width='20' height='20' fill='none' stroke='%23000' stroke-width='3'/></svg>"
+        ];
+        let currentStamp = null;
+
+        function fetchStamps() {
+            return STAMP_LIST;
+        }
+
+        function buildStampGrid() {
+            const grid = document.getElementById("stampGrid");
+            grid.innerHTML = "";
+            const list = fetchStamps();
+            if (!list.length) {
+                const none = document.createElement("div");
+                none.style.opacity = .7;
+                none.textContent = "No stamps yet. Add URLs to STAMP_LIST.";
+                grid.appendChild(none);
+            } else {
+                list.forEach(url => {
+                    const cell = document.createElement("div");
+                    cell.className = "stcell";
+                    const img = new Image();
+                    img.src = url;
+                    img.alt = "stamp";
+                    img.style.imageRendering = "pixelated";
+                    cell.appendChild(img);
+                    cell.onclick = () => selectStamp(url);
+                    grid.appendChild(cell);
                 });
             }
-            body.appendChild(actions);
-            tt.appendChild(body);
-
-            // add to DOM temporarily to measure, append to mural container
-            muralCanvas.appendChild(tt);
-
-            // position near frame (prefer right-bottom)
-            const fRect = frame.getBoundingClientRect();
-            const mRect = muralCanvas.getBoundingClientRect();
-            const ttRect = tt.getBoundingClientRect();
-            let left = (fRect.right - mRect.left) + 12; // right side
-            let top = (fRect.top - mRect.top);
-            // if doesn't fit to right, place left
-            if (left + ttRect.width > mRect.width - 8) left = (fRect.left - mRect.left) - ttRect.width - 12;
-            // if still off, clamp
-            left = Math.max(8, Math.min(left, mRect.width - ttRect.width - 8));
-            // clamp top
-            if (top + ttRect.height > mRect.height - 8) top = mRect.height - ttRect.height - 8;
-            top = Math.max(8, top);
-
-            tt.style.left = left + 'px';
-            tt.style.top = top + 'px';
-
-            // show animation
-            requestAnimationFrame(() => tt.classList.add('show'));
-
-            // focus name input
-            nameIn.focus();
-
-            // realtime listener for comments on this item (listen to doc)
-            const docRef = doc(db, 'mural_items', id);
-            const unsubscribe = onSnapshot(docRef, snap => {
-                const dat = snap.data() || {};
-                const comments = dat.comments || [];
-                // render list
-                list.innerHTML = '';
-                comments.forEach((c, i) => {
-                    const cc = document.createElement('div');
-                    cc.className = 'ct-comment' + (i % 2 ? ' alt' : '');
-                    cc.innerHTML = '<div style=\"font-weight:700;margin-bottom:4px\">' + (c.name || 'anon') + '</div><div style=\"font-size:13px\">' + (c.text || '') + '</div>';
-                    list.appendChild(cc);
-                });
-                // scroll to bottom
-                list.scrollTop = list.scrollHeight;
-            });
-
-            // posting handler: update comments array by pushing
-            post.addEventListener('click', async () => {
-                const name = (nameIn.value || 'anon').trim();
-                const text = (comIn.value || '').trim();
-                if (!text) return alert('Write a comment');
-                try {
-                    // append to existing comments array
-                    const snap = await getDocs(query(ITEMS, orderBy('timestamp', 'desc'))); // cheap way to ensure Firestore reads available (not strictly needed)
-                    // use transaction-like update: fetch doc, then update
-                    const s = await (await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js')).getDoc(docRef).catch(() => null);
-                } catch (e) {}
-                try {
-                    // simpler: read current doc and update comments
-                    const current = (await (await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js')).getDoc(docRef)).data() || {};
-                } catch (e) {}
-                // fallback approach using updateDoc with concat via get then update
-                try {
-                    const snap2 = await (await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js')).getDoc(docRef);
-                    const cur = snap2.exists() ? snap2.data() : {};
-                    const curComments = (cur.comments || []).concat([{
-                        name,
-                        text
-                    }]);
-                    await updateDoc(docRef, {
-                        comments: curComments
-                    });
-                    comIn.value = '';
-                } catch (err) {
-                    try {
-                        await updateDoc(docRef, {
-                            comments: (data.comments || []).concat([{
-                                name,
-                                text
-                            }])
-                        });
-                        comIn.value = '';
-                    } catch (e) {
-                        alert('Save failed');
-                    }
-                }
-            });
-
-            function cleanup() {
-                unsubscribe && unsubscribe();
-                closeCurrentTooltip();
-            }
-
-            // close on outside click
-            function outsideHandler(ev2) {
-                if (!tt.contains(ev2.target) && !frame.contains(ev2.target)) {
-                    cleanup();
-                    document.removeEventListener('pointerdown', outsideHandler);
-                }
-            }
-            document.addEventListener('pointerdown', outsideHandler);
-
-            // ESC to close
-            document.addEventListener('keydown', tooltipEscHandler);
-
-            CURRENT_TOOLTIP = tt;
         }
-        onSnapshot(q, snap => {
-            snap.forEach(d => {
-                const id = d.id;
-                const data = d.data();
-                if (!document.querySelector('[data-id="' + id + '"]')) renderItem(id, data);
+
+        function selectStamp(url) {
+            currentStamp = url;
+            hide("stampPop");
+            setTool("stamp");
+        }
+
+        function openStamp() {
+            buildStampGrid();
+            show("stampPop");
+        }
+
+        function closeStamp() {
+            hide("stampPop");
+        }
+        document.getElementById("chooseStamp").onclick = () => {
+            openStamp();
+            setTool("stamp");
+        };
+        document.getElementById("tStamp").onclick = () => {
+            openStamp();
+            setTool("stamp");
+        };
+        document.getElementById("stampClose").onclick = closeStamp;
+
+        fc.on("mouse:down", (e) => {
+            if (fc.isDrawingMode || !currentStamp) return;
+            const p = fc.getPointer(e.e);
+            fabric.Image.fromURL(currentStamp, (img) => {
+                img.set({
+                    left: p.x - 14,
+                    top: p.y - 14,
+                    selectable: true
+                });
+                fc.add(img);
+                fc.setActiveObject(img);
+                fc.requestRenderAll();
             });
         });
 
-        // esc close modals and restore scanline opacity
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                doodleModal.style.display = 'none';
-                stampModal.style.display = 'none';
-                noteModal.style.display = 'none';
-                sidePanel.style.display = 'none';
-                document.querySelector('.scanline').style.opacity = '0.06';
-            }
-        });
-
-        // basic focus trap for modals (first focusable element cycling)
-        function trapFocus(modal) {
-            const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-            if (!focusable.length) return;
-            const first = focusable[0],
-                last = focusable[focusable.length - 1];
-            first.focus();
-            modal.addEventListener('keydown', function(e) {
-                if (e.key === 'Tab') {
-                    if (e.shiftKey) {
-                        if (document.activeElement === first) {
-                            e.preventDefault();
-                            last.focus();
-                        }
-                    } else {
-                        if (document.activeElement === last) {
-                            e.preventDefault();
-                            first.focus();
-                        }
-                    }
-                }
+        /* Post doodle to board */
+        document.getElementById("post").onclick = () => {
+            const dataUrl = fc.toDataURL({
+                format: "png"
             });
+            const it = {
+                uid: UID,
+                name: profile.name,
+                src: dataUrl,
+                w: 420,
+                h: 300,
+                x: 40,
+                y: 40,
+                scale: 1,
+                ts: Date.now(),
+                reactions: {}
+            };
+            const r = push(ITEMS);
+            set(r, it);
+            hide("studioPop");
+        };
+
+        /* Studio buttons */
+        document.getElementById("undo").onclick = undo;
+        document.getElementById("redo").onclick = redo;
+        document.getElementById("clear").onclick = () => {
+            fc.clear();
+            fc.setBackgroundColor("#fff", fc.renderAll.bind(fc));
+            pushState();
+        };
+        document.getElementById("studioClose").onclick = () => hide("studioPop");
+
+        /* Presence header (local only, demo) */
+        function renderFriends() {
+            const h = document.getElementById("friendHeader");
+            h.innerHTML = "";
+            const me = document.createElement("div");
+            me.className = "friend online";
+            me.innerHTML = `<div class="dot"></div><div>${profile.name}</div>`;
+            h.appendChild(me);
         }
-    </script>
-    <div id="brushPreview" aria-hidden="true"></div>
+        renderFriends();
 
-    <script>
-        (function() {
-            function createModernFrame(titleText, contentEl) {
-                const frame = document.createElement('div');
-                frame.className = 'new-frame';
-                const handle = document.createElement('div');
-                handle.className = 'handle drag-handle';
-                const topbar = document.createElement('div');
-                topbar.className = 'topbar';
-                const title = document.createElement('div');
-                title.className = 'title';
-                title.textContent = titleText || 'Mural Item';
-                topbar.appendChild(title);
-                const content = document.createElement('div');
-                content.className = 'content';
-                if (contentEl) content.appendChild(contentEl);
-                const icons = document.createElement('div');
-                icons.className = 'mural-icons';
-                const chat = document.createElement('div');
-                chat.className = 'icon-btn icon-chat';
-                chat.innerHTML = '💬';
-                const heart = document.createElement('div');
-                heart.className = 'icon-btn icon-heart';
-                heart.innerHTML = '♡';
-                chat.onclick = () => {
-                    if (window.showCommentTooltip) window.showCommentTooltip(frame);
-                };
-                heart.onclick = () => {
-                    heart.classList.toggle('liked');
-                    if (window.likeMuralItem) window.likeMuralItem(frame);
-                };
-                icons.appendChild(chat);
-                icons.appendChild(heart);
-                frame.appendChild(handle);
-                frame.appendChild(topbar);
-                frame.appendChild(content);
-                frame.appendChild(icons);
-                if (window.dragWindow) {
-                    handle.addEventListener('mousedown', e => {
-                        e.stopPropagation();
-                        window.dragWindow(e, frame);
-                    });
-                    handle.addEventListener('touchstart', e => {
-                        e.stopPropagation();
-                        window.dragWindow(e, frame);
-                    }, {
-                        passive: true
-                    });
-                }
-                return frame;
-            }
-            // Replace original frame creation logic if exists
-            if (window.addMuralItem) {
-                const oldAdd = window.addMuralItem;
-                window.addMuralItem = function(data) {
-                    const el = oldAdd.call(this, data);
-                    const titleText = data.title || 'Mural Item';
-                    const contentEl = el.querySelector('canvas, img');
-                    const newFrame = createModernFrame(titleText, contentEl);
-                    el.innerHTML = '';
-                    el.appendChild(newFrame);
-                    return el;
-                };
-            }
-            // Ensure fabric canvas transparent background
-            if (window.fabric && window.fabric.Canvas) {
-                const oldInit = window.fabric.Canvas;
-                window.fabric.Canvas = function(el, opts) {
-                    opts = opts || {};
-                    opts.backgroundColor = 'rgba(0,0,0,0)';
-                    return new oldInit(el, opts);
-                };
-            }
-            // Force PNG export
-            if (window.saveMuralItemImage) {
-                const oldSave = window.saveMuralItemImage;
-                window.saveMuralItemImage = function(canvas, ...args) {
-                    try {
-                        const data = canvas.toDataURL('image/png');
-                        return oldSave.call(this, data, ...args);
-                    } catch (e) {
-                        return oldSave.apply(this, [canvas, ...args]);
-                    }
-                };
-            }
-        })();
-    </script>
+        /* Helpers */
+        function show(id) {
+            document.getElementById(id).classList.add("show")
+        }
 
+        function hide(id) {
+            document.getElementById(id).classList.remove("show")
+        }
+
+        /* Keep chat name in sync with profile by default */
+        document.getElementById("chatName").value = profile.name;
+    </script>
 </body>
 
 </html>
