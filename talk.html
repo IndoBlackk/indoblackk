@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WELCOME.EXE — Retro Mono UI (Mobile‑first) + Brush Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     /* ============================
        CORE THEME — MONOCHROME UI
@@ -11,9 +12,9 @@
     :root{
       --bg:#000;      /* UI background */
       --fg:#fff;      /* UI foreground */
-      --dim:#bfbfbf;  /* muted text */
+      --dim:#b9b9b9;  /* muted text */
       --line:#fff;    /* borders */
-      --shadow:#1a1a1a; /* hard shadow */
+      --shadow:#111;  /* hard shadow */
 
       /* Pattern colours for BG picker (UI stays mono; applied to canvas frame only) */
       --c1:#111; 
@@ -22,70 +23,83 @@
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; background:#000; color:var(--fg); font-family: 'Courier New', monospace;
+      margin:0; background:#000; color:var(--fg);
+      font-family:'Press Start 2P', monospace; letter-spacing:.25px; line-height:1.6;
       overflow:hidden;
     }
 
     /* CRT ambience */
-    .crt::before{content:""; position:fixed; inset:0; pointer-events:none; opacity:.6;
-      background:repeating-linear-gradient(to bottom, rgba(255,255,255,.05) 0 1px, transparent 1px 3px);
+    .crt::before{content:""; position:fixed; inset:0; pointer-events:none; opacity:.5;
+      background:repeating-linear-gradient(to bottom, rgba(255,255,255,.04) 0 1px, transparent 1px 3px);
       mix-blend-mode:overlay;
     }
     .crt::after{content:""; position:fixed; inset:0; pointer-events:none;
       background:radial-gradient(120% 85% at 50% 50%, transparent 60%, rgba(0,0,0,.45) 100%);
     }
+    @media (max-width:480px){ .crt::before{opacity:.30} }
 
-    /* Desktop bezel vibe */
-    .bezel{position:fixed; inset:22px; pointer-events:none}
+    /* Desktop bezel vibe (tiny screws) */
+    .bezel{position:fixed; inset:18px; pointer-events:none}
+    .bezel::before,.bezel::after{content:""; position:absolute; width:6px; height:6px; background:#fff; box-shadow: inset -1px -1px 0 #000, inset 1px 1px 0 #000}
+    .bezel::before{left:-14px; top:-14px}
+    .bezel::after{right:-14px; bottom:-14px}
 
     /* ============================
        MAIN WINDOW — RESPONSIVE
        ============================ */
     .window{
       position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-      width:min(92vw, 760px); background:var(--bg);
+      width:min(92vw, 760px); max-height:92vh; background:var(--bg);
       border:4px solid var(--line); box-shadow:10px 10px 0 var(--shadow);
+      display:flex; flex-direction:column;
+      /* iOS safe area */
+      margin:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
     .titlebar{ display:flex; align-items:center; justify-content:space-between;
-      padding:8px 10px; border-bottom:4px solid var(--line); text-transform:uppercase; user-select:none }
+      padding:10px 12px; border-bottom:4px solid var(--line); text-transform:uppercase; user-select:none }
     .win-name{font-weight:bold}
     .win-controls{display:flex; gap:8px}
-    .ctrl{width:16px; height:16px; border:3px solid var(--line); background:var(--bg)}
+    .ctrl{width:18px; height:18px; border:3px solid var(--line); background:var(--bg)}
     .ctrl:active{transform:translate(1px,1px)}
 
-    .contents{ padding:14px }
-    .bio{ font-size:12px; color:var(--dim); text-align:center; line-height:1.6; margin:4px 0 16px }
+    .contents{ padding:14px; overflow:auto; -webkit-overflow-scrolling:touch }
+    .bio{ font-size:11px; color:var(--dim); text-align:center; margin:0 0 12px }
 
     /* Layout: on mobile stacked, on desktop two-column with tips */
     .grid{ display:grid; grid-template-columns: 1fr; gap:12px }
     @media (min-width: 900px){ .grid{ grid-template-columns: 1fr 300px } }
 
     /* Name field */
-    .field{ display:flex; align-items:center; gap:8px; justify-content:center }
+    .field{ display:flex; align-items:center; gap:10px; justify-content:center; flex-wrap:wrap }
     .field label{font-size:12px}
     .field input{ background:var(--bg); color:var(--fg); border:3px solid var(--line);
-      padding:10px 12px; font-size:12px; width:min(360px, 80vw); text-transform:uppercase; outline:none }
+      padding:12px 14px; font-size:12px; width:min(360px, 84vw); text-transform:uppercase; outline:none }
     .field input:focus{ box-shadow:0 0 0 3px var(--fg) inset }
 
     /* Canvas zone */
-    .canvas-wrap{ position:relative; width:min(520px, 88vw); margin:0 auto }
-    #avatarCanvas{ display:block; width:100%; height:auto; image-rendering:pixelated; border:4px solid var(--line); background:#111 }
+    .canvas-wrap{ position:relative; width:min(520px, 88vw); margin:6px auto 0 }
+    #avatarCanvas{ display:block; width:100%; height:auto; image-rendering:pixelated; border:4px solid var(--line); background:#111; cursor:crosshair; touch-action:none; -webkit-touch-callout:none; user-select:none }
     #gridOverlay{ position:absolute; inset:0; pointer-events:none; display:none; opacity:.35; background:
       repeating-linear-gradient(to right, rgba(255,255,255,.25) 0 1px, transparent 1px 12px),
       repeating-linear-gradient(to bottom, rgba(255,255,255,.25) 0 1px, transparent 1px 12px) }
 
     /* Toolbar (mono UI) */
     .toolbar{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:12px 0 }
-    .tool{ border:3px solid var(--line); background:var(--bg); color:var(--fg); padding:8px 10px; font-size:12px; cursor:pointer; text-transform:uppercase }
+    .tool{ border:3px solid var(--line); background:var(--bg); color:var(--fg); padding:10px 12px; font-size:11px; cursor:pointer; text-transform:uppercase }
+    .tool:hover{ filter:brightness(1.1) }
+    .tool:focus-visible{ outline:3px solid #fff; outline-offset:2px }
     .tool:active{ transform:translate(1px,1px) }
+    .tool[disabled]{ opacity:.35; filter:grayscale(1); pointer-events:none }
     .toolbar .spacer{ width:16px }
 
     /* Status bar */
-    .status{ display:flex; justify-content:space-between; border-top:4px solid var(--line); padding:8px 10px; font-size:11px; color:var(--dim) }
+    .status{ display:flex; gap:12px; justify-content:space-between; align-items:center; border-top:4px solid var(--line); padding:8px 10px; font-size:10px; color:var(--dim) }
+    .status > div:first-child{ overflow:hidden; white-space:nowrap; text-overflow:ellipsis }
 
     /* OK button */
-    .ok{ display:block; width:240px; margin:10px auto 0; padding:12px; text-align:center; border:4px solid var(--line); background:var(--bg); text-transform:uppercase; cursor:pointer }
+    .ok{ display:block; width:240px; margin:12px auto 0; padding:14px; text-align:center; border:4px solid var(--line); background:var(--bg); text-transform:uppercase; cursor:pointer }
     .ok:active{ transform:translate(1px,1px) }
+    .ok[disabled]{ opacity:.35; filter:grayscale(1); pointer-events:none }
 
     /* ============================
        POPOUT WINDOWS
@@ -94,34 +108,38 @@
        Only one open at a time via JS
        ============================ */
     .popout{ position:absolute; z-index:50; background:var(--bg); border:4px solid var(--line); box-shadow:8px 8px 0 var(--shadow); width:min(680px, 92vw); display:none }
-    .pop-head{ display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:4px solid var(--line); text-transform:uppercase; user-select:none; cursor:move }
+    .pop-head{ display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:4px solid var(--line); text-transform:uppercase; user-select:none; cursor:move }
     .pop-title{ font-size:12px }
-    .pop-close{ border:3px solid var(--line); width:22px; height:22px; background:var(--bg); cursor:pointer }
-    .pop-body{ padding:12px }
+    .pop-close{ position:relative; border:3px solid var(--line); width:26px; height:26px; background:var(--bg); cursor:pointer }
+    .pop-close::before{ content:'✕'; position:absolute; inset:0; display:grid; place-items:center; font-size:14px; color:#fff }
+    .pop-body{ padding:12px; max-height:70vh; overflow:auto; -webkit-overflow-scrolling:touch }
 
     /* Mobile treatment for popouts: turn into fullscreen pane */
     @media (max-width: 700px){
       .popout{ position:fixed; inset:0; width:100vw; height:100vh; transform:none !important; box-shadow:none; border-width:6px }
       .pop-head{ cursor:default }
+      .pop-body{ max-height: calc(100vh - 60px); }
+      .tool{ padding:12px 14px; font-size:12px }
+      .field input{ font-size:12px; padding:12px 14px }
     }
 
     /* Brush chooser UI (mono) */
     .brush-list{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px; margin-bottom:12px }
-    .chip{ border:3px solid var(--line); padding:10px; text-align:center; font-size:12px; cursor:pointer; user-select:none }
+    .chip{ border:3px solid var(--line); padding:12px 8px; text-align:center; font-size:11px; cursor:pointer; user-select:none }
     .chip.active, .chip:hover{ background:var(--fg); color:var(--bg) }
 
-    .row{ display:flex; align-items:center; gap:10px; margin:10px 0; font-size:12px }
-    .swatch{ width:22px; height:22px; border:3px solid var(--line); background:#fff }
+    .row{ display:flex; align-items:center; gap:12px; margin:10px 0; font-size:11px; flex-wrap:wrap }
+    .swatch{ width:26px; height:26px; border:3px solid var(--line); background:#fff }
 
     /* Retro slider styling */
     input[type=range]{ -webkit-appearance:none; width:100%; background:transparent }
-    input[type=range]::-webkit-slider-runnable-track{ height:12px; background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 6px); border:3px solid var(--line) }
-    input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:18px; height:18px; background:var(--fg); border:3px solid var(--line); margin-top:-5px }
-    input[type=range]::-moz-range-track{ height:12px; background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 6px); border:3px solid var(--line) }
-    input[type=range]::-moz-range-thumb{ width:18px; height:18px; background:var(--fg); border:3px solid var(--line) }
+    input[type=range]::-webkit-slider-runnable-track{ height:14px; background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 6px); border:3px solid var(--line) }
+    input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:20px; height:20px; background:var(--fg); border:3px solid var(--line); margin-top:-5px }
+    input[type=range]::-moz-range-track{ height:14px; background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 6px); border:3px solid var(--line) }
+    input[type=range]::-moz-range-thumb{ width:20px; height:20px; background:var(--fg); border:3px solid var(--line) }
 
     /* Tips card */
-    .tip{ border:3px solid var(--line); padding:10px; font-size:12px; color:var(--dim) }
+    .tip{ border:3px solid var(--line); padding:10px; font-size:11px; color:var(--dim) }
   </style>
 </head>
 <body class="crt">
@@ -179,7 +197,7 @@
 
     <div class="status">
       <div id="statusText">STATUS: Waiting for name…</div>
-      <div>v0.3 • MOBILE‑FIRST</div>
+      <div>v0.3.1 • MOBILE‑FIRST</div>
     </div>
   </div>
 
@@ -205,7 +223,7 @@
       </div>
       <div class="row">
         <span>COLOUR</span>
-        <div class="swatch" id="colourSwatch"></div>
+        <div class="swatch" id="colourSwatch" title="Tap to pick colour"></div>
         <input id="colourPicker" type="color" value="#ffffff" style="appearance:none; border:0; background:transparent; width:1px; height:1px; opacity:0; position:absolute" />
       </div>
       <div class="row" style="justify-content:flex-end">
@@ -220,8 +238,8 @@
        ============================ */
     function makeDraggable(el, handle){
       let offX=0, offY=0, dragging=false;
-      function down(e){ dragging=true; const r = el.getBoundingClientRect(); offX = (e.touches?e.touches[0].clientX:e.clientX) - r.left; offY = (e.touches?e.touches[0].clientY:e.clientY) - r.top; document.body.style.userSelect='none'; }
-      function move(e){ if(!dragging) return; const x=(e.touches?e.touches[0].clientX:e.clientX)-offX; const y=(e.touches?e.touches[0].clientY:e.clientY)-offY; el.style.left=x+'px'; el.style.top=y+'px'; el.style.transform='none'; }
+      function down(e){ dragging=true; const p=e.touches?e.touches[0]:e; const r=el.getBoundingClientRect(); offX=p.clientX-r.left; offY=p.clientY-r.top; document.body.style.userSelect='none'; }
+      function move(e){ if(!dragging) return; const p=e.touches?e.touches[0]:e; const x=p.clientX-offX; const y=p.clientY-offY; el.style.left=x+'px'; el.style.top=y+'px'; el.style.transform='none'; }
       function up(){ dragging=false; document.body.style.userSelect=''; }
       handle.addEventListener('mousedown', down); window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
       handle.addEventListener('touchstart', down, {passive:true}); window.addEventListener('touchmove', move, {passive:true}); window.addEventListener('touchend', up);
@@ -307,12 +325,16 @@
 
     function onPointerDown(e){
       const rect = canvas.getBoundingClientRect();
-      const x = Math.floor((e.clientX - rect.left) * (canvas.width/rect.width));
-      const y = Math.floor((e.clientY - rect.top) * (canvas.height/rect.height));
+      const clientX = e.clientX ?? (e.touches&&e.touches[0].clientX);
+      const clientY = e.clientY ?? (e.touches&&e.touches[0].clientY);
+      const x = Math.floor((clientX - rect.left) * (canvas.width/rect.width));
+      const y = Math.floor((clientY - rect.top) * (canvas.height/rect.height));
       pushUndo(); drawing=true; last={x,y};
       applyBrush(x,y, true);
     }
-    function onPointerMove(e){ if(!drawing) return; const rect = canvas.getBoundingClientRect(); const x = Math.floor((e.clientX - rect.left) * (canvas.width/rect.width)); const y = Math.floor((e.clientY - rect.top) * (canvas.height/rect.height));
+    function onPointerMove(e){ if(!drawing) return; const rect = canvas.getBoundingClientRect(); const clientX = e.clientX ?? (e.touches&&e.touches[0].clientX); const clientY = e.clientY ?? (e.touches&&e.touches[0].clientY);
+      const x = Math.floor((clientX - rect.left) * (canvas.width/rect.width));
+      const y = Math.floor((clientY - rect.top) * (canvas.height/rect.height));
       if(last){ lineTo(last.x,last.y,x,y,(lx,ly)=> applyBrush(lx,ly,false)); } last={x,y};
     }
     function onPointerUp(){ drawing=false; last=null; }
@@ -340,8 +362,8 @@
     canvas.addEventListener('mousedown', onPointerDown);
     window.addEventListener('mousemove', onPointerMove);
     window.addEventListener('mouseup', onPointerUp);
-    canvas.addEventListener('touchstart', (e)=>{ const t=e.touches[0]; onPointerDown({clientX:t.clientX, clientY:t.clientY}); }, {passive:true});
-    window.addEventListener('touchmove', (e)=>{ const t=e.touches[0]; onPointerMove({clientX:t.clientX, clientY:t.clientY}); }, {passive:true});
+    canvas.addEventListener('touchstart', (e)=>{ onPointerDown(e); }, {passive:true});
+    window.addEventListener('touchmove', (e)=>{ onPointerMove(e); }, {passive:true});
     window.addEventListener('touchend', onPointerUp);
 
     /* ============================
@@ -362,6 +384,9 @@
     document.getElementById('brushBtn').addEventListener('click', ()=> openPop('brushPop'));
     document.querySelectorAll('.pop-close').forEach(btn=> btn.addEventListener('click', ()=> closePop(btn.dataset.close)));
 
+    // Accessibility: reduce CRT if user prefers reduced motion
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if(mq.matches){ document.body.classList.remove('crt'); }
   </script>
 </body>
 </html>
