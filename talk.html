@@ -1,1215 +1,367 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Talk 2.0 — Friends Wall (Upgraded)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #000;
-            --fg: #fff;
-            --panel: #0b0b0b;
-            --ink: #000;
-            --paper: #fff;
-            --edge: #000;
-            --edge2: #1a1a1a;
-            --z-boot: 120;
-            --z-modal: 110;
-            --z-pop: 105;
-            --z-ui: 100;
-            --accent: #57f;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WELCOME.EXE — Retro Mono UI (Mobile‑first) + Brush Tool</title>
+  <style>
+    /* ============================
+       CORE THEME — MONOCHROME UI
+       ============================ */
+    :root{
+      --bg:#000;      /* UI background */
+      --fg:#fff;      /* UI foreground */
+      --dim:#bfbfbf;  /* muted text */
+      --line:#fff;    /* borders */
+      --shadow:#1a1a1a; /* hard shadow */
 
-        * {
-            box-sizing: border-box
-        }
+      /* Pattern colours for BG picker (UI stays mono; applied to canvas frame only) */
+      --c1:#111; 
+      --c2:#eee;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:#000; color:var(--fg); font-family: 'Courier New', monospace;
+      overflow:hidden;
+    }
 
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            background: var(--bg);
-            color: var(--fg);
-            font-family: "JetBrains Mono", ui-monospace, monospace
-        }
+    /* CRT ambience */
+    .crt::before{content:""; position:fixed; inset:0; pointer-events:none; opacity:.6;
+      background:repeating-linear-gradient(to bottom, rgba(255,255,255,.05) 0 1px, transparent 1px 3px);
+      mix-blend-mode:overlay;
+    }
+    .crt::after{content:""; position:fixed; inset:0; pointer-events:none;
+      background:radial-gradient(120% 85% at 50% 50%, transparent 60%, rgba(0,0,0,.45) 100%);
+    }
 
-        button,
-        input,
-        textarea,
-        select {
-            font-family: inherit
-        }
+    /* Desktop bezel vibe */
+    .bezel{position:fixed; inset:22px; pointer-events:none}
 
-        img {
-            max-width: 100%;
-            display: block
-        }
+    /* ============================
+       MAIN WINDOW — RESPONSIVE
+       ============================ */
+    .window{
+      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+      width:min(92vw, 760px); background:var(--bg);
+      border:4px solid var(--line); box-shadow:10px 10px 0 var(--shadow);
+    }
+    .titlebar{ display:flex; align-items:center; justify-content:space-between;
+      padding:8px 10px; border-bottom:4px solid var(--line); text-transform:uppercase; user-select:none }
+    .win-name{font-weight:bold}
+    .win-controls{display:flex; gap:8px}
+    .ctrl{width:16px; height:16px; border:3px solid var(--line); background:var(--bg)}
+    .ctrl:active{transform:translate(1px,1px)}
 
-        /* Layout */
-        .app {
-            display: grid;
-            grid-template-columns: 1fr 340px;
-            grid-template-rows: auto 1fr;
-            grid-template-areas:
-                "top top" "board chat";
-            height: 100%
-        }
+    .contents{ padding:14px }
+    .bio{ font-size:12px; color:var(--dim); text-align:center; line-height:1.6; margin:4px 0 16px }
 
-        .top {
-            grid-area: top;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            border-bottom: 2px solid var(--edge);
-            background: #0d0d0d;
-            position: sticky;
-            top: 0;
-            z-index: var(--z-ui)
-        }
+    /* Layout: on mobile stacked, on desktop two-column with tips */
+    .grid{ display:grid; grid-template-columns: 1fr; gap:12px }
+    @media (min-width: 900px){ .grid{ grid-template-columns: 1fr 300px } }
 
-        .brand {
-            font-family: "Press Start 2P", monospace;
-            font-size: 14px
-        }
+    /* Name field */
+    .field{ display:flex; align-items:center; gap:8px; justify-content:center }
+    .field label{font-size:12px}
+    .field input{ background:var(--bg); color:var(--fg); border:3px solid var(--line);
+      padding:10px 12px; font-size:12px; width:min(360px, 80vw); text-transform:uppercase; outline:none }
+    .field input:focus{ box-shadow:0 0 0 3px var(--fg) inset }
 
-        .spacer {
-            flex: 1
-        }
+    /* Canvas zone */
+    .canvas-wrap{ position:relative; width:min(520px, 88vw); margin:0 auto }
+    #avatarCanvas{ display:block; width:100%; height:auto; image-rendering:pixelated; border:4px solid var(--line); background:#111 }
+    #gridOverlay{ position:absolute; inset:0; pointer-events:none; display:none; opacity:.35; background:
+      repeating-linear-gradient(to right, rgba(255,255,255,.25) 0 1px, transparent 1px 12px),
+      repeating-linear-gradient(to bottom, rgba(255,255,255,.25) 0 1px, transparent 1px 12px) }
 
-        .pills {
-            display: flex;
-            gap: 8px;
-            align-items: center
-        }
+    /* Toolbar (mono UI) */
+    .toolbar{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:12px 0 }
+    .tool{ border:3px solid var(--line); background:var(--bg); color:var(--fg); padding:8px 10px; font-size:12px; cursor:pointer; text-transform:uppercase }
+    .tool:active{ transform:translate(1px,1px) }
+    .toolbar .spacer{ width:16px }
 
-        .pill {
-            display: grid;
-            place-items: center;
-            height: 30px;
-            padding: 0 10px;
-            border: 2px solid var(--edge);
-            background: var(--panel);
-            cursor: pointer
-        }
+    /* Status bar */
+    .status{ display:flex; justify-content:space-between; border-top:4px solid var(--line); padding:8px 10px; font-size:11px; color:var(--dim) }
 
-        .pill.on {
-            outline: 2px solid var(--accent)
-        }
+    /* OK button */
+    .ok{ display:block; width:240px; margin:10px auto 0; padding:12px; text-align:center; border:4px solid var(--line); background:var(--bg); text-transform:uppercase; cursor:pointer }
+    .ok:active{ transform:translate(1px,1px) }
 
-        .board-wrap {
-            grid-area: board;
-            position: relative;
-            overflow: hidden
-        }
+    /* ============================
+       POPOUT WINDOWS
+       - desktop: floating draggable
+       - mobile: fullscreen overlays
+       Only one open at a time via JS
+       ============================ */
+    .popout{ position:absolute; z-index:50; background:var(--bg); border:4px solid var(--line); box-shadow:8px 8px 0 var(--shadow); width:min(680px, 92vw); display:none }
+    .pop-head{ display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:4px solid var(--line); text-transform:uppercase; user-select:none; cursor:move }
+    .pop-title{ font-size:12px }
+    .pop-close{ border:3px solid var(--line); width:22px; height:22px; background:var(--bg); cursor:pointer }
+    .pop-body{ padding:12px }
 
-        #boardCanvas {
-            width: 100%;
-            height: 100%
-        }
+    /* Mobile treatment for popouts: turn into fullscreen pane */
+    @media (max-width: 700px){
+      .popout{ position:fixed; inset:0; width:100vw; height:100vh; transform:none !important; box-shadow:none; border-width:6px }
+      .pop-head{ cursor:default }
+    }
 
-        .chat {
-            grid-area: chat;
-            border-left: 2px solid var(--edge);
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-            background: #0d0d0d
-        }
+    /* Brush chooser UI (mono) */
+    .brush-list{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px; margin-bottom:12px }
+    .chip{ border:3px solid var(--line); padding:10px; text-align:center; font-size:12px; cursor:pointer; user-select:none }
+    .chip.active, .chip:hover{ background:var(--fg); color:var(--bg) }
 
-        .chat-head {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            border-bottom: 2px solid var(--edge)
-        }
+    .row{ display:flex; align-items:center; gap:10px; margin:10px 0; font-size:12px }
+    .swatch{ width:22px; height:22px; border:3px solid var(--line); background:#fff }
 
-        #friendHeader {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            flex-wrap: wrap
-        }
+    /* Retro slider styling */
+    input[type=range]{ -webkit-appearance:none; width:100%; background:transparent }
+    input[type=range]::-webkit-slider-runnable-track{ height:12px; background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 6px); border:3px solid var(--line) }
+    input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:18px; height:18px; background:var(--fg); border:3px solid var(--line); margin-top:-5px }
+    input[type=range]::-moz-range-track{ height:12px; background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 6px); border:3px solid var(--line) }
+    input[type=range]::-moz-range-thumb{ width:18px; height:18px; background:var(--fg); border:3px solid var(--line) }
 
-        .friend {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 6px;
-            border: 2px solid var(--edge);
-            background: #111
-        }
-
-        .friend .dot {
-            width: 8px;
-            height: 8px;
-            border: 2px solid var(--edge);
-            background: #333
-        }
-
-        .friend.online .dot {
-            background: #3c5
-        }
-
-        .chat-log {
-            flex: 1;
-            overflow: auto;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px
-        }
-
-        .msg {
-            border: 2px solid var(--edge);
-            background: #111;
-            padding: 6px
-        }
-
-        .msg .meta {
-            display: flex;
-            align-items: center;
-            gap: 8px
-        }
-
-        .msg .avatar {
-            width: 18px;
-            height: 18px;
-            border: 2px solid var(--edge);
-            background: #fff
-        }
-
-        .msg .who {
-            font-weight: 600
-        }
-
-        .msg .text {
-            margin-top: 4px;
-            white-space: pre-wrap
-        }
-
-        .date-sep {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            opacity: .7
-        }
-
-        .date-sep:before,
-        .date-sep:after {
-            content: "";
-            height: 2px;
-            background: var(--edge);
-            flex: 1
-        }
-
-        .chat-compose {
-            border-top: 2px solid var(--edge);
-            padding: 8px;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 8px
-        }
-
-        #chatMsg {
-            min-height: 36px;
-            max-height: 120px
-        }
-
-        /* Floating chat button (mobile) */
-        .chat-fab {
-            position: fixed;
-            right: 12px;
-            bottom: 12px;
-            width: 46px;
-            height: 46px;
-            border: 2px solid var(--edge);
-            background: #0d0d0d;
-            display: none;
-            place-items: center;
-            z-index: var(--z-ui);
-            box-shadow: 0 0 0 2px var(--edge2)
-        }
-
-        .chat-fab.badge:after {
-            content: attr(data-count);
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            min-width: 18px;
-            height: 18px;
-            border-radius: 9px;
-            border: 2px solid var(--edge);
-            background: #c33;
-            color: #fff;
-            display: grid;
-            place-items: center;
-            font-size: 11px;
-            padding: 0 4px
-        }
-
-        /* Modal basics */
-        .pop {
-            position: fixed;
-            inset: 0;
-            display: none;
-            place-items: center;
-            background: rgba(0, 0, 0, .6);
-            z-index: var(--z-modal)
-        }
-
-        .pop.show {
-            display: grid
-        }
-
-        .modal {
-            width: min(720px, 92vw);
-            background: #0b0b0b;
-            border: 2px solid var(--edge);
-            box-shadow: 0 0 0 2px var(--edge2)
-        }
-
-        .modal .title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            border-bottom: 2px solid var(--edge);
-            background: #0d0d0d;
-            font-family: "Press Start 2P", monospace;
-            font-size: 14px
-        }
-
-        .modal .body {
-            padding: 12px
-        }
-
-        /* Studio */
-        #drawCanvas {
-            width: 420px;
-            height: 300px;
-            border: 2px solid var(--edge);
-            background: #fff;
-            image-rendering: pixelated
-        }
-
-        .controls {
-            margin-top: 8px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-            background: #111;
-            border: 2px solid var(--edge);
-            padding: 8px
-        }
-
-        .controls label {
-            font-size: 11px
-        }
-
-        .range {
-            width: 170px
-        }
-
-        .brush-preview {
-            position: absolute;
-            pointer-events: none;
-            border: 2px dashed #777;
-            border-radius: 999px;
-            transform: translate(-50%, -50%);
-            mix-blend-mode: difference
-        }
-
-        /* Stamp chooser */
-        .grid-stamps {
-            display: grid;
-            grid-template-columns: repeat(8, 40px);
-            gap: 4px;
-            padding: 6px
-        }
-
-        .stcell {
-            width: 40px;
-            height: 40px;
-            background: #fff;
-            border: 2px solid var(--edge);
-            display: grid;
-            place-items: center
-        }
-
-        .stcell img {
-            width: 28px;
-            height: 28px;
-            image-rendering: pixelated
-        }
-
-        .stcell:hover {
-            background: #000
-        }
-
-        .stcell:hover img {
-            filter: invert(1)
-        }
-
-        /* Footer toolbar under each card */
-        .react-bar {
-            font-size: 12px
-        }
-
-        /* Tiny helpers */
-        .hide {
-            display: none !important
-        }
-
-        /* Responsive */
-        @media (max-width: 920px) {
-            .app {
-                grid-template-columns: 1fr;
-                grid-template-areas: "top" "board"
-            }
-
-            .chat {
-                position: fixed;
-                inset: auto 0 0;
-                height: 55vh;
-                transform: translateY(110%);
-                transition: transform .2s ease
-            }
-
-            .chat.show {
-                transform: translateY(0)
-            }
-
-            .chat-fab {
-                display: grid
-            }
-        }
-    </style>
+    /* Tips card */
+    .tip{ border:3px solid var(--line); padding:10px; font-size:12px; color:var(--dim) }
+  </style>
 </head>
+<body class="crt">
 
-<body>
-    <div class="app">
-        <div class="top">
-            <div class="brand">TALK 2.0</div>
-            <div id="friendHeader" class="pills" title="Who's here"></div>
-            <div class="spacer"></div>
-            <button id="btnNew" class="pill"><img alt="" src="" data-icon="add">&nbsp;New Doodle</button>
-            <button id="btnPrefs" class="pill"><img alt="" src="" data-icon="gear">&nbsp;Prefs</button>
-            <button id="btnHelp" class="pill"><img alt="" src="" data-icon="help">&nbsp;Help</button>
-        </div>
+  <div class="bezel"></div>
 
-        <div class="board-wrap">
-            <canvas id="boardCanvas"></canvas>
-        </div>
-
-        <aside id="chat" class="chat">
-            <div class="chat-head">
-                <div style="font-family:'Press Start 2P',monospace;font-size:12px">Chat</div>
-                <div class="spacer"></div>
-                <button id="chatClose" class="pill">Close</button>
-            </div>
-            <div id="chatLog" class="chat-log"></div>
-            <div class="chat-compose">
-                <textarea id="chatMsg" placeholder="Say something… (Enter to send, Shift+Enter = newline)"></textarea>
-                <div style="display:flex;gap:8px">
-                    <input id="chatName" placeholder="Name" style="width:120px" maxlength="24" />
-                    <button id="chatSend" class="pill">Send</button>
-                </div>
-            </div>
-        </aside>
-    </div>
-    <button id="chatFab" class="chat-fab"><img alt="" data-icon="chat"></button>
-
-    <!-- Studio (draw) -->
-    <div id="studioPop" class="pop">
-        <div class="modal">
-            <div class="title">
-                <div>Studio</div><button id="studioClose" class="pill">Close</button>
-            </div>
-            <div class="body">
-                <div style="position:relative;display:inline-block">
-                    <canvas id="drawCanvas" width="420" height="300"></canvas>
-                    <div id="brushPreview" class="brush-preview hide"></div>
-                </div>
-                <div class="controls">
-                    <button id="tBrush" class="pill on"><img alt="" data-icon="brush"></button>
-                    <button id="tEraser" class="pill"><img alt="" data-icon="eraser"></button>
-                    <button id="tStamp" class="pill"><img alt="" data-icon="stamp"></button>
-                    <label>Size <input id="brushSize" class="range" type="range" min="1" max="24" value="3"></label>
-                    <label>Color <input id="brushColor" type="color" value="#000000"></label>
-                    <button id="chooseStamp" class="pill">Choose Stamps</button>
-                    <div class="spacer"></div>
-                    <button id="undo" class="pill">Undo</button>
-                    <button id="redo" class="pill">Redo</button>
-                    <button id="clear" class="pill">Clear</button>
-                    <button id="post" class="pill" style="background:#113">Post</button>
-                </div>
-                <div style="font-size:12px;opacity:.75;margin-top:6px">Shortcuts: +/- size · I eyedropper · Shift = straight line</div>
-            </div>
-        </div>
+  <div class="window" id="win">
+    <div class="titlebar" id="dragWin">
+      <div class="win-name">WELCOME.EXE</div>
+      <div class="win-controls">
+        <span class="ctrl" title="min"></span>
+        <span class="ctrl" title="max"></span>
+        <span class="ctrl" title="close"></span>
+      </div>
     </div>
 
-    <!-- Stamp chooser -->
-    <div id="stampPop" class="pop">
-        <div class="modal" style="max-width:600px">
-            <div class="title" id="stampDrag">
-                <div>Stamps</div><button id="stampClose" class="pill">Close</button>
-            </div>
-            <div class="body">
-                <div id="stampGrid" class="grid-stamps"></div>
-            </div>
+    <div class="contents">
+      <div class="bio">Monochrome interface • Colour canvas. Choose a name, sketch an avatar, and step in.</div>
+
+      <div class="grid">
+        <div>
+          <div class="field">
+            <label for="username">NAME</label>
+            <input id="username" type="text" placeholder="ENTER NAME" />
+          </div>
+
+          <div class="canvas-wrap">
+            <!-- NOTE: Canvas uses full colour; UI remains mono -->
+            <canvas id="avatarCanvas" width="256" height="256"></canvas>
+            <div id="gridOverlay"></div>
+          </div>
+
+          <div class="toolbar">
+            <button class="tool" id="brushBtn">BRUSH</button>
+            <button class="tool" id="eraserBtn" disabled>ERASE</button>
+            <button class="tool" id="bucketBtn" disabled>FILL</button>
+            <button class="tool" id="stampBtn" disabled>STAMP</button>
+            <button class="tool" id="bgBtn" disabled>BG</button>
+            <span class="spacer"></span>
+            <button class="tool" id="gridBtn">GRID</button>
+            <button class="tool" id="undoBtn">UNDO</button>
+            <button class="tool" id="redoBtn">REDO</button>
+          </div>
         </div>
+
+        <div class="tip">
+          <div><strong>TIP</strong></div>
+          <div style="margin-top:6px">Tap <b>BRUSH</b> to open the tool panel. On phones, panels use fullscreen; on desktop, they float. Only one panel opens at a time.</div>
+          <div style="margin-top:6px">Press <b>G</b> to toggle the pixel grid. The UI is strictly black/white, but the canvas accepts any colours.</div>
+        </div>
+      </div>
+
+      <button class="ok" id="okBtn" disabled>OK!</button>
     </div>
 
-    <!-- Help / Prefs (lightweight) -->
-    <div id="helpPop" class="pop">
-        <div class="modal">
-            <div class="title">
-                <div>Help</div><button id="helpClose" class="pill">Close</button>
-            </div>
-            <div class="body">
-                <p>Welcome! Draw something, post it, react with ❤ 👍 😂, and chat. Drag to move your own cards. On mobile, tap the chat bubble.</p>
-            </div>
-        </div>
+    <div class="status">
+      <div id="statusText">STATUS: Waiting for name…</div>
+      <div>v0.3 • MOBILE‑FIRST</div>
     </div>
-    <div id="prefsPop" class="pop">
-        <div class="modal">
-            <div class="title">
-                <div>Preferences</div><button id="prefsClose" class="pill">Close</button>
-            </div>
-            <div class="body"><label><input id="prefSounds" type="checkbox"> Retro sounds</label> · <label><input id="prefReduceMotion" type="checkbox"> Reduce motion</label></div>
-        </div>
+  </div>
+
+  <!-- ============================
+       BRUSH POPOUT (fully working)
+       ============================ -->
+  <div class="popout" id="brushPop" style="left:50%; top:10%; transform:translateX(-50%)">
+    <div class="pop-head" id="dragBrush">
+      <div class="pop-title">BRUSH</div>
+      <button class="pop-close" data-close="#brushPop" aria-label="Close"></button>
     </div>
+    <div class="pop-body">
+      <div class="brush-list" id="brushList">
+        <div class="chip active" data-brush="pencil">PENCIL</div>
+        <div class="chip" data-brush="paint">PAINT</div>
+        <div class="chip" data-brush="spray">SPRAY</div>
+        <div class="chip" data-brush="marker">MARKER</div>
+      </div>
+      <div class="row">
+        <span>SIZE</span>
+        <input id="brushSize" type="range" min="1" max="32" value="6" />
+        <span id="brushSizeVal">6</span>
+      </div>
+      <div class="row">
+        <span>COLOUR</span>
+        <div class="swatch" id="colourSwatch"></div>
+        <input id="colourPicker" type="color" value="#ffffff" style="appearance:none; border:0; background:transparent; width:1px; height:1px; opacity:0; position:absolute" />
+      </div>
+      <div class="row" style="justify-content:flex-end">
+        <button class="tool" id="brushOK">OK</button>
+      </div>
+    </div>
+  </div>
 
-    <script type="module">
-        /* === External libs (CDN) === */
-        import {
-            initializeApp
-        } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-        import {
-            getDatabase,
-            ref,
-            child,
-            push,
-            set,
-            onChildAdded,
-            onChildRemoved,
-            onChildChanged,
-            update
-        } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-database.js";
-        import {
-            fabric
-        } from "https://cdn.jsdelivr.net/npm/fabric@5.2.4/dist/fabric.min.js";
+  <script>
+    /* ============================
+       JS: Helpers
+       ============================ */
+    function makeDraggable(el, handle){
+      let offX=0, offY=0, dragging=false;
+      function down(e){ dragging=true; const r = el.getBoundingClientRect(); offX = (e.touches?e.touches[0].clientX:e.clientX) - r.left; offY = (e.touches?e.touches[0].clientY:e.clientY) - r.top; document.body.style.userSelect='none'; }
+      function move(e){ if(!dragging) return; const x=(e.touches?e.touches[0].clientX:e.clientX)-offX; const y=(e.touches?e.touches[0].clientY:e.clientY)-offY; el.style.left=x+'px'; el.style.top=y+'px'; el.style.transform='none'; }
+      function up(){ dragging=false; document.body.style.userSelect=''; }
+      handle.addEventListener('mousedown', down); window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+      handle.addEventListener('touchstart', down, {passive:true}); window.addEventListener('touchmove', move, {passive:true}); window.addEventListener('touchend', up);
+    }
 
-        /* === Firebase config — PASTE YOUR EXISTING CONFIG BELOW ===
-           Replace the placeholder values with your actual firebaseConfig from your current page.
-           Keep the same property names. Example shape shown. */
-        const firebaseConfig = {
-            apiKey: "AIzaSyBeXCRIeRdHr2C3EYnDwC1NoQNQxZygA0U",
-            authDomain: "guestbook-bfbdc.firebaseapp.com",
-            databaseURL: "https://guestbook-bfbdc-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "guestbook-bfbdc",
-            storageBucket: "guestbook-bfbdc.firebasestorage.app",
-            messagingSenderId: "710789947600",
-            appId: "1:710789947600:web:19014ef99d053f4c5dbed5",
-            measurementId: "G-E9XPN9563X"
-        };
+    // Open one popout at a time
+    function openPop(id){ document.querySelectorAll('.popout').forEach(p=>p.style.display='none'); const el = document.getElementById(id); el.style.display='block'; }
+    function closePop(id){ const el = document.querySelector(id); if(el) el.style.display='none'; }
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        /* Use the SAME paths as your existing app */
-        const ITEMS = ref(db, "mural_items");
-        const CHAT = ref(db, "mini_chat");
-        const PROFILES = ref(db, "profiles");
+    // Grid toggle
+    const gridOverlay = document.getElementById('gridOverlay');
+    const gridBtn = document.getElementById('gridBtn');
+    function toggleGrid(){ gridOverlay.style.display = (gridOverlay.style.display==='block') ? 'none' : 'block'; }
+    gridBtn.addEventListener('click', toggleGrid);
+    window.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='g') toggleGrid(); });
 
-        /* === Local identity (no auth; just local UID) === */
-        const UID = (localStorage.getItem("uid") || (() => {
-            const u = Math.random().toString(36).slice(2);
-            localStorage.setItem("uid", u);
-            return u;
-        })());
-        let profile = JSON.parse(localStorage.getItem("profile") || "{}");
-        profile.name = profile.name || ("anon-" + UID.slice(0, 4));
+    // Draggable (desktop only — on mobile, popouts go fullscreen so dragging is unnecessary)
+    const win = document.getElementById('win');
+    makeDraggable(win, document.getElementById('dragWin'));
+    makeDraggable(document.getElementById('brushPop'), document.getElementById('dragBrush'));
 
-        /* === Icons (expects /ui-icons/*) — fallback emojis if missing === */
-        const ICONS = {
-            brush: "brush.png",
-            eraser: "eraser.png",
-            stamp: "stamp.png",
-            add: "plus.png",
-            chat: "chat.png",
-            gear: "gear.png",
-            help: "help.png",
-            trash: "bin.png"
-        };
-        document.querySelectorAll("img[data-icon]").forEach(img => {
-            const f = ICONS[img.dataset.icon];
-            if (f) img.src = "ui-icons/" + f
-        });
+    // Close buttons
+    document.querySelectorAll('.pop-close').forEach(btn=>{
+      btn.addEventListener('click', ()=> closePop(btn.dataset.close));
+    });
 
-        /* === Top buttons === */
-        document.getElementById("btnNew").onclick = () => show("studioPop");
-        document.getElementById("btnHelp").onclick = () => show("helpPop");
-        document.getElementById("helpClose").onclick = () => hide("helpPop");
-        document.getElementById("btnPrefs").onclick = () => show("prefsPop");
-        document.getElementById("prefsClose").onclick = () => hide("prefsPop");
+    /* ============================
+       Canvas + Drawing Engine (Brush only)
+       ============================ */
+    const canvas = document.getElementById('avatarCanvas');
+    const ctx = canvas.getContext('2d');
+    // Start with a dark background (users can change later via BG tool in future)
+    ctx.fillStyle = '#111'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    let drawing=false, last=null;
 
-        /* === Board === */
-        const boardCanvasEl = document.getElementById("boardCanvas");
-        const board = new fabric.Canvas("boardCanvas", {
-            selection: false,
-            backgroundColor: "#111"
-        });
-        board.lowerCanvasEl.getContext('2d').imageSmoothingEnabled = false;
-        board.upperCanvasEl.getContext('2d').imageSmoothingEnabled = false;
+    // Brush state
+    let brushType='pencil';
+    let brushSize=6; // px
+    let brushColour='#ffffff';
 
-        function resizeBoard() {
-            const r = boardCanvasEl.getBoundingClientRect();
-            board.setWidth(r.width);
-            board.setHeight(r.height);
-            board.requestRenderAll();
-        }
-        window.addEventListener("resize", resizeBoard);
-        resizeBoard();
+    const brushBtn = document.getElementById('brushBtn');
+    brushBtn.addEventListener('click', ()=> openPop('brushPop'));
 
-        const itemsMap = new Map();
+    // Brush UI interactions
+    const brushList = document.getElementById('brushList');
+    brushList.addEventListener('click', (e)=>{
+      const chip = e.target.closest('.chip'); if(!chip) return;
+      document.querySelectorAll('#brushList .chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      brushType = chip.dataset.brush;
+    });
+    const size = document.getElementById('brushSize');
+    const sizeVal = document.getElementById('brushSizeVal');
+    size.addEventListener('input', ()=>{ brushSize = parseInt(size.value,10); sizeVal.textContent = brushSize; });
 
-        function applySavedTransform(group, it) {
-            const s = Math.max(.5, Math.min(2, Number(it.scale || 1)));
-            group.scaleX = s;
-            group.scaleY = s;
-            group.left = (it.x ?? 40);
-            group.top = (it.y ?? 40);
-        }
+    const colourPicker = document.getElementById('colourPicker');
+    const colourSwatch = document.getElementById('colourSwatch');
+    function setSwatch(col){ colourSwatch.style.background = col; }
+    setSwatch(brushColour);
+    colourSwatch.addEventListener('click', ()=> colourPicker.click());
+    colourPicker.addEventListener('input', (e)=>{ brushColour = e.target.value; setSwatch(brushColour); });
 
-        function reactionCounts(it) {
-            const counts = {
-                heart: 0,
-                up: 0,
-                lol: 0
-            };
-            if (it.reactions) {
-                counts.heart = Object.keys(it.reactions.heart || {}).length;
-                counts.up = Object.keys(it.reactions.up || {}).length;
-                counts.lol = Object.keys(it.reactions.lol || {}).length;
-            }
-            return counts;
-        }
+    document.getElementById('brushOK').addEventListener('click', ()=> closePop('#brushPop'));
 
-        function buildCard(it, key, onReady) {
-            const CARD_W = Math.min(300, Math.max(160, it.w || 220));
-            const HEADER_H = 28,
-                FOOTER_H = 24,
-                PADDING = 6;
+    // Undo/Redo stacks
+    const undoStack=[]; const redoStack=[]; const MAX_STACK=20;
+    function pushUndo(){ try{ const snap = ctx.getImageData(0,0,canvas.width,canvas.height); undoStack.push(snap); if(undoStack.length>MAX_STACK) undoStack.shift(); redoStack.length=0; }catch(e){} }
+    function doUndo(){ if(!undoStack.length) return; const snap = undoStack.pop(); const current = ctx.getImageData(0,0,canvas.width,canvas.height); redoStack.push(current); ctx.putImageData(snap,0,0); }
+    function doRedo(){ if(!redoStack.length) return; const snap = redoStack.pop(); const current = ctx.getImageData(0,0,canvas.width,canvas.height); undoStack.push(current); ctx.putImageData(snap,0,0); }
+    document.getElementById('undoBtn').addEventListener('click', doUndo);
+    document.getElementById('redoBtn').addEventListener('click', doRedo);
 
-            const border = new fabric.Rect({
-                left: 0,
-                top: 0,
-                width: CARD_W,
-                height: HEADER_H + FOOTER_H + Math.min(260, it.h || 220) + PADDING * 2,
-                rx: 0,
-                ry: 0,
-                stroke: "#000",
-                strokeWidth: 2,
-                fill: "#0b0b0b"
-            });
-            const header = new fabric.Rect({
-                left: 0,
-                top: 0,
-                width: CARD_W,
-                height: HEADER_H,
-                fill: "#0d0d0d",
-                stroke: "#000",
-                strokeWidth: 2
-            });
-            const footer = new fabric.Rect({
-                left: 0,
-                top: HEADER_H + Math.min(260, it.h || 220) + PADDING * 2,
-                width: CARD_W,
-                height: FOOTER_H,
-                fill: "#0d0d0d",
-                stroke: "#000",
-                strokeWidth: 2
-            });
+    // Drawing helpers
+    function drawDot(x,y,size,colour,alpha=1){
+      ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = colour; ctx.beginPath(); ctx.arc(x,y,size/2,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
+    function lineTo(x0,y0,x1,y1,stepCb){
+      const dx=x1-x0, dy=y1-y0; const steps=Math.max(Math.abs(dx), Math.abs(dy));
+      for(let i=0;i<=steps;i++){
+        const t=steps? i/steps : 0; const x=x0+dx*t; const y=y0+dy*t; stepCb(x,y);
+      }
+    }
 
-            const avatar = new fabric.Rect({
-                left: PADDING,
-                top: PADDING,
-                width: 18,
-                height: 18,
-                fill: "#fff",
-                stroke: "#000",
-                strokeWidth: 2,
-                selectable: false,
-                evented: false
-            });
-            const nameText = new fabric.Text((it.name || "anon").slice(0, 24), {
-                left: PADDING + 26,
-                top: PADDING + 3,
-                fontFamily: "JetBrains Mono",
-                fontSize: 12,
-                fill: "#fff",
-                selectable: false,
-                evented: false
-            });
-            const reacts = new fabric.Text("❤ 0  👍 0  😂 0", {
-                left: PADDING,
-                top: footer.top + 4,
-                fontFamily: "JetBrains Mono",
-                fontSize: 12,
-                fill: "#fff",
-                selectable: false,
-                evented: false,
-                class: "react-bar"
-            });
+    function onPointerDown(e){
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) * (canvas.width/rect.width));
+      const y = Math.floor((e.clientY - rect.top) * (canvas.height/rect.height));
+      pushUndo(); drawing=true; last={x,y};
+      applyBrush(x,y, true);
+    }
+    function onPointerMove(e){ if(!drawing) return; const rect = canvas.getBoundingClientRect(); const x = Math.floor((e.clientX - rect.left) * (canvas.width/rect.width)); const y = Math.floor((e.clientY - rect.top) * (canvas.height/rect.height));
+      if(last){ lineTo(last.x,last.y,x,y,(lx,ly)=> applyBrush(lx,ly,false)); } last={x,y};
+    }
+    function onPointerUp(){ drawing=false; last=null; }
 
-            fabric.Image.fromURL(it.src, (img) => {
-                img.set({
-                    left: PADDING,
-                    top: HEADER_H + PADDING,
-                    selectable: false,
-                    evented: false,
-                    objectCaching: false
-                });
-                const maxW = CARD_W - PADDING * 2;
-                const scale = Math.min(1, maxW / img.width);
-                img.scale(scale);
-                const contentH = (img.height * scale);
-                border.set("height", HEADER_H + PADDING + contentH + PADDING + FOOTER_H);
-                footer.set({
-                    top: border.height - FOOTER_H
-                });
-                reacts.set({
-                    top: border.height - FOOTER_H + 4
-                });
+    function applyBrush(x,y,isFirst){
+      // Different behaviours per brush
+      switch(brushType){
+        case 'pencil':
+          drawDot(x,y,Math.max(1,brushSize), brushColour, 1);
+          break;
+        case 'paint': // thicker, slight jitter texture
+          const n = 6; for(let i=0;i<n;i++){ const jx = x + (Math.random()-0.5)*brushSize*0.6; const jy = y + (Math.random()-0.5)*brushSize*0.6; drawDot(jx,jy,brushSize*0.9, brushColour, 0.95); }
+          break;
+        case 'spray':
+          const density = 20 + brushSize*2;
+          for(let i=0;i<density;i++){ const r = Math.random()*brushSize; const a = Math.random()*Math.PI*2; const sx = x + Math.cos(a)*r; const sy = y + Math.sin(a)*r; drawDot(sx,sy,1+Math.random()*2, brushColour, 0.35); }
+          break;
+        case 'marker': // semi-transparent layering
+          drawDot(x,y,brushSize*1.2, brushColour, 0.35);
+          break;
+      }
+    }
 
-                const group = new fabric.Group([border, header, footer, img, nameText, avatar, reacts], {
-                    left: it.x ?? 40,
-                    top: it.y ?? 40,
-                    hasControls: false,
-                    subTargetCheck: true
-                });
-                group.set({
-                    dbKey: key,
-                    owner: it.uid,
-                    dtype: "card",
-                    lockScalingFlip: true
-                });
+    // Mouse + touch support
+    canvas.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+    canvas.addEventListener('touchstart', (e)=>{ const t=e.touches[0]; onPointerDown({clientX:t.clientX, clientY:t.clientY}); }, {passive:true});
+    window.addEventListener('touchmove', (e)=>{ const t=e.touches[0]; onPointerMove({clientX:t.clientX, clientY:t.clientY}); }, {passive:true});
+    window.addEventListener('touchend', onPointerUp);
 
-                // Ownership & interaction rules
-                const isOwner = (it.uid === UID);
-                group.hasBorders = false;
-                group.hoverCursor = (isOwner ? "move" : "pointer");
-                group.hasControls = isOwner;
-                group.lockMovementX = !isOwner;
-                group.lockMovementY = !isOwner;
-                group.lockScalingX = !isOwner;
-                group.lockScalingY = !isOwner;
+    /* ============================
+       Status + OK enable rules
+       ============================ */
+    const nameInput = document.getElementById('username');
+    const statusText = document.getElementById('statusText');
+    const okBtn = document.getElementById('okBtn');
+    nameInput.addEventListener('input', ()=>{
+      const hasName = !!nameInput.value.trim();
+      statusText.textContent = hasName ? `Hello, ${nameInput.value.trim()}. Sketch your avatar →` : 'STATUS: Waiting for name…';
+      okBtn.disabled = !hasName;
+    });
 
-                // Apply saved transform
-                applySavedTransform(group, it);
+    /* ============================
+       One‑at‑a‑time popout logic
+       ============================ */
+    document.getElementById('brushBtn').addEventListener('click', ()=> openPop('brushPop'));
+    document.querySelectorAll('.pop-close').forEach(btn=> btn.addEventListener('click', ()=> closePop(btn.dataset.close)));
 
-                // Drag scale clamp (owner only)
-                group.on("scaling", () => {
-                    if (!isOwner) {
-                        group.scaleX = group.scaleY = it.scale || 1;
-                        return;
-                    }
-                    const s = Math.max(.5, Math.min(2, group.scaleX));
-                    group.scaleX = s;
-                    group.scaleY = s;
-                });
-
-                // Double click remove (owner only)
-                group.on("mousedblclick", () => {
-                    if (isOwner) update(child(ITEMS, key), {
-                        deleted: true
-                    });
-                });
-
-                // Reaction hit areas (three transparent rects)
-                const segW = (CARD_W - PADDING * 2) / 3;
-                const y = footer.top;
-                const makeHit = (i, kind) => {
-                    const r = new fabric.Rect({
-                        left: PADDING + i * segW,
-                        top: y,
-                        width: segW,
-                        height: FOOTER_H,
-                        fill: "rgba(0,0,0,0)",
-                        strokeWidth: 0,
-                        selectable: false,
-                        hasBorders: false,
-                        hasControls: false
-                    });
-                    r.on("mousedown", () => toggleReaction(key, kind));
-                    return r;
-                };
-                const hitH = [makeHit(0, "heart"), makeHit(1, "up"), makeHit(2, "lol")];
-                hitH.forEach(h => group.addWithUpdate(h));
-
-                onReady(group);
-
-                // Initial counts
-                updateReactionText(key, it);
-            });
-        }
-
-        function updateReactionText(key, it) {
-            const rec = itemsMap.get(key);
-            if (!rec) return;
-            const counts = reactionCounts(it);
-            const t = rec.group._objects.find(o => o.type === "text" && o.text && o.text.includes("❤"));
-            if (t) {
-                t.text = `❤ ${counts.heart}  👍 ${counts.up}  😂 ${counts.lol}`;
-                board.requestRenderAll();
-            }
-        }
-
-        function addBoardItem(key, it) {
-            if (it.deleted) {
-                removeBoardItem(key);
-                return;
-            }
-            if (itemsMap.has(key)) return;
-            buildCard(it, key, (group) => {
-                board.add(group);
-                board.bringToFront(group);
-                itemsMap.set(key, {
-                    group,
-                    data: it
-                });
-                board.requestRenderAll();
-            });
-        }
-
-        function updateBoardItem(key, it) {
-            const rec = itemsMap.get(key);
-            if (!rec) {
-                addBoardItem(key, it);
-                return;
-            }
-            rec.data = it;
-            if (it.deleted) {
-                removeBoardItem(key);
-                return;
-            }
-            applySavedTransform(rec.group, it);
-            updateReactionText(key, it);
-            board.requestRenderAll();
-        }
-
-        function removeBoardItem(key) {
-            const rec = itemsMap.get(key);
-            if (!rec) return;
-            board.remove(rec.group);
-            itemsMap.delete(key);
-            board.requestRenderAll();
-        }
-
-        // Persist position + scale after drag/resize (owner only)
-        board.on("object:modified", (e) => {
-            const g = e.target;
-            if (!g || !g.dbKey) return;
-            const key = g.dbKey;
-            const rec = itemsMap.get(key);
-            if (!rec) return;
-            const it = rec.data || {};
-            const isOwner = (it.uid === UID);
-            if (!isOwner) return;
-            const s = g.scaleX || 1;
-            it.x = Math.round(g.left || 0);
-            it.y = Math.round(g.top || 0);
-            it.scale = Math.max(.5, Math.min(2, s));
-            update(child(ITEMS, key), {
-                x: it.x,
-                y: it.y,
-                scale: it.scale
-            });
-        });
-
-        /* === Data listeners === */
-        onChildAdded(ITEMS, (snap) => addBoardItem(snap.key, snap.val()));
-        onChildChanged(ITEMS, (snap) => updateBoardItem(snap.key, snap.val()));
-        onChildRemoved(ITEMS, (snap) => removeBoardItem(snap.key));
-
-        /* === Reactions === */
-        function toggleReaction(key, kind) {
-            const rec = itemsMap.get(key);
-            if (!rec) return;
-            const it = rec.data || {};
-            it.reactions = it.reactions || {};
-            it.reactions[kind] = it.reactions[kind] || {};
-            const mine = !!it.reactions[kind][UID];
-            if (mine) {
-                delete it.reactions[kind][UID];
-            } else {
-                it.reactions[kind][UID] = true;
-            }
-            update(child(ITEMS, key), {
-                reactions: it.reactions
-            });
-        }
-
-        /* === Chat === */
-        const chatLog = document.getElementById("chatLog");
-
-        function fmtDate(ts) {
-            const d = new Date(ts);
-            return d.toLocaleDateString([], {
-                month: 'short',
-                day: 'numeric'
-            });
-        }
-        let lastDateLabel = "";
-
-        function addMsg(key, m) {
-            const day = fmtDate(m.ts || Date.now());
-            if (day !== lastDateLabel) {
-                const sep = document.createElement("div");
-                sep.className = "date-sep";
-                sep.textContent = day;
-                chatLog.appendChild(sep);
-                lastDateLabel = day;
-            }
-            const el = document.createElement("div");
-            el.className = "msg";
-            el.dataset.key = key;
-            el.innerHTML = `<div class="meta"><div class="avatar" style="background:${m.avatar||'#fff'}"></div><div class="who">${(m.name||'anon').slice(0,24)}</div><div class="spacer"></div><button class="del pill hide"><img alt="" data-icon="trash"></button></div><div class="text"></div>`;
-            el.querySelector(".text").textContent = m.text || "";
-            el.querySelectorAll("img[data-icon]").forEach(img => {
-                const f = ICONS[img.dataset.icon];
-                if (f) img.src = "ui-icons/" + f
-            });
-            chatLog.appendChild(el);
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }
-        onChildAdded(CHAT, (snap) => addMsg(snap.key, snap.val()));
-        onChildRemoved(CHAT, (snap) => {
-            const el = chatLog.querySelector(`[data-key="${snap.key}"]`);
-            if (el) el.remove();
-        });
-
-        function sendMsg() {
-            const name = (document.getElementById("chatName").value || profile.name || "anon").slice(0, 24);
-            const text = (document.getElementById("chatMsg").value || "").slice(0, 240).trim();
-            if (!text) return;
-            const m = {
-                name,
-                text,
-                uid: UID,
-                avatar: profile.avatar || "",
-                ts: Date.now()
-            };
-            const r = push(CHAT);
-            set(r, m);
-            document.getElementById("chatMsg").value = "";
-        }
-        document.getElementById("chatSend").onclick = sendMsg;
-        const chatMsgEl = document.getElementById("chatMsg");
-        chatMsgEl.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMsg();
-            }
-        });
-
-        /* Chat show/hide (mobile) */
-        const chatPanel = document.getElementById("chat");
-        const chatFab = document.getElementById("chatFab");
-        chatFab.onclick = () => chatPanel.classList.toggle("show");
-        document.getElementById("chatClose").onclick = () => chatPanel.classList.remove("show");
-
-        /* === Studio (fabric) === */
-        const studio = document.getElementById("studioPop");
-        const fc = new fabric.Canvas("drawCanvas", {
-            isDrawingMode: true,
-            selection: true,
-            enableRetinaScaling: true
-        });
-        fc.lowerCanvasEl.getContext('2d').imageSmoothingEnabled = false;
-        fc.upperCanvasEl.getContext('2d').imageSmoothingEnabled = false;
-        fc.setBackgroundColor("#fff", fc.renderAll.bind(fc));
-        fc.freeDrawingBrush.color = "#000";
-        fc.freeDrawingBrush.width = 3;
-
-        const brushSize = document.getElementById("brushSize");
-        const brushColor = document.getElementById("brushColor");
-        const brushPreview = document.getElementById("brushPreview");
-
-        function updateBrush() {
-            fc.freeDrawingBrush.color = brushColor.value;
-            fc.freeDrawingBrush.width = Number(brushSize.value);
-            showBrushPreview();
-        }
-        brushSize.oninput = updateBrush;
-        brushColor.oninput = updateBrush;
-        updateBrush();
-
-        /* Brush preview near cursor */
-        function showBrushPreview() {
-            brushPreview.classList.remove("hide");
-            brushPreview.style.width = fc.freeDrawingBrush.width + "px";
-            brushPreview.style.height = fc.freeDrawingBrush.width + "px";
-        }
-        fc.on("mouse:move", (e) => {
-            const p = e.pointer;
-            const r = fc.upperCanvasEl.getBoundingClientRect();
-            brushPreview.style.left = (p.x + r.left) + "px";
-            brushPreview.style.top = (p.y + r.top) + "px";
-        });
-        fc.on("mouse:out", () => brushPreview.classList.add("hide"));
-
-        /* Shortcuts: +/- size, I eyedropper, Shift straight line */
-        document.addEventListener("keydown", (e) => {
-            if (!studio.classList.contains("show")) return;
-            if (e.key === "+" || e.key === "=") {
-                brushSize.value = Math.min(24, Number(brushSize.value) + 1);
-                updateBrush();
-            }
-            if (e.key === "-" || e.key === "_") {
-                brushSize.value = Math.max(1, Number(brushSize.value) - 1);
-                updateBrush();
-            }
-            if (e.key.toLowerCase() === 'i') { // eyedropper
-                const p = fc.getPointer(e);
-                const px = fc.contextContainer.getImageData(p.x, p.y, 1, 1).data;
-                const hex = `#${[px[0],px[1],px[2]].map(v=>v.toString(16).padStart(2,'0')).join('')}`;
-                brushColor.value = hex;
-                updateBrush();
-            }
-        });
-
-        let lineStart = null;
-        let drawingLine = null;
-        fc.on("mouse:down", (e) => {
-            if (e.e.shiftKey) {
-                lineStart = e.pointer;
-                drawingLine = new fabric.Line([lineStart.x, lineStart.y, lineStart.x, lineStart.y], {
-                    stroke: fc.freeDrawingBrush.color,
-                    strokeWidth: fc.freeDrawingBrush.width,
-                    selectable: false
-                });
-                fc.add(drawingLine);
-                fc.requestRenderAll();
-            }
-        });
-        fc.on("mouse:move", (e) => {
-            if (drawingLine) {
-                drawingLine.set({
-                    x2: e.pointer.x,
-                    y2: e.pointer.y
-                });
-                fc.requestRenderAll();
-            }
-        });
-        fc.on("mouse:up", () => {
-            lineStart = null;
-            drawingLine = null;
-        });
-
-        /* History */
-        let history = {
-                u: [],
-                r: []
-            },
-            loadingState = false;
-
-        function pushState() {
-            if (loadingState) return;
-            try {
-                history.u.push(JSON.stringify(fc.toJSON()));
-                if (history.u.length > 150) history.u.shift();
-                history.r = [];
-            } catch (e) {}
-        }
-
-        function undo() {
-            if (history.u.length < 2) return;
-            history.r.push(history.u.pop());
-            const prev = history.u[history.u.length - 1];
-            loadingState = true;
-            fc.loadFromJSON(prev, () => {
-                fc.renderAll();
-                loadingState = false;
-            })
-        }
-
-        function redo() {
-            if (!history.r.length) return;
-            const nxt = history.r.pop();
-            history.u.push(nxt);
-            loadingState = true;
-            fc.loadFromJSON(nxt, () => {
-                fc.renderAll();
-                loadingState = false;
-            })
-        }
-        fc.on("path:created", pushState);
-        fc.on("object:added", pushState);
-        fc.on("object:modified", pushState);
-        fc.on("object:removed", pushState);
-        pushState();
-
-        /* Tools */
-        function setTool(t) {
-            document.querySelectorAll("#studioPop .controls .pill").forEach(b => b.classList.remove("on"));
-            if (t === "brush") {
-                fc.isDrawingMode = true;
-                document.getElementById("tBrush").classList.add("on");
-            }
-            if (t === "eraser") {
-                fc.isDrawingMode = true;
-                fc.freeDrawingBrush.color = "#fff";
-                document.getElementById("tEraser").classList.add("on");
-            }
-            if (t === "stamp") {
-                fc.isDrawingMode = false;
-                document.getElementById("tStamp").classList.add("on");
-            }
-        }
-
-        document.getElementById("tBrush").onclick = () => {
-            fc.freeDrawingBrush.color = brushColor.value;
-            setTool("brush");
-        };
-        document.getElementById("tEraser").onclick = () => setTool("eraser");
-
-        /* Stamps */
-        const STAMP_LIST = [
-            // a few built-in SVG data URIs so the grid isn't empty
-            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><rect width='28' height='28' fill='%23ffd54a'/><circle cx='9' cy='10' r='3' fill='%23000'/><circle cx='19' cy='10' r='3' fill='%23000'/><path d='M7 19 q7 6 14 0' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'/></svg>",
-            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><rect width='28' height='28' fill='%2300d4ff'/><path d='M4 18 l6-8 4 5 4-6 6 9' stroke='%23000' stroke-width='3' fill='none'/></svg>",
-            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><rect width='28' height='28' fill='%23fff'/><rect x='4' y='4' width='20' height='20' fill='none' stroke='%23000' stroke-width='3'/></svg>"
-        ];
-        let currentStamp = null;
-
-        function fetchStamps() {
-            return STAMP_LIST;
-        }
-
-        function buildStampGrid() {
-            const grid = document.getElementById("stampGrid");
-            grid.innerHTML = "";
-            const list = fetchStamps();
-            if (!list.length) {
-                const none = document.createElement("div");
-                none.style.opacity = .7;
-                none.textContent = "No stamps yet. Add URLs to STAMP_LIST.";
-                grid.appendChild(none);
-            } else {
-                list.forEach(url => {
-                    const cell = document.createElement("div");
-                    cell.className = "stcell";
-                    const img = new Image();
-                    img.src = url;
-                    img.alt = "stamp";
-                    img.style.imageRendering = "pixelated";
-                    cell.appendChild(img);
-                    cell.onclick = () => selectStamp(url);
-                    grid.appendChild(cell);
-                });
-            }
-        }
-
-        function selectStamp(url) {
-            currentStamp = url;
-            hide("stampPop");
-            setTool("stamp");
-        }
-
-        function openStamp() {
-            buildStampGrid();
-            show("stampPop");
-        }
-
-        function closeStamp() {
-            hide("stampPop");
-        }
-        document.getElementById("chooseStamp").onclick = () => {
-            openStamp();
-            setTool("stamp");
-        };
-        document.getElementById("tStamp").onclick = () => {
-            openStamp();
-            setTool("stamp");
-        };
-        document.getElementById("stampClose").onclick = closeStamp;
-
-        fc.on("mouse:down", (e) => {
-            if (fc.isDrawingMode || !currentStamp) return;
-            const p = fc.getPointer(e.e);
-            fabric.Image.fromURL(currentStamp, (img) => {
-                img.set({
-                    left: p.x - 14,
-                    top: p.y - 14,
-                    selectable: true
-                });
-                fc.add(img);
-                fc.setActiveObject(img);
-                fc.requestRenderAll();
-            });
-        });
-
-        /* Post doodle to board */
-        document.getElementById("post").onclick = () => {
-            const dataUrl = fc.toDataURL({
-                format: "png"
-            });
-            const it = {
-                uid: UID,
-                name: profile.name,
-                src: dataUrl,
-                w: 420,
-                h: 300,
-                x: 40,
-                y: 40,
-                scale: 1,
-                ts: Date.now(),
-                reactions: {}
-            };
-            const r = push(ITEMS);
-            set(r, it);
-            hide("studioPop");
-        };
-
-        /* Studio buttons */
-        document.getElementById("undo").onclick = undo;
-        document.getElementById("redo").onclick = redo;
-        document.getElementById("clear").onclick = () => {
-            fc.clear();
-            fc.setBackgroundColor("#fff", fc.renderAll.bind(fc));
-            pushState();
-        };
-        document.getElementById("studioClose").onclick = () => hide("studioPop");
-
-        /* Presence header (local only, demo) */
-        function renderFriends() {
-            const h = document.getElementById("friendHeader");
-            h.innerHTML = "";
-            const me = document.createElement("div");
-            me.className = "friend online";
-            me.innerHTML = `<div class="dot"></div><div>${profile.name}</div>`;
-            h.appendChild(me);
-        }
-        renderFriends();
-
-        /* Helpers */
-        function show(id) {
-            document.getElementById(id).classList.add("show")
-        }
-
-        function hide(id) {
-            document.getElementById(id).classList.remove("show")
-        }
-
-        /* Keep chat name in sync with profile by default */
-        document.getElementById("chatName").value = profile.name;
-    </script>
+  </script>
 </body>
-
 </html>
